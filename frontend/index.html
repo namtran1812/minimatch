@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8effb">
+  <title>MiniMatch Market Microstructure Lab</title>
+  <link rel="stylesheet" href="/styles.css?v=clean-y2k-2">
+</head>
+<body>
+  <div class="sticker-field" aria-hidden="true">
+    <img class="sticker sticker-star sticker-star-a" src="/assets/star.svg" alt="">
+    <img class="sticker sticker-star sticker-star-b" src="/assets/star.svg" alt="">
+    <img class="sticker sticker-heart" src="/assets/heart.svg" alt="">
+    <img class="sticker sticker-bow" src="/assets/bow.svg" alt="">
+    <span class="sparkle sparkle-a">✦</span><span class="sparkle sparkle-b">✧</span><span class="sparkle sparkle-c">★</span>
+  </div>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="mascot-badge"><img src="/assets/bunny.svg" alt="MiniMatch bunny mascot"></div>
+        <div class="brand-copy">
+          <div class="eyebrow">LOW-LATENCY EXCHANGE · MARKET MICROSTRUCTURE LAB</div>
+          <div class="brand-line"><h1>MiniMatch</h1><span class="brand-script">research workspace</span></div>
+          <p class="subtitle">Deterministic matching, replay, live depth, risk controls, and market-microstructure research in one integrated workspace.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <label class="symbol-picker">Symbol<select id="viewSymbol"><option value="1">1</option></select></label>
+        <div class="status"><span class="dot"></span><span id="connection">Connecting</span></div>
+      </div>
+    </header>
+
+    <section class="metrics" id="metrics"></section>
+
+    <nav class="tabs" aria-label="Dashboard views">
+      <button class="tab active" data-tab="exchange" type="button">Exchange</button>
+      <button class="tab" data-tab="microstructure" type="button">Research</button>
+      <button class="tab" data-tab="testing" type="button">Scenario Lab</button>
+      <button class="tab" data-tab="timemachine" type="button">Replay</button>
+      <button class="tab" data-tab="live" type="button">Live Market</button>
+    </nav>
+
+    <section class="tab-page active" id="tab-exchange">
+      <section class="workspace">
+        <aside class="panel controls command-deck">
+          <div class="command-zone order-zone">
+            <div class="zone-kicker">ORDER ENTRY</div>
+            <div class="section-title">Submit command</div>
+            <div class="order-fields">
+              <label>Order ID<input id="orderId" type="number" value="100"></label>
+              <label>Client ID<input id="clientId" type="number" value="42"></label>
+              <label>Symbol<input id="symbol" type="number" value="1"></label>
+              <label>Side<select id="side"><option>buy</option><option>sell</option></select></label>
+              <label>Type<select id="type"><option>limit</option><option>market</option><option>ioc</option><option>fok</option><option>post</option></select></label>
+              <label>Price<input id="price" type="number" value="10000"></label>
+              <label>Quantity<input id="quantity" type="number" value="25"></label>
+              <button id="submitOrder" class="primary command-submit" type="button">Submit order</button>
+            </div>
+          </div>
+
+          <div class="command-zone manage-zone">
+            <div class="zone-kicker">ORDER MANAGEMENT</div>
+            <div class="section-title">Manage active order</div>
+            <div class="button-stack">
+              <button id="cancelOrder" type="button">Cancel order</button>
+              <button id="replaceOrder" type="button">Replace order</button>
+            </div>
+          </div>
+
+          <div class="command-zone scenario-zone">
+            <div class="zone-kicker">SCENARIOS</div>
+            <div class="section-title">Scenario launcher</div>
+            <div class="scenario-grid">
+              <button data-scenario="basic" type="button">Seed book</button>
+              <button data-scenario="fifo" type="button">FIFO match</button>
+              <button data-scenario="advanced" type="button">FOK / post-only</button>
+              <button data-scenario="multisymbol" type="button">Multi-symbol</button>
+            </div>
+            <button id="reset" class="danger" type="button">Reset exchange</button>
+          </div>
+          <div id="feedback" class="feedback command-feedback" aria-live="polite"></div>
+        </aside>
+
+        <section class="market-column">
+          <div class="panel book-panel">
+            <div class="panel-header">
+              <div>
+                <div class="section-title">Order book</div>
+                <div class="muted">Price-time priority · top 12 levels</div>
+              </div>
+              <div class="book-badges">
+                <span class="badge" id="imbalanceBadge">Imbalance —</span>
+                <span class="badge" id="micropriceBadge">Microprice —</span>
+              </div>
+            </div>
+            <div class="spread" id="spread"></div>
+            <div class="book-head"><span>Price</span><span>Size</span><span>Orders</span><span>Depth</span></div>
+            <div class="book asks" id="asks"></div>
+            <div class="midline">MID / SPREAD</div>
+            <div class="book bids" id="bids"></div>
+          </div>
+        </section>
+
+        <aside class="panel feeds">
+          <div class="section-title">Trades</div>
+          <div class="feed" id="trades"></div>
+          <div class="section-title separated">Execution reports</div>
+          <div class="feed reports" id="reports"></div>
+        </aside>
+      </section>
+    </section>
+
+    <section class="tab-page" id="tab-microstructure">
+      <section class="analytics-grid">
+        <article class="chart-panel wide">
+          <div class="chart-header"><div><div class="section-title">Price discovery</div><div class="muted">Midprice and queue-weighted microprice</div></div><button class="small" id="clearHistory" type="button">Clear history</button></div>
+          <svg id="priceChart" class="chart-svg" data-height="230" viewBox="0 0 800 230" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
+          <div class="legend"><span><i class="legend-mid"></i>Midprice</span><span><i class="legend-micro"></i>Microprice</span></div>
+        </article>
+        <article class="chart-panel">
+          <div class="section-title">Spread</div>
+          <div class="muted">Quoted spread through time</div>
+          <svg id="spreadChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
+        </article>
+        <article class="chart-panel">
+          <div class="section-title">Order-flow imbalance</div>
+          <div class="muted">Top-five-level bid share, centered at 50%</div>
+          <svg id="imbalanceChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
+        </article>
+        <article class="chart-panel wide">
+          <div class="section-title">Depth profile</div>
+          <div class="muted">Displayed liquidity by distance from the midpoint</div>
+          <svg id="depthChart" class="chart-svg" data-height="230" viewBox="0 0 800 230" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
+          <div class="legend"><span><i class="legend-bid"></i>Bid depth</span><span><i class="legend-ask"></i>Ask depth</span></div>
+        </article>
+        <article class="chart-panel">
+          <div class="section-title">Trade size</div>
+          <div class="muted">Most recent executions</div>
+          <svg id="tradeChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
+        </article>
+        <article class="chart-panel">
+          <div class="section-title">API round-trip latency</div>
+          <div class="muted">Browser-to-C++ dashboard request time; not matching latency</div>
+          <svg id="latencyChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
+        </article>
+      </section>
+    </section>
+
+    <section class="tab-page" id="tab-testing">
+      <section class="testing-layout">
+        <article class="panel simulator-panel">
+          <div class="section-title">Automated market simulation</div>
+          <p class="muted">Generate deterministic-looking two-sided flow through the same HTTP order API used by the manual form.</p>
+          <div class="grid two">
+            <label>Orders / second<input id="simRate" type="number" min="1" max="50" value="8"></label>
+            <label>Base price<input id="simBase" type="number" value="10000"></label>
+            <label>Price range<input id="simRange" type="number" min="1" value="8"></label>
+            <label>Max quantity<input id="simQty" type="number" min="1" value="100"></label>
+          </div>
+          <div class="button-row">
+            <button id="startSimulation" class="primary" type="button">Start flow</button>
+            <button id="stopSimulation" type="button">Stop</button>
+          </div>
+          <div class="simulation-status" id="simulationStatus">Stopped</div>
+        </article>
+
+        <article class="panel test-panel">
+          <div class="section-title">Invariant monitor</div>
+          <div class="invariant-list" id="invariants"></div>
+          <p class="muted">These checks run against every refreshed state returned by the C++ server.</p>
+        </article>
+
+        <article class="panel test-panel">
+          <div class="section-title">Live distribution</div>
+          <div class="distribution" id="distribution"></div>
+        </article>
+
+        <article class="panel test-panel full">
+          <div class="section-title">How to demonstrate the system</div>
+          <ol class="demo-steps">
+            <li>Load <strong>FIFO match</strong> and show that older orders execute first at the same price.</li>
+            <li>Load <strong>FOK / post-only</strong> and inspect rejected versus filled execution reports.</li>
+            <li>Start automated flow, then open <strong>Microstructure</strong> to watch spread, imbalance, microprice, and depth evolve.</li>
+            <li>Switch symbols after loading <strong>Multi-symbol</strong> to prove independent books and deterministic routing.</li>
+          </ol>
+        </article>
+      </section>
+    </section>
+
+
+    <section class="tab-page" id="tab-live">
+      <section class="live-layout">
+        <article class="panel live-controls">
+          <div class="section-title">Live venue connection</div>
+          <p class="muted">View normalized external market data. External events are visualized and recorded; they are not matched by the MiniMatch venue.</p>
+          <div class="grid two">
+            <label>Venue<select id="liveVenue">
+              <option value="coinbase">Coinbase Advanced Trade — Recommended</option>
+              <option value="kraken">Kraken Spot — Working</option>
+              <option value="binance">Binance.US Spot — Working</option>
+              <option value="demo">Recorded Demo — Working</option>
+              <option value="alpaca">Alpaca IEX Equities — Coming Soon</option>
+              <option value="massive">Massive / Polygon Flat Files — Coming Soon</option>
+              <option value="polygon">Massive / Polygon Live Stocks — Coming Soon</option>
+            </select></label>
+            <label>Symbol<input id="liveSymbol" value="btcusd"></label>
+            <label>Refresh (ms)<input id="liveRefreshMs" type="number" min="100" value="500"></label>
+          </div>
+          <div class="button-row"><button id="connectLive" class="primary" type="button">View live feed</button><button id="stopLive" type="button">Stop view</button></div>
+          <div id="liveStatus" class="simulation-status">Adapter not selected</div>
+          <div class="live-help">
+            <strong>Start the adapter in another terminal</strong>
+            <code id="liveCommand">./scripts/run_live_binance.sh btcusdt</code>
+          </div>
+          <div id="massivePlaceholder" class="provider-placeholder" hidden>
+            <div class="provider-placeholder__eyebrow">HISTORICAL DATA PROVIDER</div>
+            <h3>Massive Flat Files</h3>
+            <p>Download compressed historical market datasets from Massive's S3-compatible Flat Files service, import them into MiniMatch SQLite, and use them for backtesting and replay.</p>
+            <div class="provider-placeholder__grid">
+              <div><span>Provider type</span><strong>Historical</strong></div>
+              <div><span>Current dataset</span><strong>US stock minute bars</strong></div>
+              <div><span>Storage</span><strong>SQLite + JSON</strong></div>
+              <div><span>Authentication</span><strong>S3 access keys</strong></div>
+            </div>
+            <div class="provider-placeholder__steps">
+              <strong>Workflow</strong>
+              <ol>
+                <li>Rotate the previously exposed credential and place the new key pair in <code>.env</code>.</li>
+                <li>Run <code>source scripts/setup_massive.sh</code>.</li>
+                <li>List or download an entitled Flat File.</li>
+                <li>Import a ticker into <code>data/historical/market_history.db</code>.</li>
+              </ol>
+            </div>
+          </div>
+          <div id="genericProviderPlaceholder" class="provider-placeholder" hidden>
+            <div class="provider-placeholder__eyebrow" id="genericProviderEyebrow">PROVIDER ROADMAP</div>
+            <h3 id="genericProviderTitle">Provider integration</h3>
+            <p id="genericProviderDescription"></p>
+            <div class="provider-placeholder__grid" id="genericProviderGrid"></div>
+            <div class="provider-placeholder__steps"><strong>Current status</strong><p id="genericProviderStatus"></p></div>
+          </div>
+          <div id="alpacaPlaceholder" class="provider-placeholder" hidden>
+            <div class="provider-placeholder__eyebrow">PLANNED VENUE ADAPTER</div>
+            <h3>Alpaca US Equities</h3>
+            <p>MiniMatch is architected for Alpaca trade and quote streams, but this distribution keeps the adapter disabled until credentials and market-data entitlements are configured.</p>
+            <div class="provider-placeholder__grid">
+              <div><span>Current status</span><strong>Coming soon</strong></div>
+              <div><span>Planned coverage</span><strong>US equities</strong></div>
+              <div><span>Data model</span><strong>Quotes + trades</strong></div>
+              <div><span>Default feed</span><strong>IEX</strong></div>
+            </div>
+            <div class="provider-placeholder__steps">
+              <strong>Integration roadmap</strong>
+              <ol>
+                <li>Configure Alpaca API credentials.</li>
+                <li>Validate account market-data entitlements.</li>
+                <li>Start the authenticated WebSocket adapter.</li>
+                <li>Normalize quotes and trades into the shared venue schema.</li>
+              </ol>
+            </div>
+          </div>
+        </article>
+        <article class="panel live-metrics-panel">
+          <div class="section-title">Feed health</div>
+          <div id="liveMetrics" class="live-metrics"></div>
+        </article>
+        <article class="panel live-book-panel">
+          <div class="panel-header"><div><div class="section-title">External order book</div><div class="muted" id="liveBookSubtitle">No data</div></div><span class="badge" id="liveConnectionBadge">OFFLINE</span></div>
+          <div class="live-quote-grid" id="liveSpread"></div>
+          <div class="live-ops-strip">
+            <div><small>Feed age</small><strong id="liveAge">—</strong></div>
+            <div><small>API RTT</small><strong id="liveRtt">—</strong></div>
+            <div><small>Reconnects</small><strong id="liveReconnects">0</strong></div>
+            <div><small>Dropped</small><strong id="liveDropped">0</strong></div>
+          </div>
+          <div class="book-head"><span>Price</span><span>Size</span><span>Orders</span><span>Depth</span></div>
+          <div class="book asks" id="liveAsks"></div><div class="midline">LIVE EXTERNAL MARKET</div><div class="book bids" id="liveBids"></div>
+        </article>
+        <article class="chart-panel live-chart live-chart-price"><div class="section-title">Live midprice / microprice</div><div class="muted">Normalized from the external venue feed</div><svg id="livePriceChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
+        <article class="chart-panel live-chart live-chart-spread"><div class="section-title">Live spread</div><div class="muted">Quoted spread and basis-point cost</div><svg id="liveSpreadChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
+        <article class="chart-panel live-chart live-chart-rate"><div class="section-title">Message throughput</div><div class="muted">Normalized market events per second</div><svg id="liveRateChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
+        <article class="chart-panel live-chart live-chart-latency"><div class="section-title">API latency distribution</div><div class="muted">Browser-to-C++ dashboard round-trip latency</div><svg id="liveLatencyChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
+        <article class="panel live-heatmap-panel"><div class="section-title">Liquidity heatmap</div><div class="muted">Top levels; intensity is normalized within the visible book</div><div id="liveHeatmap" class="liquidity-heatmap"></div></article>
+        <article class="panel live-queue-panel"><div class="section-title">Queue proxy</div><div class="muted">Displayed size ahead at the selected best level; this is not true Level-3 queue rank.</div><div id="liveQueueProxy" class="queue-proxy"></div></article>
+        <article class="panel live-paper-panel"><div class="section-title">Paper execution</div><div class="muted">Cross the external best bid/ask without sending an order to the venue.</div><div class="paper-metrics"><div><small>Inventory</small><strong id="paperInventory">0</strong></div><div><small>Cash</small><strong id="paperCash">0</strong></div><div><small>Unrealized P&amp;L</small><strong id="paperPnl">0</strong></div></div><div class="button-row"><button id="paperBuy" type="button">Buy 0.001</button><button id="paperSell" type="button">Sell 0.001</button><button id="paperReset" type="button">Reset</button></div></article>
+        <article class="panel live-events-panel full"><div class="section-title">Normalized event timeline</div><div id="liveEventTimeline" class="event-timeline"></div></article>
+        <article class="panel live-trades-panel"><div class="section-title">External trade tape</div><div class="feed" id="liveTrades"></div></article>
+        <article class="panel live-storage-panel full"><div class="section-title">Recorded demo database</div><p class="muted">Every normalized event is stored in <code>data/live/market_events.db</code> and in a session JSONL file. Query it with:</p><code>python3 scripts/query_live_db.py --limit 20</code></article>
+      </section>
+    </section>
+
+    <section class="tab-page" id="tab-timemachine">
+      <section class="testing-layout">
+        <article class="panel simulator-panel full">
+          <div class="section-title">Autonomous strategy arena</div>
+          <p class="muted">Five deterministic agents trade through the real matching engine: market maker, momentum, mean reversion, institutional TWAP, and noise flow.</p>
+          <div class="grid two">
+            <label>Commands<input id="arenaSteps" type="number" min="10" max="5000" value="500"></label>
+            <label>Drop every N messages (0 = off)<input id="dropEvery" type="number" min="0" value="0"></label>
+            <label>Duplicate every N messages (0 = off)<input id="duplicateEvery" type="number" min="0" value="0"></label>
+          </div>
+          <div class="button-row">
+            <button id="runArena" class="primary" type="button">Run arena</button>
+            <button data-scenario="flashcrash" type="button">Flash crash</button>
+            <button data-scenario="liquidityvacuum" type="button">Liquidity vacuum</button>
+          </div>
+          <div id="arenaStatus" class="simulation-status">Ready</div>
+        </article>
+
+        <article class="panel test-panel full">
+          <div class="section-title">Exchange time machine</div>
+          <p class="muted">Reconstruct the complete book after any command. Playback is deterministic and never mutates the live exchange.</p>
+          <div class="timeline-controls">
+            <button id="timelineStart" type="button">|◀</button>
+            <button id="timelineBack" type="button">◀</button>
+            <button id="timelinePlay" class="primary" type="button">▶ Play</button>
+            <button id="timelineForward" type="button">▶</button>
+            <button id="timelineEnd" type="button">▶|</button>
+            <label>Speed<select id="timelineSpeed"><option value="800">1×</option><option value="250">5×</option><option value="50">20×</option></select></label>
+          </div>
+          <input id="timelineSlider" type="range" min="0" max="0" value="0">
+          <div class="timeline-meta"><span id="timelineFrame">Frame 0 / 0</span><span id="timelineHash">Hash —</span></div>
+          <div class="timeline-grid">
+            <div><div class="section-title">Historical book</div><div id="historicalBook" class="historical-book"></div></div>
+            <div><div class="section-title">Recent commands</div><div id="timelineActions" class="feed"></div></div>
+          </div>
+        </article>
+
+        <article class="panel test-panel full">
+          <div class="section-title">Explainable matching</div>
+          <p class="muted">Click any live trade in the Exchange tab, or enter a sequence number below.</p>
+          <div class="explain-row"><label>Trade sequence<input id="explainSequence" type="number" min="1" value="1"></label><button id="explainTrade" type="button">Explain trade</button></div>
+          <div id="tradeExplanation" class="explanation">No trade selected.</div>
+        </article>
+      </section>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

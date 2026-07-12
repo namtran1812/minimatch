@@ -1,0 +1,13 @@
+build/
+results/
+*.events
+*.snapshot
+.DS_Store
+compile_commands.json
+
+# Local provider credentials and downloaded market data
+.env
+.env.*
+!.env.example
+data/massive/raw/
+data/massive/processed/
