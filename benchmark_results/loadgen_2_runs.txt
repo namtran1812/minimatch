@@ -1,0 +1,4 @@
+===== loadgen run 1 =====
+orders=100000 symbols=8 seconds=0.0203232 orders_per_sec=4.92048e+06 active=19806 state_hash=6739171713042933832
+===== loadgen run 2 =====
+orders=100000 symbols=8 seconds=0.0210293 orders_per_sec=4.75527e+06 active=19806 state_hash=6739171713042933832
