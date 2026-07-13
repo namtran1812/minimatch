@@ -13,3 +13,4 @@ data/massive/raw/
 data/massive/processed/
 __pycache__/
 *.pyc
+data/live/

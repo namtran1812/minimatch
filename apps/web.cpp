@@ -21,6 +21,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <cstdlib>
 
 namespace asio = boost::asio;
 namespace beast = boost::beast;
@@ -412,6 +413,126 @@ std::string explain_trade_json(const DashboardState& state, Sequence sequence) {
   return "{\"found\":false}";
 }
 
+
+std::optional<std::string> json_string_field(const std::string& body,
+                                             const std::string& key) {
+  const std::string marker = "\"" + key + "\":";
+  const std::size_t field = body.find(marker);
+  if (field == std::string::npos) return std::nullopt;
+
+  const std::size_t quote_begin = body.find('"', field + marker.size());
+  if (quote_begin == std::string::npos) return std::nullopt;
+
+  const std::size_t quote_end = body.find('"', quote_begin + 1);
+  if (quote_end == std::string::npos) return std::nullopt;
+
+  return body.substr(quote_begin + 1, quote_end - quote_begin - 1);
+}
+
+std::optional<bool> json_bool_field(const std::string& body,
+                                    const std::string& key) {
+  const std::string marker = "\"" + key + "\":";
+  const std::size_t field = body.find(marker);
+  if (field == std::string::npos) return std::nullopt;
+
+  const std::size_t value_begin = field + marker.size();
+
+  if (body.compare(value_begin, 4, "true") == 0) return true;
+  if (body.compare(value_begin, 5, "false") == 0) return false;
+
+  return std::nullopt;
+}
+
+std::optional<double> json_number_field(const std::string& body,
+                                        const std::string& key) {
+  const std::string marker = "\"" + key + "\":";
+  const std::size_t field = body.find(marker);
+  if (field == std::string::npos) return std::nullopt;
+
+  const char* begin = body.c_str() + field + marker.size();
+  char* end = nullptr;
+
+  const double value = std::strtod(begin, &end);
+
+  if (end == begin) return std::nullopt;
+  return value;
+}
+
+struct VenueHealth {
+  std::string venue;
+  std::string status{"missing"};
+  bool connected{false};
+  bool transport_connected{false};
+  double age_ms{-1.0};
+  double spread{-1.0};
+  double sequence_gaps{-1.0};
+  bool healthy{false};
+};
+
+VenueHealth read_venue_health(const std::string& venue,
+                              const std::string& symbol) {
+  VenueHealth health;
+  health.venue = venue;
+
+  const std::string path =
+      "data/live/" + venue + "_" + symbol + ".json";
+
+  const std::string body = load_file(path);
+
+  if (body.empty()) {
+    health.status = "missing";
+    return health;
+  }
+
+  health.status =
+      json_string_field(body, "status").value_or("unknown");
+
+  health.connected =
+      json_bool_field(body, "connected").value_or(false);
+
+  health.transport_connected =
+      json_bool_field(body, "transportConnected").value_or(false);
+
+  health.age_ms =
+      json_number_field(body, "ageMs").value_or(-1.0);
+
+  health.spread =
+      json_number_field(body, "spread").value_or(-1.0);
+
+  health.sequence_gaps =
+      json_number_field(body, "sequenceGaps").value_or(-1.0);
+
+  health.healthy =
+      health.status == "live" &&
+      health.connected &&
+      health.transport_connected &&
+      health.age_ms >= 0.0 &&
+      health.age_ms <= 15000.0 &&
+      health.spread > 0.0 &&
+      health.sequence_gaps == 0.0;
+
+  return health;
+}
+
+std::string venue_health_json(const VenueHealth& health) {
+  std::ostringstream out;
+
+  out << "{"
+      << "\"status\":\"" << json_escape(health.status) << "\","
+      << "\"connected\":"
+      << (health.connected ? "true" : "false") << ","
+      << "\"transportConnected\":"
+      << (health.transport_connected ? "true" : "false") << ","
+      << "\"ageMs\":" << health.age_ms << ","
+      << "\"spread\":" << health.spread << ","
+      << "\"sequenceGaps\":" << health.sequence_gaps << ","
+      << "\"healthy\":"
+      << (health.healthy ? "true" : "false")
+      << "}";
+
+  return out.str();
+}
+
 http::response<http::string_body> response(http::status status, std::string body,
                                            std::string_view content_type = "application/json") {
   http::response<http::string_body> res{status, 11};
@@ -431,6 +552,53 @@ http::response<http::string_body> handle_request(DashboardState& state,
 
   try {
     std::lock_guard<std::mutex> lock(state.mutex);
+    if (req.method() == http::verb::get && path == "/api/health") {
+      const auto query = parse_query(target);
+
+      const std::string symbol = safe_token(
+          query.count("symbol") ? query.at("symbol") : "btcusd"
+      );
+
+      if (symbol.empty()) {
+        throw std::runtime_error("invalid symbol");
+      }
+
+      const VenueHealth coinbase =
+          read_venue_health("coinbase", symbol);
+
+      const VenueHealth kraken =
+          read_venue_health("kraken", symbol);
+
+      const VenueHealth binance =
+          read_venue_health("binance", symbol);
+
+      const bool healthy =
+          coinbase.healthy &&
+          kraken.healthy &&
+          binance.healthy;
+
+      std::ostringstream out;
+
+      out << "{"
+          << "\"status\":\""
+          << (healthy ? "healthy" : "degraded")
+          << "\","
+          << "\"symbol\":\"" << json_escape(symbol) << "\","
+          << "\"venues\":{"
+          << "\"coinbase\":" << venue_health_json(coinbase) << ","
+          << "\"kraken\":" << venue_health_json(kraken) << ","
+          << "\"binance\":" << venue_health_json(binance)
+          << "}"
+          << "}";
+
+      return response(
+          healthy
+              ? http::status::ok
+              : http::status::service_unavailable,
+          out.str()
+      );
+    }
+
     if (req.method() == http::verb::get && path == "/api/live/state") {
       const auto query = parse_query(target);
       const std::string venue = safe_token(query.count("venue") ? query.at("venue") : "binance");

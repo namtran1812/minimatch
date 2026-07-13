@@ -51,7 +51,20 @@ if(MINIMATCH_BUILD_TESTS)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
   add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp)
-  target_link_libraries(minimatch_tests PRIVATE minimatch GTest::gtest_main)
+  target_include_directories(
+    minimatch_tests
+    BEFORE PRIVATE
+      ${googletest_SOURCE_DIR}/googletest/include
+      ${googletest_SOURCE_DIR}/googletest
+  )
+
+  target_link_libraries(
+    minimatch_tests
+    PRIVATE
+      minimatch
+      GTest::gtest
+      GTest::gtest_main
+  )
   include(GoogleTest)
   gtest_discover_tests(minimatch_tests)
 endif()
