@@ -1,0 +1,95 @@
+name: MiniMatch CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            libboost-dev \
+            libboost-system-dev \
+            libboost-thread-dev \
+            python3 \
+            curl
+
+      - name: Validate Python
+        run: |
+          python3 -m py_compile live_feed/live_market.py
+
+      - name: Validate shell scripts
+        run: |
+          find scripts -type f -name "*.sh" -print0 |
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            bash -n "$file"
+          done
+
+      - name: Configure CMake
+        run: |
+          cmake \
+            -S . \
+            -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DMINIMATCH_BUILD_TESTS=ON
+
+      - name: Build
+        run: |
+          cmake --build build --parallel 2
+
+      - name: Run tests
+        run: |
+          ctest --test-dir build --output-on-failure
+
+      - name: Build Docker image
+        run: |
+          docker build -t minimatch:ci .
+
+      - name: Start container
+        run: |
+          docker run -d \
+            --name minimatch-ci \
+            -p 8080:10000 \
+            -e PORT=10000 \
+            -e LIVE_SYMBOL=btcusd \
+            minimatch:ci
+
+      - name: Wait for health endpoint
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent \
+              "http://127.0.0.1:8080/api/health?symbol=btcusd" \
+              >/dev/null; then
+              echo "Health endpoint passed"
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          docker logs minimatch-ci
+          exit 1
+
+      - name: Show logs
+        if: always()
+        run: docker logs minimatch-ci || true
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f minimatch-ci || true
