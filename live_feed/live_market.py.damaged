@@ -1,0 +1,759 @@
+
+async def run_binance(
+    symbol: str,
+    recorder: Recorder,
+    state: LiveState,
+) -> None:
+    """Binance.US synchronized depth, trades, and book ticker."""
+
+    symbol = symbol.lower()
+
+    rest_base = os.getenv(
+        "BINANCE_REST_BASE",
+        "https://api.binance.us",
+    )
+    ws_base = os.getenv(
+        "BINANCE_WS_BASE",
+        "wss://stream.binance.us:9443",
+    )
+
+    # Depth owns the reconstructed order book.
+    # bookTicker is observed and recorded, but must not mutate that book.
+    stream = (
+        f"{symbol}@depth@100ms/"
+        f"{symbol}@trade/"
+        f"{symbol}@bookTicker"
+    )
+
+    snapshot_url = (
+        f"{rest_base}/api/v3/depth"
+        f"?symbol={symbol.upper()}&limit=1000"
+    )
+
+    def validate_book() -> None:
+        if not state.bids or not state.asks:
+            return
+
+        best_bid = max(state.bids)
+        best_ask = min(state.asks)
+
+        if best_bid >= best_ask:
+            raise RuntimeError(
+                "Binance order-book desynchronization: "
+                f"best_bid={best_bid} best_ask={best_ask}"
+            )
+
+    while True:
+        try:
+            # Never preserve a previous connection's local book.
+            state.bids.clear()
+            state.asks.clear()
+            state.connected = False
+            state.status = "connecting"
+            state.last_sequence = None
+            state.publish()
+
+            socket_url = f"{ws_base}/stream?streams={stream}"
+
+            async with websockets.connect(
+                socket_url,
+                ping_interval=20,
+                ping_timeout=20,
+                max_size=16 * 1024 * 1024,
+                max_queue=256,
+                close_timeout=5,
+            ) as ws:
+                buffered_depth: list[dict[str, Any]] = []
+
+                # Open the stream first, then fetch the REST snapshot.
+                snapshot_task = asyncio.create_task(
+                    fetch_json(snapshot_url)
+                )
+
+                while not snapshot_task.done():
+                    raw = await asyncio.wait_for(
+                        ws.recv(),
+                        timeout=15,
+                    )
+                    message = json.loads(raw)
+                    data = message.get("data", message)
+
+                    event_type = data.get("e")
+
+                    if event_type == "depthUpdate":
+                        buffered_depth.append(data)
+
+                    elif event_type == "trade":
+                        process_binance_trade(
+                            data,
+                            recorder,
+                            state,
+                        )
+
+                    elif (
+                        "b" in data
+                        and "a" in data
+                        and "s" in data
+                    ):
+                        process_binance_book_ticker(
+                            data,
+                            recorder,
+                            state,
+                        )
+
+                snapshot = await snapshot_task
+
+                state.bids = {
+                    float(price): float(quantity)
+                    for price, quantity in snapshot["bids"]
+                    if float(quantity) > 0.0
+                }
+
+                state.asks = {
+                    float(price): float(quantity)
+                    for price, quantity in snapshot["asks"]
+                    if float(quantity) > 0.0
+                }
+
+                snapshot_id = int(snapshot["lastUpdateId"])
+                previous_final_id: int | None = None
+                bridge_found = False
+
+                # Apply every relevant buffered event in sequence.
+                for update in buffered_depth:
+                    first_id = int(update["U"])
+                    final_id = int(update["u"])
+
+                    if final_id <= snapshot_id:
+                        continue
+
+                    if not bridge_found:
+                        expected = snapshot_id + 1
+
+                        if not (
+                            first_id <= expected <= final_id
+                        ):
+                            continue
+
+                        bridge_found = True
+                    else:
+                        expected = previous_final_id + 1
+
+                        if first_id != expected:
+                            state.sequence_gaps += 1
+                            raise RuntimeError(
+                                "Binance buffered sequence gap: "
+                                f"expected={expected} "
+                                f"received={first_id}-{final_id}"
+                            )
+
+                    apply_binance_depth(
+                        update,
+                        recorder,
+                        state,
+                    )
+
+                    previous_final_id = final_id
+
+                if not bridge_found:
+                    raise RuntimeError(
+                        "No buffered depth event bridged "
+                        f"snapshot update ID {snapshot_id}"
+                    )
+
+                state.last_sequence = previous_final_id
+                validate_book()
+
+                state.connected = True
+                state.status = "live"
+                state.publish()
+
+                async for raw in ws:
+                    message = json.loads(raw)
+                    data = message.get("data", message)
+                    event_type = data.get("e")
+
+                    if event_type == "depthUpdate":
+                        first_id = int(data["U"])
+                        final_id = int(data["u"])
+
+                        expected = (
+                            int(state.last_sequence) + 1
+                        )
+
+                        if final_id < expected:
+                            continue
+
+                        if first_id != expected:
+                            state.sequence_gaps += 1
+                            raise RuntimeError(
+                                "Binance live sequence gap: "
+                                f"expected={expected} "
+                                f"received={first_id}-{final_id}"
+                            )
+
+                        apply_binance_depth(
+                            data,
+                            recorder,
+                            state,
+                        )
+
+                        validate_book()
+
+                    elif event_type == "trade":
+                        process_binance_trade(
+                            data,
+                            recorder,
+                            state,
+                        )
+
+                    elif (
+                        "b" in data
+                        and "a" in data
+                        and "s" in data
+                    ):
+                        process_binance_book_ticker(
+                            data,
+                            recorder,
+                            state,
+                        )
+
+                    if state.event_count % 5 == 0:
+                        state.publish()
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception as exc:
+            state.connected = False
+            state.bids.clear()
+            state.asks.clear()
+            state.reconnects += 1
+            state.status = f"reconnecting: {exc}"
+            state.publish()
+            await asyncio.sleep(2)
+
+
+def apply_binance_depth(
+    data: dict[str, Any],
+    recorder: Recorder,
+    state: LiveState,
+) -> None:
+    sequence = int(data["u"])
+    receive_ns = now_ns()
+    exchange_ns = int(data.get("E", 0)) * 1_000_000
+
+    for side_name, key, book in (
+        ("BUY", "b", state.bids),
+        ("SELL", "a", state.asks),
+    ):
+        for price_text, quantity_text in data.get(key, []):
+            price = float(price_text)
+            quantity = float(quantity_text)
+
+            # Binance quantities are absolute replacements.
+            if quantity == 0.0:
+                book.pop(price, None)
+            else:
+                book[price] = quantity
+
+            recorder.record({
+                "receiveTsNs": receive_ns,
+                "exchangeTsNs": exchange_ns,
+                "sequence": sequence,
+                "type": "depth",
+                "side": side_name,
+                "price": price,
+                "quantity": quantity,
+            })
+
+            state.event_count += 1
+            state.last_event_ns = receive_ns
+
+    state.last_sequence = sequence
+
+
+def process_binance_trade(
+    data: dict[str, Any],
+    recorder: Recorder,
+    state: LiveState,
+) -> None:
+    side = "SELL" if data.get("m") else "BUY"
+    receive_ns = now_ns()
+
+    trade = {
+        "sequence": int(data.get("t", 0)),
+        "side": side,
+        "price": float(data["p"]),
+        "quantity": float(data["q"]),
+        "timestampNs": int(
+            data.get("T", data.get("E", 0))
+        ) * 1_000_000,
+    }
+
+    state.trades.appendleft(trade)
+    state.trade_count += 1
+    state.event_count += 1
+    state.last_event_ns = receive_ns
+
+    recorder.record({
+        "receiveTsNs": receive_ns,
+        "exchangeTsNs": trade["timestampNs"],
+        "sequence": trade["sequence"],
+        "type": "trade",
+        "side": side,
+        "price": trade["price"],
+        "quantity": trade["quantity"],
+    })
+
+
+def process_binance_book_ticker(
+    data: dict[str, Any],
+    recorder: Recorder,
+    state: LiveState,
+) -> None:
+    """
+    Record Binance best-bid/ask observations without mutating the
+    reconstructed depth book.
+
+    The depth stream is the sole owner of state.bids/state.asks.
+    Mutating those maps here leaves stale bookTicker levels behind.
+    """
+
+    bid = float(data["b"])
+    bid_quantity = float(data["B"])
+    ask = float(data["a"])
+    ask_quantity = float(data["A"])
+    receive_ns = now_ns()
+
+    sequence = int(
+        data.get("u", state.last_sequence or 0)
+    )
+
+    state.event_count += 1
+    state.last_event_ns = receive_ns
+
+    recorder.record({
+        "receiveTsNs": receive_ns,
+        "exchangeTsNs": None,
+        "sequence": sequence,
+        "type": "bookTicker",
+        "side": None,
+        "price": (bid + ask) / 2.0,
+        "quantity": bid_quantity + ask_quantity,
+        "bestBid": bid,
+        "bestBidQuantity": bid_quantity,
+        "bestAsk": ask,
+        "bestAskQuantity": ask_quantity,
+    })
+
+
+async def run_coinbase(symbol: str, recorder: Recorder, state: LiveState) -> None:
+    """Public Coinbase Advanced Trade L2 + trade feed (no API key required)."""
+    product = symbol.upper().replace('/', '-').replace('_', '-')
+    if '-' not in product:
+        product = {"BTCUSD": "BTC-USD", "ETHUSD": "ETH-USD", "SOLUSD": "SOL-USD"}.get(product, product)
+    url = os.getenv("COINBASE_WS_URL", "wss://advanced-trade-ws.coinbase.com")
+    while True:
+        try:
+            state.status = "connecting"
+            state.publish()
+            async with websockets.connect(url, ping_interval=20, ping_timeout=20, max_size=16 * 1024 * 1024,
+            max_queue=64,
+            close_timeout=5) as ws:
+                for channel in ("level2", "market_trades", "heartbeats"):
+                    await ws.send(json.dumps({"type": "subscribe", "product_ids": [product], "channel": channel}))
+                state.connected = True
+                state.status = "live"
+                state.publish()
+                async for raw in ws:
+                    msg = json.loads(raw)
+                    channel = msg.get("channel")
+                    seq = msg.get("sequence_num")
+                    if isinstance(seq, int):
+                        if state.last_sequence is not None and seq > state.last_sequence + 1:
+                            state.sequence_gaps += 1
+                        state.last_sequence = seq
+                    if channel == "l2_data":
+                        for event in msg.get("events", []):
+                            for update in event.get("updates", []):
+                                side_text = str(update.get("side", "")).lower()
+                                side = "BUY" if side_text in {"bid", "buy"} else "SELL"
+                                price = float(update["price_level"])
+                                qty = float(update["new_quantity"])
+                                book = state.bids if side == "BUY" else state.asks
+                                if qty == 0:
+                                    book.pop(price, None)
+                                else:
+                                    book[price] = qty
+                                event_ns = now_ns()
+                                recorder.record({
+                                    "receiveTsNs": event_ns, "exchangeTsNs": None,
+                                    "sequence": seq, "type": "depth", "side": side,
+                                    "price": price, "quantity": qty,
+                                })
+                                state.event_count += 1
+                                state.last_event_ns = event_ns
+                    elif channel == "market_trades":
+                        for event in msg.get("events", []):
+                            for item in event.get("trades", []):
+                                side = str(item.get("side", "UNKNOWN")).upper()
+                                trade = {
+                                    "sequence": item.get("trade_id", seq),
+                                    "side": side,
+                                    "price": float(item["price"]),
+                                    "quantity": float(item["size"]),
+                                    "timestamp": item.get("time"),
+                                }
+                                state.trades.appendleft(trade)
+                                state.trade_count += 1
+                                state.event_count += 1
+                                state.last_event_ns = now_ns()
+                                recorder.record({
+                                    "receiveTsNs": state.last_event_ns, "exchangeTsNs": None,
+                                    "sequence": trade["sequence"], "type": "trade", "side": side,
+                                    "price": trade["price"], "quantity": trade["quantity"],
+                                })
+                    if state.event_count % 5 == 0 or channel == "market_trades":
+                        state.publish()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            state.connected = False
+            state.reconnects += 1
+            state.status = f"reconnecting: {exc}"
+            state.publish()
+            await asyncio.sleep(3)
+
+
+async def run_kraken(
+    symbol: str,
+    recorder: Recorder,
+    state: LiveState,
+) -> None:
+    """Public Kraken Spot WebSocket v2 L2 book and trades."""
+
+    pair = symbol.upper().replace("-", "/").replace("_", "/")
+
+    if "/" not in pair:
+        pair = {
+            "BTCUSD": "BTC/USD",
+            "ETHUSD": "ETH/USD",
+            "SOLUSD": "SOL/USD",
+        }.get(pair, pair)
+
+    url = os.getenv("KRAKEN_WS_URL", "wss://ws.kraken.com/v2")
+
+    depth = 25
+    local_seq = 0
+
+    def apply_level(
+        book: dict[float, float],
+        price: float,
+        quantity: float,
+    ) -> None:
+        if quantity == 0.0:
+            book.pop(price, None)
+        else:
+            # Kraken quantities are replacements, not deltas.
+            book[price] = quantity
+
+    def truncate_books() -> None:
+        # Kraken requires clients to truncate the locally maintained
+        # book after every update because levels leaving the subscribed
+        # depth may not receive qty=0 deletion events.
+        if len(state.bids) > depth:
+            keep_bids = sorted(
+                state.bids.items(),
+                key=lambda item: item[0],
+                reverse=True,
+            )[:depth]
+            state.bids = dict(keep_bids)
+
+        if len(state.asks) > depth:
+            keep_asks = sorted(
+                state.asks.items(),
+                key=lambda item: item[0],
+            )[:depth]
+            state.asks = dict(keep_asks)
+
+    def validate_book() -> None:
+        if not state.bids or not state.asks:
+            return
+
+        best_bid = max(state.bids)
+        best_ask = min(state.asks)
+
+        if best_bid >= best_ask:
+            raise RuntimeError(
+                "Kraken order-book desynchronization: "
+                f"best_bid={best_bid} best_ask={best_ask}"
+            )
+
+    while True:
+        try:
+            # Never carry stale levels across reconnects.
+            state.bids.clear()
+            state.asks.clear()
+            state.connected = False
+            state.status = "connecting"
+            state.publish()
+
+            async with websockets.connect(
+                url,
+                ping_interval=20,
+                ping_timeout=20,
+                max_size=16 * 1024 * 1024,
+                max_queue=64,
+                close_timeout=5,
+            ) as ws:
+                await ws.send(json.dumps({
+                    "method": "subscribe",
+                    "params": {
+                        "channel": "book",
+                        "symbol": [pair],
+                        "depth": depth,
+                        "snapshot": True,
+                    },
+                }))
+
+                await ws.send(json.dumps({
+                    "method": "subscribe",
+                    "params": {
+                        "channel": "trade",
+                        "symbol": [pair],
+                        "snapshot": False,
+                    },
+                }))
+
+                snapshot_received = False
+
+                async for raw in ws:
+                    msg = json.loads(raw)
+                    channel = msg.get("channel")
+                    message_type = msg.get("type")
+
+                    if channel == "book":
+                        for payload in msg.get("data", []):
+                            # A snapshot replaces the complete local book.
+                            if message_type == "snapshot":
+                                state.bids.clear()
+                                state.asks.clear()
+
+                            # Process every update in the message before
+                            # truncating or validating.
+                            for level in payload.get("bids", []):
+                                price = float(level["price"])
+                                qty = float(level["qty"])
+
+                                apply_level(state.bids, price, qty)
+
+                                local_seq += 1
+                                event_ns = now_ns()
+
+                                recorder.record({
+                                    "receiveTsNs": event_ns,
+                                    "exchangeTsNs": None,
+                                    "sequence": local_seq,
+                                    "type": "depth",
+                                    "side": "BUY",
+                                    "price": price,
+                                    "quantity": qty,
+                                })
+
+                                state.event_count += 1
+                                state.last_event_ns = event_ns
+
+                            for level in payload.get("asks", []):
+                                price = float(level["price"])
+                                qty = float(level["qty"])
+
+                                apply_level(state.asks, price, qty)
+
+                                local_seq += 1
+                                event_ns = now_ns()
+
+                                recorder.record({
+                                    "receiveTsNs": event_ns,
+                                    "exchangeTsNs": None,
+                                    "sequence": local_seq,
+                                    "type": "depth",
+                                    "side": "SELL",
+                                    "price": price,
+                                    "quantity": qty,
+                                })
+
+                                state.event_count += 1
+                                state.last_event_ns = event_ns
+
+                            truncate_books()
+                            validate_book()
+
+                            state.last_sequence = local_seq
+
+                            if message_type == "snapshot":
+                                snapshot_received = True
+                                state.connected = True
+                                state.status = "live"
+
+                    elif channel == "trade":
+                        for item in msg.get("data", []):
+                            local_seq += 1
+
+                            side = str(
+                                item.get("side", "UNKNOWN")
+                            ).upper()
+
+                            trade = {
+                                "sequence": item.get(
+                                    "trade_id",
+                                    local_seq,
+                                ),
+                                "side": side,
+                                "price": float(item["price"]),
+                                "quantity": float(item["qty"]),
+                                "timestamp": item.get("timestamp"),
+                            }
+
+                            state.trades.appendleft(trade)
+                            state.trade_count += 1
+                            state.event_count += 1
+                            state.last_event_ns = now_ns()
+                            state.last_sequence = local_seq
+
+                            recorder.record({
+                                "receiveTsNs": state.last_event_ns,
+                                "exchangeTsNs": None,
+                                "sequence": trade["sequence"],
+                                "type": "trade",
+                                "side": side,
+                                "price": trade["price"],
+                                "quantity": trade["quantity"],
+                            })
+
+                    if snapshot_received and (
+                        state.event_count % 5 == 0
+                        or channel == "trade"
+                    ):
+                        state.publish()
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception as exc:
+            state.connected = False
+            state.bids.clear()
+            state.asks.clear()
+            state.reconnects += 1
+            state.status = f"reconnecting: {exc}"
+            state.publish()
+            await asyncio.sleep(3)
+
+
+async def run_alpaca(symbol: str, recorder: Recorder, state: LiveState) -> None:
+    key = os.environ.get("APCA_API_KEY_ID")
+    secret = os.environ.get("APCA_API_SECRET_KEY")
+    if not key or not secret:
+        raise RuntimeError("Set APCA_API_KEY_ID and APCA_API_SECRET_KEY")
+    feed = os.environ.get("ALPACA_FEED", "iex")
+    url = os.environ.get("ALPACA_WS_URL", f"wss://stream.data.alpaca.markets/v2/{feed}")
+    symbol = symbol.upper()
+    while True:
+        try:
+            state.status = "connecting"
+            state.publish()
+            async with websockets.connect(url, ping_interval=20, ping_timeout=20) as ws:
+                await ws.send(json.dumps({"action": "auth", "key": key, "secret": secret}))
+                auth = json.loads(await ws.recv())
+                if not any(item.get("T") == "success" for item in auth):
+                    raise RuntimeError(f"authentication failed: {auth}")
+                await ws.send(json.dumps({"action": "subscribe", "trades": [symbol], "quotes": [symbol]}))
+                state.connected = True
+                state.status = f"live:{feed}"
+                state.publish()
+                async for raw in ws:
+                    for item in json.loads(raw):
+                        event_type = item.get("T")
+                        if event_type == "q":
+                            bid, ask = float(item["bp"]), float(item["ap"])
+                            state.bids = {bid: float(item["bs"])}
+                            state.asks = {ask: float(item["as"])}
+                            state.event_count += 1
+                            state.last_event_ns = now_ns()
+                            recorder.record({
+                                "receiveTsNs": now_ns(), "exchangeTsNs": None,
+                                "sequence": None, "type": "quote", "side": None,
+                                "price": (bid + ask) / 2, "quantity": float(item["bs"]) + float(item["as"]),
+                                "raw": item,
+                            })
+                        elif event_type == "t":
+                            trade = {
+                                "sequence": int(item.get("i", state.trade_count + 1)),
+                                "side": "UNKNOWN", "price": float(item["p"]),
+                                "quantity": float(item["s"]), "timestamp": item.get("t"),
+                            }
+                            state.trades.appendleft(trade)
+                            state.trade_count += 1
+                            state.event_count += 1
+                            state.last_event_ns = now_ns()
+                            recorder.record({
+                                "receiveTsNs": now_ns(), "exchangeTsNs": None,
+                                "sequence": trade["sequence"], "type": "trade", "side": "UNKNOWN",
+                                "price": trade["price"], "quantity": trade["quantity"], "raw": item,
+                            })
+                        state.publish()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            state.connected = False
+            state.reconnects += 1
+            state.status = f"reconnecting: {exc}"
+            state.publish()
+            await asyncio.sleep(3)
+
+
+async def main_async(args: argparse.Namespace) -> None:
+    venue = args.venue.lower()
+    symbol = args.symbol.lower()
+    recorder = Recorder(venue, symbol)
+    state = LiveState(venue=venue, symbol=symbol, depth_limit=args.depth)
+    state.session_id = recorder.session_id
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, stop.set)
+        except NotImplementedError:
+            pass
+    runners = {
+        "coinbase": run_coinbase,
+        "kraken": run_kraken,
+        "binance": run_binance,
+        "alpaca": run_alpaca,
+    }
+    task = asyncio.create_task(runners[venue](symbol, recorder, state))
+    try:
+        await stop.wait()
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        state.connected = False
+        state.status = "stopped"
+        state.publish()
+        recorder.close()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--venue", choices=["coinbase", "kraken", "binance", "alpaca"], required=True)
+    parser.add_argument("--symbol", required=True)
+    parser.add_argument("--depth", type=int, default=20)
+    args = parser.parse_args()
+    asyncio.run(main_async(args))
+
+
+if __name__ == "__main__":
+    main()

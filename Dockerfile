@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     git \
-    libboost-all-dev \
+    libboost-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
@@ -25,7 +27,8 @@ RUN cmake \
     -S . \
     -B build \
     -DCMAKE_BUILD_TYPE=Release \
-    -DMINIMATCH_BUILD_TESTS=OFF
+    -DMINIMATCH_BUILD_TESTS=OFF \
+    -DMINIMATCH_BUILD_BENCHMARKS=OFF
 
 RUN cmake --build build \
     --target minimatch_web \
@@ -37,22 +40,33 @@ RUN cmake --build build \
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PORT=8080
+ENV PORT=10000
+ENV LIVE_PROVIDER=coinbase
+ENV LIVE_SYMBOL=btcusd
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libboost-system1.83.0 \
-    libboost-thread1.83.0 \
+    libboost-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
+    python3 \
+    python3-pip \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY --from=builder /src/build/minimatch_web ./build/minimatch_web
+
 COPY frontend ./frontend
-COPY scripts/start_web.sh ./scripts/start_web.sh
+COPY live_feed ./live_feed
+COPY scripts/start_hosted.sh ./scripts/start_hosted.sh
 
-RUN chmod +x ./scripts/start_web.sh
+RUN python3 -m pip install --break-system-packages \
+    aiohttp \
+    websockets
 
-EXPOSE 8080
+RUN chmod +x ./scripts/start_hosted.sh
 
-CMD ["./scripts/start_web.sh"]
+EXPOSE 10000
+
+CMD ["./scripts/start_hosted.sh"]
