@@ -1,0 +1,13 @@
+.git
+.github
+build
+.venv
+.venv-live
+.env
+.env.*
+data/live/*.db
+data/live/*.sqlite
+data/massive/raw
+results
+*.tar.gz
+.DS_Store
