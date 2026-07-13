@@ -3,6 +3,7 @@
 #include "minimatch/queue_model.hpp"
 #include <gtest/gtest.h>
 #include <numeric>
+#include <cmath>
 
 using namespace minimatch;
 
