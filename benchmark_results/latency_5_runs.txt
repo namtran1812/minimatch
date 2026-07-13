@@ -1,0 +1,10 @@
+===== latency run 1 =====
+orders=1000000 throughput=1.2018e+07 p50_ns=42 p95_ns=125 p99_ns=208 p999_ns=1084 max_ns=38833 state_hash=16864509674985480077
+===== latency run 2 =====
+orders=1000000 throughput=1.18158e+07 p50_ns=42 p95_ns=125 p99_ns=208 p999_ns=1125 max_ns=888541 state_hash=16864509674985480077
+===== latency run 3 =====
+orders=1000000 throughput=1.25678e+07 p50_ns=42 p95_ns=125 p99_ns=208 p999_ns=917 max_ns=27250 state_hash=16864509674985480077
+===== latency run 4 =====
+orders=1000000 throughput=1.2585e+07 p50_ns=42 p95_ns=125 p99_ns=208 p999_ns=917 max_ns=12792 state_hash=16864509674985480077
+===== latency run 5 =====
+orders=1000000 throughput=1.14115e+07 p50_ns=42 p95_ns=125 p99_ns=209 p999_ns=1208 max_ns=150875 state_hash=16864509674985480077

@@ -1,0 +1,10 @@
+===== loadgen run 1 =====
+orders=1000000 symbols=8 seconds=0.158298 orders_per_sec=6.3172e+06 active=197552 state_hash=4496917943067555212
+===== loadgen run 2 =====
+orders=1000000 symbols=8 seconds=0.124552 orders_per_sec=8.02879e+06 active=197552 state_hash=4496917943067555212
+===== loadgen run 3 =====
+orders=1000000 symbols=8 seconds=0.123592 orders_per_sec=8.09114e+06 active=197552 state_hash=4496917943067555212
+===== loadgen run 4 =====
+orders=1000000 symbols=8 seconds=0.133696 orders_per_sec=7.47966e+06 active=197552 state_hash=4496917943067555212
+===== loadgen run 5 =====
+orders=1000000 symbols=8 seconds=0.132156 orders_per_sec=7.56679e+06 active=197552 state_hash=4496917943067555212

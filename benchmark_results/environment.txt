@@ -1,10 +1,15 @@
-Date: Mon Jul 13 23:20:36 UTC 2026
-Commit: 32300dbf0bcaae0b10db9acfeacedc10e20c7342
-Machine: Darwin MacBook-Air-cua-Tran.local 25.3.0 Darwin Kernel Version 25.3.0: Wed Jan 28 20:53:01 PST 2026; root:xnu-12377.81.4~5/RELEASE_ARM64_T8103 arm64
-CPU cores: 8
-Memory bytes: 8589934592
-Compiler:
+timestamp_utc=2026-07-13T23:27:50Z
+commit=d8b9fba260cc0347ed429379d1717e0929b8e1ed
+os=macOS 26.3
+architecture=arm64
+cpu=Apple M1
+logical_cpus=8
+memory_bytes=8589934592
+
+compiler:
 Apple clang version 15.0.0 (clang-1500.3.9.4)
 Target: arm64-apple-darwin25.3.0
-CMake:
+Thread model: posix
+
+cmake:
 cmake version 4.4.0

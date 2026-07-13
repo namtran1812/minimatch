@@ -1,0 +1,6 @@
+===== latency orders=100000 =====
+orders=100000 throughput=6.34347e+06 p50_ns=125 p95_ns=250 p99_ns=375 p999_ns=1625 max_ns=21750 state_hash=8740429464535818932
+===== latency orders=1000000 =====
+orders=1000000 throughput=1.21464e+07 p50_ns=42 p95_ns=125 p99_ns=208 p999_ns=1041 max_ns=46666 state_hash=16864509674985480077
+===== latency orders=5000000 =====
+orders=5000000 throughput=1.06818e+07 p50_ns=42 p95_ns=125 p99_ns=208 p999_ns=2584 max_ns=2940000 state_hash=4097710228142450234

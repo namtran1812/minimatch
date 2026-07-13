@@ -1,0 +1,10 @@
+===== loadgen symbols=1 =====
+orders=1000000 symbols=1 seconds=0.14826 orders_per_sec=6.74491e+06 active=197455 state_hash=3093828574943703461
+===== loadgen symbols=2 =====
+orders=1000000 symbols=2 seconds=0.114815 orders_per_sec=8.70963e+06 active=197344 state_hash=6429372903027227576
+===== loadgen symbols=4 =====
+orders=1000000 symbols=4 seconds=0.116821 orders_per_sec=8.56014e+06 active=197397 state_hash=7615076860519575411
+===== loadgen symbols=8 =====
+orders=1000000 symbols=8 seconds=0.124703 orders_per_sec=8.01903e+06 active=197552 state_hash=4496917943067555212
+===== loadgen symbols=16 =====
+orders=1000000 symbols=16 seconds=0.145857 orders_per_sec=6.85604e+06 active=197461 state_hash=1056091167512748872
