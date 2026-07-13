@@ -56,7 +56,7 @@ class Recorder:
         self.count = 0
         self.last_commit_ns = self.started_ns
         self.jsonl = (DATA_DIR / f"{self.venue}_{self.symbol}.jsonl").open("a", buffering=1)
-        self.db = sqlite3.connect(DATA_DIR / "market_events.db", timeout=30, isolation_level=None)
+        self.db = sqlite3.connect(DATA_DIR / f"{self.venue}_market_events.db", timeout=30, isolation_level=None)
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=NORMAL")
         self.db.execute("PRAGMA busy_timeout=30000")
