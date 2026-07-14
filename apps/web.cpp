@@ -2,6 +2,8 @@
 #include <array>
 #include <iomanip>
 #include "minimatch/router.hpp"
+#include "minimatch/execution_engine.hpp"
+#include "minimatch/execution_store.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -1154,6 +1156,100 @@ http::response<http::string_body> response(http::status status, std::string body
   return res;
 }
 
+
+
+std::string execution_database_path() {
+  const char* configured =
+      std::getenv("EXECUTION_DB_PATH");
+
+  if (configured != nullptr && *configured != '\0') {
+    return configured;
+  }
+
+  return "data/executions/router_executions.db";
+}
+
+std::string routed_execution_json(
+    const minimatch::RoutedExecutionSummary& summary,
+    const std::string& symbol,
+    minimatch::RouteSide side,
+    const minimatch::ExecutionSimulationConfig& config,
+    std::int64_t execution_id) {
+  std::ostringstream out;
+  out << std::setprecision(15);
+
+  out << "{"
+      << "\"executionId\":" << execution_id << ","
+      << "\"symbol\":\"" << json_escape(symbol) << "\","
+      << "\"side\":\""
+      << (side == minimatch::RouteSide::Buy ? "BUY" : "SELL")
+      << "\","
+      << "\"complete\":"
+      << (summary.complete ? "true" : "false") << ","
+      << "\"requestedQuantity\":"
+      << summary.requested_quantity << ","
+      << "\"filledQuantity\":"
+      << summary.filled_quantity << ","
+      << "\"remainingQuantity\":"
+      << summary.remaining_quantity << ","
+      << "\"averageFillPrice\":"
+      << summary.average_fill_price << ","
+      << "\"totalNotional\":"
+      << summary.total_notional << ","
+      << "\"totalFees\":"
+      << summary.total_fees << ","
+      << "\"totalLatencyMs\":"
+      << summary.total_latency_ms << ","
+      << "\"simulation\":{"
+      << "\"fillRatio\":" << config.fill_ratio << ","
+      << "\"rejectionProbability\":"
+      << config.rejection_probability << ","
+      << "\"baseLatencyMs\":"
+      << config.base_latency_ms << ","
+      << "\"latencyJitterMs\":"
+      << config.latency_jitter_ms << ","
+      << "\"seed\":" << config.seed
+      << "},"
+      << "\"children\":[";
+
+  for (std::size_t index = 0;
+       index < summary.children.size();
+       ++index) {
+    if (index > 0) {
+      out << ",";
+    }
+
+    const auto& child = summary.children[index];
+
+    out << "{"
+        << "\"venue\":\""
+        << json_escape(child.venue) << "\","
+        << "\"levelIndex\":"
+        << child.level_index << ","
+        << "\"requestedQuantity\":"
+        << child.requested_quantity << ","
+        << "\"filledQuantity\":"
+        << child.filled_quantity << ","
+        << "\"remainingQuantity\":"
+        << child.remaining_quantity << ","
+        << "\"price\":"
+        << child.price << ","
+        << "\"notional\":"
+        << child.notional << ","
+        << "\"fee\":"
+        << child.fee << ","
+        << "\"latencyMs\":"
+        << child.latency_ms << ","
+        << "\"status\":\""
+        << minimatch::to_string(child.status)
+        << "\""
+        << "}";
+  }
+
+  out << "]}";
+  return out.str();
+}
+
 http::response<http::string_body> handle_request(DashboardState& state,
                                                   const http::request<http::string_body>& req,
                                                   const std::string& frontend_dir) {
@@ -1265,6 +1361,127 @@ http::response<http::string_body> handle_request(DashboardState& state,
       SymbolId symbol = 1;
       if (const auto it = query.find("symbol"); it != query.end()) symbol = static_cast<SymbolId>(std::stoul(it->second));
       return response(http::status::ok, state_json(state, symbol));
+    }
+
+    if (req.method() == http::verb::post &&
+        path == "/api/router/execute") {
+      const auto fields = parse_form(req.body());
+
+      const std::string symbol = safe_token(
+          fields.count("symbol")
+              ? fields.at("symbol")
+              : "btcusd"
+      );
+
+      if (symbol.empty()) {
+        throw std::runtime_error("invalid symbol");
+      }
+
+      const std::string side_value =
+          fields.count("side")
+              ? fields.at("side")
+              : "";
+
+      minimatch::RouteSide side;
+
+      if (side_value == "buy" || side_value == "BUY") {
+        side = minimatch::RouteSide::Buy;
+      } else if (side_value == "sell" ||
+                 side_value == "SELL") {
+        side = minimatch::RouteSide::Sell;
+      } else {
+        throw std::runtime_error(
+            "side must be buy or sell"
+        );
+      }
+
+      const double quantity =
+          fields.count("quantity")
+              ? std::stod(fields.at("quantity"))
+              : 0.0;
+
+      const double fill_ratio =
+          fields.count("fillRatio")
+              ? std::stod(fields.at("fillRatio"))
+              : 1.0;
+
+      const double rejection_probability =
+          fields.count("rejectionProbability")
+              ? std::stod(
+                    fields.at("rejectionProbability")
+                )
+              : 0.0;
+
+      const double base_latency_ms =
+          fields.count("baseLatencyMs")
+              ? std::stod(fields.at("baseLatencyMs"))
+              : 0.0;
+
+      const double latency_jitter_ms =
+          fields.count("latencyJitterMs")
+              ? std::stod(fields.at("latencyJitterMs"))
+              : 0.0;
+
+      const std::uint64_t seed =
+          fields.count("seed")
+              ? static_cast<std::uint64_t>(
+                    std::stoull(fields.at("seed"))
+                )
+              : 1ULL;
+
+      const minimatch::RouteRequest route_request{
+          side,
+          quantity
+      };
+
+      const auto quotes =
+          read_router_quotes(symbol);
+
+      const minimatch::RoutePlan plan =
+          minimatch::build_route_plan(
+              route_request,
+              quotes
+          );
+
+      const minimatch::ExecutionSimulationConfig config{
+          .fill_ratio = fill_ratio,
+          .rejection_probability =
+              rejection_probability,
+          .base_latency_ms =
+              base_latency_ms,
+          .latency_jitter_ms =
+              latency_jitter_ms,
+          .seed = seed
+      };
+
+      const minimatch::RoutedExecutionSummary summary =
+          minimatch::simulate_route_execution(
+              plan,
+              config
+          );
+
+      static minimatch::ExecutionStore execution_store(
+          execution_database_path()
+      );
+
+      const std::int64_t execution_id =
+          execution_store.save(
+              symbol,
+              side,
+              config,
+              summary
+          );
+
+      return response(
+          http::status::ok,
+          routed_execution_json(
+              summary,
+              symbol,
+              side,
+              config,
+              execution_id
+          )
+      );
     }
 
     if (req.method() == http::verb::post &&

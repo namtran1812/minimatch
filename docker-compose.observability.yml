@@ -7,6 +7,7 @@ services:
     environment:
       PORT: "10000"
       LIVE_SYMBOL: btcusd
+      EXECUTION_DB_PATH: /app/data/executions/router_executions.db
       ROUTER_COINBASE_TAKER_FEE_BPS: ${ROUTER_COINBASE_TAKER_FEE_BPS:-60}
       ROUTER_KRAKEN_TAKER_FEE_BPS: ${ROUTER_KRAKEN_TAKER_FEE_BPS:-40}
       ROUTER_BINANCE_TAKER_FEE_BPS: ${ROUTER_BINANCE_TAKER_FEE_BPS:-10}
@@ -16,6 +17,8 @@ services:
       ROUTER_LATENCY_COST_BPS_PER_MS: ${ROUTER_LATENCY_COST_BPS_PER_MS:-0.05}
     ports:
       - "8080:10000"
+    volumes:
+      - ./data/executions:/app/data/executions
 
   prometheus:
     image: prom/prometheus:latest

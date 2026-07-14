@@ -1,6 +1,19 @@
 cmake_minimum_required(VERSION 3.20)
 project(MiniMatch VERSION 1.0.0 LANGUAGES CXX)
 
+find_package(SQLite3 REQUIRED)
+
+if(TARGET SQLite3::SQLite3)
+  set(MINIMATCH_SQLITE_TARGET SQLite3::SQLite3)
+elseif(TARGET SQLite::SQLite3)
+  set(MINIMATCH_SQLITE_TARGET SQLite::SQLite3)
+else()
+  message(
+    FATAL_ERROR
+    "SQLite3 was found, but no supported imported target exists."
+  )
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -64,6 +77,8 @@ add_library(minimatch
     src/queue_model.cpp
     src/pipeline.cpp
     src/router.cpp
+    src/execution_engine.cpp
+    src/execution_store.cpp
 )
 target_include_directories(
   minimatch
@@ -77,6 +92,12 @@ target_compile_definitions(
   PUBLIC
     BOOST_ERROR_CODE_HEADER_ONLY
     BOOST_SYSTEM_NO_DEPRECATED
+)
+
+target_link_libraries(
+  minimatch
+  PUBLIC
+    ${MINIMATCH_SQLITE_TARGET}
 )
 target_compile_options(minimatch PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
@@ -101,7 +122,7 @@ if(MINIMATCH_BUILD_TESTS)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
-  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp)
+  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/execution_engine_test.cpp tests/execution_store_test.cpp)
   
 
 target_link_libraries(

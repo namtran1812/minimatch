@@ -5,14 +5,18 @@ FROM ubuntu:24.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    git \
-    libboost-dev \
-    libboost-system-dev \
-    libboost-thread-dev \
-    ca-certificates \
+RUN rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        libboost-dev \
+        libboost-system-dev \
+        libboost-thread-dev \
+        libsqlite3-dev \
+        ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -28,7 +32,6 @@ RUN cmake \
     -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DMINIMATCH_BUILD_TESTS=OFF \
-    -DMINIMATCH_BUILD_BENCHMARKS=OFF \
     -DMINIMATCH_BOOST_ROOT=/usr
 
 RUN cmake --build build \
@@ -45,13 +48,17 @@ ENV PORT=10000
 ENV LIVE_PROVIDER=coinbase
 ENV LIVE_SYMBOL=btcusd
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libboost-dev \
-    libboost-system-dev \
-    libboost-thread-dev \
-    python3 \
-    python3-pip \
-    ca-certificates \
+RUN rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get -o Acquire::Retries=5 update \
+    && apt-get install -y --no-install-recommends \
+        libboost-dev \
+        libboost-system-dev \
+        libboost-thread-dev \
+        libsqlite3-0 \
+        python3 \
+        python3-pip \
+        ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
