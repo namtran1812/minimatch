@@ -331,4 +331,58 @@ TEST(FixSession, ResetRestoresInitialState) {
   );
 }
 
+
+TEST(FixSession, SequencesOutboundExecutionReports) {
+  FixSession session;
+
+  FixMessage logon =
+      inbound_message(
+          FixMessageType::Logon,
+          1
+      );
+
+  logon.set(98, "0");
+  logon.set(108, "30");
+
+  ASSERT_TRUE(
+      session.receive(logon, 100).accepted
+  );
+
+  FixMessage report;
+  report.message_type =
+      FixMessageType::ExecutionReport;
+
+  report.set(11, "ORDER-1");
+  report.set(17, "EXEC-1");
+  report.set(150, "0");
+  report.set(39, "0");
+
+  const auto outbound =
+      session.prepare_outbound(
+          report,
+          200
+      );
+
+  EXPECT_EQ(
+      outbound.get(34),
+      std::optional<std::string>("2")
+  );
+
+  EXPECT_EQ(
+      outbound.get(49),
+      std::optional<std::string>("MINIMATCH")
+  );
+
+  EXPECT_EQ(
+      outbound.get(56),
+      std::optional<std::string>("CLIENT")
+  );
+
+  EXPECT_EQ(
+      outbound.get(52),
+      std::optional<std::string>("200")
+  );
+}
+
+
 }  // namespace

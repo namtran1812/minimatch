@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(MiniMatch VERSION 1.0.0 LANGUAGES CXX)
 
 find_package(SQLite3 REQUIRED)
+find_package(Threads REQUIRED)
 
 if(TARGET SQLite3::SQLite3)
   set(MINIMATCH_SQLITE_TARGET SQLite3::SQLite3)
@@ -130,6 +131,19 @@ target_link_libraries(
   minimatch_execution_backtest
   PRIVATE
     minimatch
+)
+
+
+add_executable(
+  minimatch_fix_server
+  apps/fix_server.cpp
+)
+
+target_link_libraries(
+  minimatch_fix_server
+  PRIVATE
+    minimatch
+    Threads::Threads
 )
 
 if(MINIMATCH_BUILD_TESTS)

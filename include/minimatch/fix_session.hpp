@@ -87,6 +87,11 @@ class FixSession {
       const std::string& test_request_id
   );
 
+  FixMessage prepare_outbound(
+      FixMessage message,
+      std::uint64_t timestamp_ns
+  );
+
   [[nodiscard]] bool heartbeat_due(
       std::uint64_t timestamp_ns
   ) const;

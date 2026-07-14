@@ -335,6 +335,46 @@ FixMessage FixSession::create_test_request(
   return message;
 }
 
+FixMessage FixSession::prepare_outbound(
+    FixMessage message,
+    std::uint64_t timestamp_ns
+) {
+  if (state_ != FixSessionState::Active &&
+      message.message_type != FixMessageType::Logon &&
+      message.message_type != FixMessageType::Logout &&
+      message.message_type != FixMessageType::Reject) {
+    throw std::logic_error(
+        "cannot send application message while FIX session is inactive"
+    );
+  }
+
+  message.set(
+      34,
+      std::to_string(
+          next_outgoing_sequence_++
+      )
+  );
+
+  message.set(
+      49,
+      config_.sender_comp_id
+  );
+
+  message.set(
+      56,
+      config_.target_comp_id
+  );
+
+  message.set(
+      52,
+      std::to_string(timestamp_ns)
+  );
+
+  last_sent_time_ns_ = timestamp_ns;
+
+  return message;
+}
+
 bool FixSession::heartbeat_due(
     std::uint64_t timestamp_ns
 ) const {
