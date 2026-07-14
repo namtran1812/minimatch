@@ -193,7 +193,7 @@ TEST(ExecutionRisk, RejectsInvalidConfiguration) {
   EXPECT_THROW(
       ExecutionRiskManager(
           ExecutionRiskLimits{
-              .max_participation_rate = 0.0
+              .max_participation_rate = -0.1
           }
       ),
       std::invalid_argument
@@ -223,5 +223,28 @@ TEST(ExecutionRisk, RejectsInvalidOrderValues) {
       ExecutionRiskRejectReason::InvalidOrder
   );
 }
+
+
+TEST(ExecutionRisk, ZeroParticipationLimitDisablesCheck) {
+  const ExecutionRiskManager manager(
+      ExecutionRiskLimits{
+          .max_participation_rate = 0.0
+      }
+  );
+
+  auto request = valid_buy();
+  request.child_quantity = 10.0;
+  request.observed_market_volume = 2.0;
+
+  const auto decision =
+      manager.check(request);
+
+  EXPECT_TRUE(decision.accepted);
+  EXPECT_EQ(
+      decision.reason,
+      ExecutionRiskRejectReason::None
+  );
+}
+
 
 }  // namespace

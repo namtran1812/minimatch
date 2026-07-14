@@ -119,7 +119,8 @@ ExecutionRiskDecision ExecutionRiskManager::check(
     );
   }
 
-  if (request.observed_market_volume > epsilon) {
+  if (limits_.max_participation_rate > epsilon &&
+      request.observed_market_volume > epsilon) {
     const double participation_rate =
         request.child_quantity /
         request.observed_market_volume;
@@ -221,10 +222,10 @@ void ExecutionRiskManager::validate_limits(
   if (!std::isfinite(
           limits.max_participation_rate
       ) ||
-      limits.max_participation_rate <= 0.0 ||
+      limits.max_participation_rate < 0.0 ||
       limits.max_participation_rate > 1.0) {
     throw std::invalid_argument(
-        "maximum participation rate must be in (0, 1]"
+        "maximum participation rate must be in [0, 1]"
     );
   }
 

@@ -26,7 +26,8 @@ struct ExecutionRiskLimits {
   double max_order_notional{0.0};
 
   // Decimal fraction: 0.10 means 10%.
-  double max_participation_rate{1.0};
+  // Zero disables the participation limit.
+  double max_participation_rate{0.0};
 
   // Maximum distance from reference price.
   double price_collar_bps{10000.0};
