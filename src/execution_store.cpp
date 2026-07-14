@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace minimatch {
 
@@ -454,5 +455,275 @@ std::int64_t ExecutionStore::child_count() const {
 
   return sqlite3_column_int64(statement.get(), 0);
 }
+
+
+namespace {
+
+ChildExecutionStatus parse_child_status(
+    const std::string& value
+) {
+  if (value == "FILLED") {
+    return ChildExecutionStatus::Filled;
+  }
+
+  if (value == "PARTIALLY_FILLED") {
+    return ChildExecutionStatus::PartiallyFilled;
+  }
+
+  return ChildExecutionStatus::Rejected;
+}
+
+StoredRouteExecution read_route_row(
+    sqlite3_stmt* statement
+) {
+  StoredRouteExecution route;
+
+  route.execution_id =
+      sqlite3_column_int64(statement, 0);
+
+  const auto text_column = [&](int index) {
+    const unsigned char* value =
+        sqlite3_column_text(statement, index);
+
+    return value == nullptr
+        ? std::string{}
+        : std::string(
+              reinterpret_cast<const char*>(value)
+          );
+  };
+
+  route.created_at = text_column(1);
+  route.symbol = text_column(2);
+  route.side = text_column(3);
+
+  route.requested_quantity =
+      sqlite3_column_double(statement, 4);
+  route.filled_quantity =
+      sqlite3_column_double(statement, 5);
+  route.remaining_quantity =
+      sqlite3_column_double(statement, 6);
+  route.average_fill_price =
+      sqlite3_column_double(statement, 7);
+  route.total_notional =
+      sqlite3_column_double(statement, 8);
+  route.total_fees =
+      sqlite3_column_double(statement, 9);
+  route.total_latency_ms =
+      sqlite3_column_double(statement, 10);
+
+  route.complete =
+      sqlite3_column_int(statement, 11) != 0;
+
+  route.fill_ratio =
+      sqlite3_column_double(statement, 12);
+  route.rejection_probability =
+      sqlite3_column_double(statement, 13);
+  route.base_latency_ms =
+      sqlite3_column_double(statement, 14);
+  route.latency_jitter_ms =
+      sqlite3_column_double(statement, 15);
+  route.simulation_seed =
+      static_cast<std::uint64_t>(
+          sqlite3_column_int64(statement, 16)
+      );
+
+  return route;
+}
+
+void load_children(
+    sqlite3* database,
+    StoredRouteExecution& route
+) {
+  Statement statement(
+      database,
+      R"SQL(
+        SELECT
+          venue,
+          level_index,
+          requested_quantity,
+          filled_quantity,
+          remaining_quantity,
+          price,
+          notional,
+          fee,
+          latency_ms,
+          status
+        FROM child_executions
+        WHERE execution_id = ?
+        ORDER BY child_id ASC;
+      )SQL"
+  );
+
+  sqlite3_bind_int64(
+      statement.get(),
+      1,
+      route.execution_id
+  );
+
+  while (sqlite3_step(statement.get()) == SQLITE_ROW) {
+    const unsigned char* venue_value =
+        sqlite3_column_text(statement.get(), 0);
+
+    const unsigned char* status_value =
+        sqlite3_column_text(statement.get(), 9);
+
+    const std::string venue =
+        venue_value == nullptr
+            ? ""
+            : reinterpret_cast<const char*>(
+                  venue_value
+              );
+
+    const std::string status =
+        status_value == nullptr
+            ? ""
+            : reinterpret_cast<const char*>(
+                  status_value
+              );
+
+    route.children.push_back(
+        RoutedChildExecution{
+            venue,
+            static_cast<std::size_t>(
+                sqlite3_column_int64(
+                    statement.get(),
+                    1
+                )
+            ),
+            sqlite3_column_double(
+                statement.get(),
+                2
+            ),
+            sqlite3_column_double(
+                statement.get(),
+                3
+            ),
+            sqlite3_column_double(
+                statement.get(),
+                4
+            ),
+            sqlite3_column_double(
+                statement.get(),
+                5
+            ),
+            sqlite3_column_double(
+                statement.get(),
+                6
+            ),
+            sqlite3_column_double(
+                statement.get(),
+                7
+            ),
+            sqlite3_column_double(
+                statement.get(),
+                8
+            ),
+            parse_child_status(status)
+        }
+    );
+  }
+}
+
+}  // namespace
+
+std::vector<StoredRouteExecution> ExecutionStore::recent(
+    std::size_t limit
+) const {
+  if (limit == 0) {
+    return {};
+  }
+
+  Statement statement(
+      database_,
+      R"SQL(
+        SELECT
+          execution_id,
+          created_at,
+          symbol,
+          side,
+          requested_quantity,
+          filled_quantity,
+          remaining_quantity,
+          average_fill_price,
+          total_notional,
+          total_fees,
+          total_latency_ms,
+          complete,
+          fill_ratio,
+          rejection_probability,
+          base_latency_ms,
+          latency_jitter_ms,
+          simulation_seed
+        FROM route_executions
+        ORDER BY execution_id DESC
+        LIMIT ?;
+      )SQL"
+  );
+
+  sqlite3_bind_int64(
+      statement.get(),
+      1,
+      static_cast<sqlite3_int64>(limit)
+  );
+
+  std::vector<StoredRouteExecution> executions;
+
+  while (sqlite3_step(statement.get()) == SQLITE_ROW) {
+    StoredRouteExecution route =
+        read_route_row(statement.get());
+
+    load_children(database_, route);
+    executions.push_back(std::move(route));
+  }
+
+  return executions;
+}
+
+std::optional<StoredRouteExecution> ExecutionStore::find(
+    std::int64_t execution_id
+) const {
+  Statement statement(
+      database_,
+      R"SQL(
+        SELECT
+          execution_id,
+          created_at,
+          symbol,
+          side,
+          requested_quantity,
+          filled_quantity,
+          remaining_quantity,
+          average_fill_price,
+          total_notional,
+          total_fees,
+          total_latency_ms,
+          complete,
+          fill_ratio,
+          rejection_probability,
+          base_latency_ms,
+          latency_jitter_ms,
+          simulation_seed
+        FROM route_executions
+        WHERE execution_id = ?;
+      )SQL"
+  );
+
+  sqlite3_bind_int64(
+      statement.get(),
+      1,
+      execution_id
+  );
+
+  if (sqlite3_step(statement.get()) != SQLITE_ROW) {
+    return std::nullopt;
+  }
+
+  StoredRouteExecution route =
+      read_route_row(statement.get());
+
+  load_children(database_, route);
+  return route;
+}
+
 
 }  // namespace minimatch

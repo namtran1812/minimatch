@@ -145,4 +145,82 @@ TEST(ExecutionStore, PersistsMultipleExecutions) {
   remove_database();
 }
 
+
+TEST(ExecutionStore, LoadsExecutionById) {
+  remove_database();
+
+  {
+    ExecutionStore store(
+        test_database_path().string()
+    );
+
+    const auto id = store.save(
+        "btcusd",
+        RouteSide::Buy,
+        ExecutionSimulationConfig{},
+        sample_summary()
+    );
+
+    const auto result = store.find(id);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->execution_id, id);
+    EXPECT_EQ(result->symbol, "btcusd");
+    EXPECT_EQ(result->side, "BUY");
+    EXPECT_TRUE(result->complete);
+    ASSERT_EQ(result->children.size(), 2U);
+    EXPECT_EQ(result->children[0].venue, "coinbase");
+  }
+
+  remove_database();
+}
+
+TEST(ExecutionStore, ReturnsRecentExecutionsNewestFirst) {
+  remove_database();
+
+  {
+    ExecutionStore store(
+        test_database_path().string()
+    );
+
+    const auto first = store.save(
+        "btcusd",
+        RouteSide::Buy,
+        ExecutionSimulationConfig{},
+        sample_summary()
+    );
+
+    const auto second = store.save(
+        "ethusd",
+        RouteSide::Sell,
+        ExecutionSimulationConfig{},
+        sample_summary()
+    );
+
+    const auto recent = store.recent(10);
+
+    ASSERT_EQ(recent.size(), 2U);
+    EXPECT_EQ(recent[0].execution_id, second);
+    EXPECT_EQ(recent[1].execution_id, first);
+    EXPECT_EQ(recent[0].symbol, "ethusd");
+  }
+
+  remove_database();
+}
+
+TEST(ExecutionStore, MissingExecutionReturnsEmpty) {
+  remove_database();
+
+  {
+    ExecutionStore store(
+        test_database_path().string()
+    );
+
+    EXPECT_FALSE(store.find(999999).has_value());
+  }
+
+  remove_database();
+}
+
+
 }  // namespace
