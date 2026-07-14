@@ -83,6 +83,7 @@ add_library(minimatch
     src/backtest_engine.cpp
     src/execution_engine.cpp
     src/oms.cpp
+    src/execution_risk.cpp
     src/execution_store.cpp
 )
 target_include_directories(
@@ -139,7 +140,7 @@ if(MINIMATCH_BUILD_TESTS)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
-  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/execution_store_test.cpp)
+  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/execution_risk_test.cpp tests/execution_store_test.cpp)
   
 
 target_link_libraries(
