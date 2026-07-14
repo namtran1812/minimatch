@@ -385,4 +385,37 @@ TEST(FixSession, SequencesOutboundExecutionReports) {
 }
 
 
+
+TEST(FixSession, RestoresPersistentSequenceState) {
+  FixSession session;
+
+  session.restore_sequence_state(
+      7,
+      9,
+      100,
+      200
+  );
+
+  EXPECT_EQ(
+      session.expected_incoming_sequence(),
+      7
+  );
+
+  EXPECT_EQ(
+      session.next_outgoing_sequence(),
+      9
+  );
+
+  EXPECT_EQ(
+      session.last_received_time_ns(),
+      100U
+  );
+
+  EXPECT_EQ(
+      session.last_sent_time_ns(),
+      200U
+  );
+}
+
+
 }  // namespace

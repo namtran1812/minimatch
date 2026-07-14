@@ -420,6 +420,32 @@ void FixSession::reset() {
   last_sent_time_ns_ = 0;
 }
 
+void FixSession::restore_sequence_state(
+    int next_incoming_sequence,
+    int next_outgoing_sequence,
+    std::uint64_t last_received_time_ns,
+    std::uint64_t last_sent_time_ns
+) {
+  if (next_incoming_sequence <= 0 ||
+      next_outgoing_sequence <= 0) {
+    throw std::invalid_argument(
+        "FIX restored sequence numbers must be positive"
+    );
+  }
+
+  expected_incoming_sequence_ =
+      next_incoming_sequence;
+
+  next_outgoing_sequence_ =
+      next_outgoing_sequence;
+
+  last_received_time_ns_ =
+      last_received_time_ns;
+
+  last_sent_time_ns_ =
+      last_sent_time_ns;
+}
+
 FixSessionResult FixSession::reject(
     FixSessionRejectReason reason,
     std::string message,

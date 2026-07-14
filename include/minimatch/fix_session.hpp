@@ -102,6 +102,13 @@ class FixSession {
 
   void reset();
 
+  void restore_sequence_state(
+      int next_incoming_sequence,
+      int next_outgoing_sequence,
+      std::uint64_t last_received_time_ns,
+      std::uint64_t last_sent_time_ns
+  );
+
  private:
   FixSessionConfig config_;
 
