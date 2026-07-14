@@ -79,6 +79,8 @@ add_library(minimatch
     src/router.cpp
     src/execution_algo.cpp
     src/execution_replay.cpp
+    src/market_replay.cpp
+    src/backtest_engine.cpp
     src/execution_engine.cpp
     src/oms.cpp
     src/execution_store.cpp
@@ -114,6 +116,18 @@ foreach(app server client replay loadgen latency snapshot backtest market_maker 
   target_link_libraries(minimatch_${app} PRIVATE minimatch)
 endforeach()
 
+
+add_executable(
+  minimatch_execution_backtest
+  apps/execution_backtest.cpp
+)
+
+target_link_libraries(
+  minimatch_execution_backtest
+  PRIVATE
+    minimatch
+)
+
 if(MINIMATCH_BUILD_TESTS)
   include(FetchContent)
   cmake_policy(SET CMP0135 NEW)
@@ -125,7 +139,7 @@ if(MINIMATCH_BUILD_TESTS)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
-  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/execution_store_test.cpp)
+  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/execution_store_test.cpp)
   
 
 target_link_libraries(
