@@ -3,6 +3,7 @@
 #include <iomanip>
 #include "minimatch/router.hpp"
 #include "minimatch/execution_engine.hpp"
+#include "minimatch/execution_store.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -1156,15 +1157,29 @@ http::response<http::string_body> response(http::status status, std::string body
 }
 
 
+
+std::string execution_database_path() {
+  const char* configured =
+      std::getenv("EXECUTION_DB_PATH");
+
+  if (configured != nullptr && *configured != '\0') {
+    return configured;
+  }
+
+  return "data/executions/router_executions.db";
+}
+
 std::string routed_execution_json(
     const minimatch::RoutedExecutionSummary& summary,
     const std::string& symbol,
     minimatch::RouteSide side,
-    const minimatch::ExecutionSimulationConfig& config) {
+    const minimatch::ExecutionSimulationConfig& config,
+    std::int64_t execution_id) {
   std::ostringstream out;
   out << std::setprecision(15);
 
   out << "{"
+      << "\"executionId\":" << execution_id << ","
       << "\"symbol\":\"" << json_escape(symbol) << "\","
       << "\"side\":\""
       << (side == minimatch::RouteSide::Buy ? "BUY" : "SELL")
@@ -1428,19 +1443,33 @@ http::response<http::string_body> handle_request(DashboardState& state,
               quotes
           );
 
+      const minimatch::ExecutionSimulationConfig config{
+          .fill_ratio = fill_ratio,
+          .rejection_probability =
+              rejection_probability,
+          .base_latency_ms =
+              base_latency_ms,
+          .latency_jitter_ms =
+              latency_jitter_ms,
+          .seed = seed
+      };
+
       const minimatch::RoutedExecutionSummary summary =
           minimatch::simulate_route_execution(
               plan,
-              minimatch::ExecutionSimulationConfig{
-                  .fill_ratio = fill_ratio,
-                  .rejection_probability =
-                      rejection_probability,
-                  .base_latency_ms =
-                      base_latency_ms,
-                  .latency_jitter_ms =
-                      latency_jitter_ms,
-                  .seed = seed
-              }
+              config
+          );
+
+      static minimatch::ExecutionStore execution_store(
+          execution_database_path()
+      );
+
+      const std::int64_t execution_id =
+          execution_store.save(
+              symbol,
+              side,
+              config,
+              summary
           );
 
       return response(
@@ -1449,16 +1478,8 @@ http::response<http::string_body> handle_request(DashboardState& state,
               summary,
               symbol,
               side,
-              minimatch::ExecutionSimulationConfig{
-                  .fill_ratio = fill_ratio,
-                  .rejection_probability =
-                      rejection_probability,
-                  .base_latency_ms =
-                      base_latency_ms,
-                  .latency_jitter_ms =
-                      latency_jitter_ms,
-                  .seed = seed
-              }
+              config,
+              execution_id
           )
       );
     }

@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libboost-dev \
     libboost-system-dev \
     libboost-thread-dev \
+    libsqlite3-dev \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
@@ -28,7 +29,6 @@ RUN cmake \
     -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DMINIMATCH_BUILD_TESTS=OFF \
-    -DMINIMATCH_BUILD_BENCHMARKS=OFF \
     -DMINIMATCH_BOOST_ROOT=/usr
 
 RUN cmake --build build \
@@ -49,6 +49,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libboost-dev \
     libboost-system-dev \
     libboost-thread-dev \
+    libsqlite3-0 \
     python3 \
     python3-pip \
     ca-certificates \

@@ -3,6 +3,17 @@ project(MiniMatch VERSION 1.0.0 LANGUAGES CXX)
 
 find_package(SQLite3 REQUIRED)
 
+if(TARGET SQLite3::SQLite3)
+  set(MINIMATCH_SQLITE_TARGET SQLite3::SQLite3)
+elseif(TARGET SQLite::SQLite3)
+  set(MINIMATCH_SQLITE_TARGET SQLite::SQLite3)
+else()
+  message(
+    FATAL_ERROR
+    "SQLite3 was found, but no supported imported target exists."
+  )
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -86,7 +97,7 @@ target_compile_definitions(
 target_link_libraries(
   minimatch
   PUBLIC
-    SQLite::SQLite3
+    ${MINIMATCH_SQLITE_TARGET}
 )
 target_compile_options(minimatch PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
