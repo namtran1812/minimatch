@@ -535,6 +535,73 @@ std::string venue_health_json(const VenueHealth& health) {
 }
 
 
+
+std::optional<std::string> json_object_field(const std::string& body,
+                                             const std::string& key) {
+  const std::string marker = "\"" + key + "\":";
+  const std::size_t field = body.find(marker);
+  if (field == std::string::npos) return std::nullopt;
+
+  const std::size_t object_begin = body.find('{', field + marker.size());
+  if (object_begin == std::string::npos) return std::nullopt;
+
+  std::size_t depth = 0;
+
+  for (std::size_t index = object_begin; index < body.size(); ++index) {
+    if (body[index] == '{') {
+      ++depth;
+    } else if (body[index] == '}') {
+      if (--depth == 0) {
+        return body.substr(
+            object_begin,
+            index - object_begin + 1
+        );
+      }
+    }
+  }
+
+  return std::nullopt;
+}
+
+struct BookLevelMetric {
+  double price{-1.0};
+  double quantity{-1.0};
+  bool valid{false};
+};
+
+BookLevelMetric json_first_book_level(const std::string& body,
+                                      const std::string& side) {
+  BookLevelMetric level;
+
+  const std::string marker = "\"" + side + "\":[";
+  const std::size_t array_begin = body.find(marker);
+
+  if (array_begin == std::string::npos) return level;
+
+  const std::size_t object_begin =
+      body.find('{', array_begin + marker.size());
+
+  if (object_begin == std::string::npos) return level;
+
+  const std::size_t object_end = body.find('}', object_begin);
+
+  if (object_end == std::string::npos) return level;
+
+  const std::string object =
+      body.substr(object_begin, object_end - object_begin + 1);
+
+  const auto price = json_number_field(object, "price");
+  const auto quantity = json_number_field(object, "quantity");
+
+  if (!price || !quantity) return level;
+
+  level.price = *price;
+  level.quantity = *quantity;
+  level.valid = true;
+
+  return level;
+}
+
 std::string prometheus_metrics(const std::string& symbol) {
   const std::array<std::string, 3> venues{
       "coinbase", "kraken", "binance"
@@ -542,37 +609,135 @@ std::string prometheus_metrics(const std::string& symbol) {
 
   std::ostringstream out;
 
-  out << "# HELP minimatch_venue_up Whether the venue feed is healthy\n"
+  out
+      << "# HELP minimatch_venue_up Whether the venue feed is healthy\n"
       << "# TYPE minimatch_venue_up gauge\n"
-      << "# HELP minimatch_feed_age_milliseconds Age of the latest venue event\n"
+      << "# HELP minimatch_feed_age_milliseconds Age of the latest event\n"
       << "# TYPE minimatch_feed_age_milliseconds gauge\n"
-      << "# HELP minimatch_spread Quoted best-ask minus best-bid spread\n"
+      << "# HELP minimatch_spread Best ask minus best bid\n"
       << "# TYPE minimatch_spread gauge\n"
-      << "# HELP minimatch_sequence_gaps_total Detected feed sequence gaps\n"
-      << "# TYPE minimatch_sequence_gaps_total counter\n";
+      << "# HELP minimatch_sequence_gaps_total Detected sequence gaps\n"
+      << "# TYPE minimatch_sequence_gaps_total counter\n"
+      << "# HELP minimatch_events_total Normalized events processed\n"
+      << "# TYPE minimatch_events_total counter\n"
+      << "# HELP minimatch_trades_total Normalized trades processed\n"
+      << "# TYPE minimatch_trades_total counter\n"
+      << "# HELP minimatch_updates_per_second Current normalized update rate\n"
+      << "# TYPE minimatch_updates_per_second gauge\n"
+      << "# HELP minimatch_reconnects_total Feed reconnect attempts\n"
+      << "# TYPE minimatch_reconnects_total counter\n"
+      << "# HELP minimatch_dropped_events_total Dropped normalized events\n"
+      << "# TYPE minimatch_dropped_events_total counter\n"
+      << "# HELP minimatch_best_bid Current best bid price\n"
+      << "# TYPE minimatch_best_bid gauge\n"
+      << "# HELP minimatch_best_ask Current best ask price\n"
+      << "# TYPE minimatch_best_ask gauge\n"
+      << "# HELP minimatch_midprice Current midpoint\n"
+      << "# TYPE minimatch_midprice gauge\n"
+      << "# HELP minimatch_microprice Queue-weighted microprice\n"
+      << "# TYPE minimatch_microprice gauge\n";
 
   for (const auto& venue : venues) {
+    const std::string path =
+        "data/live/" + venue + "_" + symbol + ".json";
+
+    const std::string body = load_file(path);
     const VenueHealth health = read_venue_health(venue, symbol);
 
-    out << "minimatch_venue_up{venue=\"" << venue
-        << "\",symbol=\"" << symbol << "\"} "
+    const std::string labels =
+        "{venue=\"" + venue + "\",symbol=\"" + symbol + "\"}";
+
+    const std::string metrics =
+        json_object_field(body, "metrics").value_or("{}");
+
+    const double events =
+        json_number_field(metrics, "events").value_or(0.0);
+
+    const double trades =
+        json_number_field(metrics, "trades").value_or(0.0);
+
+    const double updates_per_second =
+        json_number_field(metrics, "updatesPerSecond").value_or(0.0);
+
+    const double reconnects =
+        json_number_field(metrics, "reconnects").value_or(0.0);
+
+    const double dropped_events =
+        json_number_field(metrics, "droppedEvents").value_or(0.0);
+
+    const BookLevelMetric bid =
+        json_first_book_level(body, "bids");
+
+    const BookLevelMetric ask =
+        json_first_book_level(body, "asks");
+
+    const double best_bid = bid.valid ? bid.price : -1.0;
+    const double best_ask = ask.valid ? ask.price : -1.0;
+
+    const double spread =
+        bid.valid && ask.valid ? best_ask - best_bid : -1.0;
+
+    const double midprice =
+        bid.valid && ask.valid
+            ? (best_bid + best_ask) / 2.0
+            : -1.0;
+
+    double microprice =
+        json_number_field(metrics, "microprice").value_or(-1.0);
+
+    if (microprice < 0.0 &&
+        bid.valid &&
+        ask.valid &&
+        bid.quantity + ask.quantity > 0.0) {
+      microprice =
+          (best_ask * bid.quantity +
+           best_bid * ask.quantity) /
+          (bid.quantity + ask.quantity);
+    }
+
+    out << "minimatch_venue_up" << labels << " "
         << (health.healthy ? 1 : 0) << "\n";
 
-    out << "minimatch_feed_age_milliseconds{venue=\"" << venue
-        << "\",symbol=\"" << symbol << "\"} "
+    out << "minimatch_feed_age_milliseconds" << labels << " "
         << health.age_ms << "\n";
 
-    out << "minimatch_spread{venue=\"" << venue
-        << "\",symbol=\"" << symbol << "\"} "
-        << health.spread << "\n";
+    out << "minimatch_spread" << labels << " "
+        << spread << "\n";
 
-    out << "minimatch_sequence_gaps_total{venue=\"" << venue
-        << "\",symbol=\"" << symbol << "\"} "
+    out << "minimatch_sequence_gaps_total" << labels << " "
         << health.sequence_gaps << "\n";
+
+    out << "minimatch_events_total" << labels << " "
+        << events << "\n";
+
+    out << "minimatch_trades_total" << labels << " "
+        << trades << "\n";
+
+    out << "minimatch_updates_per_second" << labels << " "
+        << updates_per_second << "\n";
+
+    out << "minimatch_reconnects_total" << labels << " "
+        << reconnects << "\n";
+
+    out << "minimatch_dropped_events_total" << labels << " "
+        << dropped_events << "\n";
+
+    out << "minimatch_best_bid" << labels << " "
+        << best_bid << "\n";
+
+    out << "minimatch_best_ask" << labels << " "
+        << best_ask << "\n";
+
+    out << "minimatch_midprice" << labels << " "
+        << midprice << "\n";
+
+    out << "minimatch_microprice" << labels << " "
+        << microprice << "\n";
   }
 
   return out.str();
 }
+
 
 http::response<http::string_body> response(http::status status, std::string body,
                                            std::string_view content_type = "application/json") {
