@@ -115,6 +115,18 @@ foreach(app server client replay loadgen latency snapshot backtest market_maker 
   target_link_libraries(minimatch_${app} PRIVATE minimatch)
 endforeach()
 
+
+add_executable(
+  minimatch_execution_backtest
+  apps/execution_backtest.cpp
+)
+
+target_link_libraries(
+  minimatch_execution_backtest
+  PRIVATE
+    minimatch
+)
+
 if(MINIMATCH_BUILD_TESTS)
   include(FetchContent)
   cmake_policy(SET CMP0135 NEW)
