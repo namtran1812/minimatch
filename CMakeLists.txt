@@ -20,12 +20,29 @@ set(
 )
 
 if(NOT MINIMATCH_BOOST_ROOT)
-  message(
-    FATAL_ERROR
-    "Set MINIMATCH_BOOST_ROOT, for example: "
-    "-DMINIMATCH_BOOST_ROOT=/opt/homebrew/opt/boost"
-  )
+  if(APPLE AND EXISTS "/opt/homebrew/opt/boost/include/boost/asio.hpp")
+    set(
+      MINIMATCH_BOOST_ROOT
+      "/opt/homebrew/opt/boost"
+    )
+  elseif(UNIX AND EXISTS "/usr/include/boost/asio.hpp")
+    set(
+      MINIMATCH_BOOST_ROOT
+      "/usr"
+    )
+  else()
+    message(
+      FATAL_ERROR
+      "Boost headers were not found. Set MINIMATCH_BOOST_ROOT "
+      "to the Boost installation prefix."
+    )
+  endif()
 endif()
+
+message(
+  STATUS
+  "Using Boost root: ${MINIMATCH_BOOST_ROOT}"
+)
 
 find_path(
   MINIMATCH_BOOST_INCLUDE_DIR
