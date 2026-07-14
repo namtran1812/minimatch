@@ -1,0 +1,6 @@
+timestamp_ns,type,symbol,venue,bid_price,bid_quantity,ask_price,ask_quantity,trade_price,trade_quantity
+1000000000,QUOTE,btcusd,coinbase,62640.00,0.50,62640.10,0.40,,
+1100000000,QUOTE,btcusd,kraken,62639.90,0.75,62640.20,0.60,,
+1200000000,TRADE,btcusd,coinbase,,,,,62640.10,0.05
+1300000000,QUOTE,btcusd,binance,62640.05,1.10,62640.15,0.90,,
+1400000000,TRADE,btcusd,binance,,,,,62640.10,0.12
