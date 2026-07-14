@@ -17,6 +17,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     ports:
       - "9090:9090"
     depends_on:
@@ -32,7 +33,12 @@ services:
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
     ports:
       - "3000:3000"
     depends_on:
       - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:
