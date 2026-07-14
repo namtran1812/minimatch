@@ -28,7 +28,8 @@ RUN cmake \
     -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DMINIMATCH_BUILD_TESTS=OFF \
-    -DMINIMATCH_BUILD_BENCHMARKS=OFF
+    -DMINIMATCH_BUILD_BENCHMARKS=OFF \
+    -DMINIMATCH_BOOST_ROOT=/usr
 
 RUN cmake --build build \
     --target minimatch_web \

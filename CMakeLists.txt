@@ -12,7 +12,29 @@ if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
 
-find_package(Boost 1.74 REQUIRED)
+set(
+  MINIMATCH_BOOST_ROOT
+  ""
+  CACHE PATH
+  "Root directory of the Boost installation"
+)
+
+if(NOT MINIMATCH_BOOST_ROOT)
+  message(
+    FATAL_ERROR
+    "Set MINIMATCH_BOOST_ROOT, for example: "
+    "-DMINIMATCH_BOOST_ROOT=/opt/homebrew/opt/boost"
+  )
+endif()
+
+find_path(
+  MINIMATCH_BOOST_INCLUDE_DIR
+  NAMES boost/asio.hpp
+  HINTS "${MINIMATCH_BOOST_ROOT}/include"
+  NO_DEFAULT_PATH
+  REQUIRED
+)
+
 
 add_library(minimatch
     src/order_book.cpp
@@ -24,10 +46,21 @@ add_library(minimatch
     src/execution.cpp
     src/queue_model.cpp
     src/pipeline.cpp
-  src/router.cpp
+    src/router.cpp
 )
-target_include_directories(minimatch PUBLIC include ${Boost_INCLUDE_DIRS})
-target_compile_definitions(minimatch PUBLIC BOOST_ERROR_CODE_HEADER_ONLY BOOST_SYSTEM_NO_DEPRECATED)
+target_include_directories(
+  minimatch
+  PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${MINIMATCH_BOOST_INCLUDE_DIR}"
+)
+
+target_compile_definitions(
+  minimatch
+  PUBLIC
+    BOOST_ERROR_CODE_HEADER_ONLY
+    BOOST_SYSTEM_NO_DEPRECATED
+)
 target_compile_options(minimatch PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
 if(MINIMATCH_ENABLE_SANITIZERS AND NOT MSVC)
@@ -52,20 +85,15 @@ if(MINIMATCH_BUILD_TESTS)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
   add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp)
-  target_include_directories(
-    minimatch_tests
-    BEFORE PRIVATE
-      ${googletest_SOURCE_DIR}/googletest/include
-      ${googletest_SOURCE_DIR}/googletest
-  )
+  
 
-  target_link_libraries(
-    minimatch_tests
-    PRIVATE
-      minimatch
-      GTest::gtest
-      GTest::gtest_main
-  )
-  include(GoogleTest)
-  gtest_discover_tests(minimatch_tests)
+target_link_libraries(
+  minimatch_tests
+  PRIVATE
+    minimatch
+    GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(minimatch_tests)
 endif()
