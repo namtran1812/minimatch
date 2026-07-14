@@ -295,6 +295,14 @@ int main(int argc, char** argv) {
         << "complete="
         << (result.complete ? "true" : "false")
         << '\n'
+        << "parent_order_id="
+        << result.parent_order_id
+        << '\n'
+        << "parent_status="
+        << minimatch::to_string(
+               result.parent_status
+           )
+        << '\n'
         << "requested_quantity="
         << result.requested_quantity
         << '\n'

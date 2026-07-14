@@ -2,6 +2,7 @@
 
 #include "minimatch/execution_algo.hpp"
 #include "minimatch/market_replay.hpp"
+#include "minimatch/oms.hpp"
 #include "minimatch/router.hpp"
 
 #include <cstddef>
@@ -25,6 +26,11 @@ struct BacktestRequest {
 
 struct BacktestFill {
   std::size_t slice_index{0};
+
+  ParentOrderId parent_order_id{0};
+  ChildOrderId child_order_id{0};
+  std::uint64_t execution_report_id{0};
+
   std::uint64_t timestamp_ns{0};
 
   double requested_quantity{0.0};
@@ -38,6 +44,9 @@ struct BacktestFill {
 
 struct BacktestResult {
   bool complete{false};
+
+  ParentOrderId parent_order_id{0};
+  OrderStatus parent_status{OrderStatus::New};
 
   double requested_quantity{0.0};
   double filled_quantity{0.0};
@@ -58,7 +67,8 @@ struct BacktestResult {
 
 BacktestResult run_historical_backtest(
     const BacktestRequest& request,
-    const MarketReplay& replay
+    const MarketReplay& replay,
+    OrderManagementSystem* oms = nullptr
 );
 
 }  // namespace minimatch

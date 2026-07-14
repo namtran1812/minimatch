@@ -39,7 +39,8 @@ double quote_quantity(
 
 BacktestResult run_historical_backtest(
     const BacktestRequest& request,
-    const MarketReplay& replay
+    const MarketReplay& replay,
+    OrderManagementSystem* oms
 ) {
   if (request.symbol.empty()) {
     throw std::invalid_argument(
@@ -59,6 +60,23 @@ BacktestResult run_historical_backtest(
 
   BacktestResult result;
   result.requested_quantity = request.quantity;
+
+  OrderManagementSystem local_oms;
+  OrderManagementSystem& order_manager =
+      oms == nullptr ? local_oms : *oms;
+
+  const ParentOrderId parent_order_id =
+      order_manager.create_parent(
+          ParentOrderRequest{
+              .symbol = request.symbol,
+              .side = request.side,
+              .quantity = request.quantity,
+              .algorithm = request.schedule.algorithm
+          },
+          replay.stats().first_timestamp_ns
+      );
+
+  result.parent_order_id = parent_order_id;
 
   std::vector<const MarketReplayEvent*> quotes;
   quotes.reserve(replay.size());
@@ -145,9 +163,53 @@ BacktestResult run_historical_backtest(
         request.taker_fee_bps /
         10000.0;
 
+    const ChildOrderId child_order_id =
+        order_manager.create_child(
+            ChildOrderRequest{
+                .parent_id = parent_order_id,
+                .venue = selected->venue,
+                .price = price,
+                .quantity = requested_child,
+                .created_timestamp_ns =
+                    selected->timestamp_ns
+            }
+        );
+
+    order_manager.mark_child_working(
+        child_order_id,
+        selected->timestamp_ns
+    );
+
+    std::uint64_t execution_report_id = 0;
+
+    if (filled > epsilon) {
+      const auto execution_report =
+          order_manager.record_fill(
+              child_order_id,
+              price,
+              filled,
+              fee,
+              selected->timestamp_ns
+          );
+
+      execution_report_id =
+          execution_report.execution_report_id;
+    }
+
+    if (filled + epsilon < requested_child) {
+      order_manager.cancel_child(
+          child_order_id,
+          selected->timestamp_ns
+      );
+    }
+
     result.fills.push_back(
         BacktestFill{
             .slice_index = slice_index,
+            .parent_order_id = parent_order_id,
+            .child_order_id = child_order_id,
+            .execution_report_id =
+                execution_report_id,
             .timestamp_ns =
                 selected->timestamp_ns,
             .requested_quantity =
@@ -177,6 +239,22 @@ BacktestResult run_historical_backtest(
 
   result.complete =
       result.remaining_quantity <= epsilon;
+
+  if (!result.complete) {
+    order_manager.cancel_parent(
+        parent_order_id,
+        replay.stats().last_timestamp_ns
+    );
+  }
+
+  const auto parent =
+      order_manager.find_parent(
+          parent_order_id
+      );
+
+  if (parent.has_value()) {
+    result.parent_status = parent->status;
+  }
 
   if (result.filled_quantity > epsilon) {
     result.average_fill_price =
