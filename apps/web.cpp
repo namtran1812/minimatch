@@ -1,4 +1,5 @@
 #include "minimatch/exchange.hpp"
+#include <array>
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -533,6 +534,46 @@ std::string venue_health_json(const VenueHealth& health) {
   return out.str();
 }
 
+
+std::string prometheus_metrics(const std::string& symbol) {
+  const std::array<std::string, 3> venues{
+      "coinbase", "kraken", "binance"
+  };
+
+  std::ostringstream out;
+
+  out << "# HELP minimatch_venue_up Whether the venue feed is healthy\n"
+      << "# TYPE minimatch_venue_up gauge\n"
+      << "# HELP minimatch_feed_age_milliseconds Age of the latest venue event\n"
+      << "# TYPE minimatch_feed_age_milliseconds gauge\n"
+      << "# HELP minimatch_spread Quoted best-ask minus best-bid spread\n"
+      << "# TYPE minimatch_spread gauge\n"
+      << "# HELP minimatch_sequence_gaps_total Detected feed sequence gaps\n"
+      << "# TYPE minimatch_sequence_gaps_total counter\n";
+
+  for (const auto& venue : venues) {
+    const VenueHealth health = read_venue_health(venue, symbol);
+
+    out << "minimatch_venue_up{venue=\"" << venue
+        << "\",symbol=\"" << symbol << "\"} "
+        << (health.healthy ? 1 : 0) << "\n";
+
+    out << "minimatch_feed_age_milliseconds{venue=\"" << venue
+        << "\",symbol=\"" << symbol << "\"} "
+        << health.age_ms << "\n";
+
+    out << "minimatch_spread{venue=\"" << venue
+        << "\",symbol=\"" << symbol << "\"} "
+        << health.spread << "\n";
+
+    out << "minimatch_sequence_gaps_total{venue=\"" << venue
+        << "\",symbol=\"" << symbol << "\"} "
+        << health.sequence_gaps << "\n";
+  }
+
+  return out.str();
+}
+
 http::response<http::string_body> response(http::status status, std::string body,
                                            std::string_view content_type = "application/json") {
   http::response<http::string_body> res{status, 11};
@@ -552,6 +593,23 @@ http::response<http::string_body> handle_request(DashboardState& state,
 
   try {
     std::lock_guard<std::mutex> lock(state.mutex);
+    if (req.method() == http::verb::get && path == "/metrics") {
+      const auto query = parse_query(target);
+      const std::string symbol = safe_token(
+          query.count("symbol") ? query.at("symbol") : "btcusd"
+      );
+
+      if (symbol.empty()) {
+        throw std::runtime_error("invalid symbol");
+      }
+
+      return response(
+          http::status::ok,
+          prometheus_metrics(symbol),
+          "text/plain; version=0.0.4; charset=utf-8"
+      );
+    }
+
     if (req.method() == http::verb::get && path == "/api/health") {
       const auto query = parse_query(target);
 
