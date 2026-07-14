@@ -4,6 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace minimatch {
@@ -63,6 +64,26 @@ RoutePlan build_route_plan(
       request.quantity <= 0.0) {
     throw std::invalid_argument(
         "route quantity must be positive"
+    );
+  }
+
+  if (!std::isfinite(request.limit_price) ||
+      request.limit_price < 0.0) {
+    throw std::invalid_argument(
+        "limit price must be non-negative"
+    );
+  }
+
+  if (!std::isfinite(request.max_slippage_bps) ||
+      request.max_slippage_bps < 0.0) {
+    throw std::invalid_argument(
+        "maximum slippage must be non-negative"
+    );
+  }
+
+  if (request.max_venue_count == 0) {
+    throw std::invalid_argument(
+        "maximum venue count must be positive"
     );
   }
 
@@ -137,11 +158,56 @@ RoutePlan build_route_plan(
   RoutePlan plan;
   plan.requested_quantity = request.quantity;
 
+  if (candidates.empty()) {
+    return plan;
+  }
+
+  const double arrival_effective_price =
+      candidates.front().effective_price;
+
+  const double slippage_fraction =
+      request.max_slippage_bps / 10000.0;
+
   double remaining = request.quantity;
+  std::unordered_set<std::string> used_venues;
 
   for (const auto& candidate : candidates) {
     if (remaining <= 1e-12) {
       break;
+    }
+
+    const bool violates_limit =
+        request.limit_price > 0.0 &&
+        (
+            request.side == RouteSide::Buy
+                ? candidate.price > request.limit_price
+                : candidate.price < request.limit_price
+        );
+
+    if (violates_limit) {
+      continue;
+    }
+
+    const bool violates_slippage =
+        request.side == RouteSide::Buy
+            ? candidate.effective_price >
+                  arrival_effective_price *
+                      (1.0 + slippage_fraction)
+            : candidate.effective_price <
+                  arrival_effective_price *
+                      (1.0 - slippage_fraction);
+
+    if (violates_slippage) {
+      continue;
+    }
+
+    const bool new_venue =
+        !used_venues.contains(candidate.venue);
+
+    if (new_venue &&
+        used_venues.size() >=
+            request.max_venue_count) {
+      continue;
     }
 
     const double routed =
@@ -154,6 +220,8 @@ RoutePlan build_route_plan(
         notional *
         candidate.taker_fee_bps /
         10000.0;
+
+    used_venues.insert(candidate.venue);
 
     plan.legs.push_back(
         RouteLeg{
@@ -179,6 +247,15 @@ RoutePlan build_route_plan(
   plan.complete =
       plan.routed_quantity + 1e-12 >=
       request.quantity;
+
+  if (request.all_or_none && !plan.complete) {
+    plan.legs.clear();
+    plan.routed_quantity = 0.0;
+    plan.estimated_notional = 0.0;
+    plan.estimated_fees = 0.0;
+    plan.average_price = 0.0;
+    return plan;
+  }
 
   if (plan.routed_quantity > 0.0) {
     plan.average_price =
