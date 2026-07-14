@@ -24,6 +24,7 @@ add_library(minimatch
     src/execution.cpp
     src/queue_model.cpp
     src/pipeline.cpp
+  src/router.cpp
 )
 target_include_directories(minimatch PUBLIC include ${Boost_INCLUDE_DIRS})
 target_compile_definitions(minimatch PUBLIC BOOST_ERROR_CODE_HEADER_ONLY BOOST_SYSTEM_NO_DEPRECATED)
@@ -50,7 +51,7 @@ if(MINIMATCH_BUILD_TESTS)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
-  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp)
+  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp)
   target_include_directories(
     minimatch_tests
     BEFORE PRIVATE
