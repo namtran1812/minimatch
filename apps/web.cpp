@@ -178,6 +178,16 @@ struct DashboardState {
   std::uint64_t submitted{0};
   std::uint64_t accepted{0};
   std::uint64_t rejected{0};
+
+  std::uint64_t execution_requests_total{0};
+  std::uint64_t execution_completed_total{0};
+  std::uint64_t execution_partial_total{0};
+  std::uint64_t execution_rejected_children_total{0};
+
+  double execution_filled_quantity_total{0.0};
+  double execution_requested_quantity_total{0.0};
+  double execution_fees_total{0.0};
+  double execution_latency_ms_total{0.0};
   std::uint64_t trade_count{0};
   Quantity traded_quantity{0};
   std::vector<LoggedAction> timeline;
@@ -1008,7 +1018,9 @@ std::string consolidated_market_json(const std::string& symbol) {
   return out.str();
 }
 
-std::string prometheus_metrics(const std::string& symbol) {
+std::string prometheus_metrics(
+    const DashboardState& state,
+    const std::string& symbol) {
   const std::array<std::string, 3> venues{
       "coinbase", "kraken", "binance"
   };
@@ -1141,6 +1153,61 @@ std::string prometheus_metrics(const std::string& symbol) {
         << microprice << "\n";
   }
 
+
+  const double execution_fill_ratio =
+      state.execution_requested_quantity_total > 0.0
+          ? state.execution_filled_quantity_total /
+                state.execution_requested_quantity_total
+          : 0.0;
+
+  const double execution_average_latency_ms =
+      state.execution_requests_total > 0
+          ? state.execution_latency_ms_total /
+                static_cast<double>(
+                    state.execution_requests_total
+                )
+          : 0.0;
+
+  out << "# TYPE minimatch_execution_requests_total counter\n"
+      << "minimatch_execution_requests_total "
+      << state.execution_requests_total << "\n"
+
+      << "# TYPE minimatch_execution_completed_total counter\n"
+      << "minimatch_execution_completed_total "
+      << state.execution_completed_total << "\n"
+
+      << "# TYPE minimatch_execution_partial_total counter\n"
+      << "minimatch_execution_partial_total "
+      << state.execution_partial_total << "\n"
+
+      << "# TYPE minimatch_execution_rejected_children_total counter\n"
+      << "minimatch_execution_rejected_children_total "
+      << state.execution_rejected_children_total << "\n"
+
+      << "# TYPE minimatch_execution_requested_quantity_total counter\n"
+      << "minimatch_execution_requested_quantity_total "
+      << state.execution_requested_quantity_total << "\n"
+
+      << "# TYPE minimatch_execution_filled_quantity_total counter\n"
+      << "minimatch_execution_filled_quantity_total "
+      << state.execution_filled_quantity_total << "\n"
+
+      << "# TYPE minimatch_execution_fees_total counter\n"
+      << "minimatch_execution_fees_total "
+      << state.execution_fees_total << "\n"
+
+      << "# TYPE minimatch_execution_latency_milliseconds_total counter\n"
+      << "minimatch_execution_latency_milliseconds_total "
+      << state.execution_latency_ms_total << "\n"
+
+      << "# TYPE minimatch_execution_fill_ratio gauge\n"
+      << "minimatch_execution_fill_ratio "
+      << execution_fill_ratio << "\n"
+
+      << "# TYPE minimatch_execution_average_latency_milliseconds gauge\n"
+      << "minimatch_execution_average_latency_milliseconds "
+      << execution_average_latency_ms << "\n";
+
   return out.str();
 }
 
@@ -1270,7 +1337,7 @@ http::response<http::string_body> handle_request(DashboardState& state,
 
       return response(
           http::status::ok,
-          prometheus_metrics(symbol),
+          prometheus_metrics(state, symbol),
           "text/plain; version=0.0.4; charset=utf-8"
       );
     }
@@ -1459,6 +1526,33 @@ http::response<http::string_body> handle_request(DashboardState& state,
               plan,
               config
           );
+
+      ++state.execution_requests_total;
+
+      state.execution_requested_quantity_total +=
+          summary.requested_quantity;
+
+      state.execution_filled_quantity_total +=
+          summary.filled_quantity;
+
+      state.execution_fees_total +=
+          summary.total_fees;
+
+      state.execution_latency_ms_total +=
+          summary.total_latency_ms;
+
+      if (summary.complete) {
+        ++state.execution_completed_total;
+      } else if (summary.filled_quantity > 0.0) {
+        ++state.execution_partial_total;
+      }
+
+      for (const auto& child : summary.children) {
+        if (child.status ==
+            minimatch::ChildExecutionStatus::Rejected) {
+          ++state.execution_rejected_children_total;
+        }
+      }
 
       static minimatch::ExecutionStore execution_store(
           execution_database_path()
