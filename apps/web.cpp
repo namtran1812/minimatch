@@ -1,5 +1,6 @@
 #include "minimatch/exchange.hpp"
 #include <array>
+#include <iomanip>
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -602,6 +603,173 @@ BookLevelMetric json_first_book_level(const std::string& body,
   return level;
 }
 
+
+struct ConsolidatedVenueQuote {
+  std::string venue;
+  bool healthy{false};
+  double age_ms{-1.0};
+  double bid{-1.0};
+  double bid_quantity{-1.0};
+  double ask{-1.0};
+  double ask_quantity{-1.0};
+};
+
+ConsolidatedVenueQuote read_consolidated_quote(
+    const std::string& venue,
+    const std::string& symbol) {
+  ConsolidatedVenueQuote quote;
+  quote.venue = venue;
+
+  const VenueHealth health = read_venue_health(venue, symbol);
+  quote.healthy = health.healthy;
+  quote.age_ms = health.age_ms;
+
+  const std::string body = load_file(
+      "data/live/" + venue + "_" + symbol + ".json"
+  );
+
+  if (body.empty()) {
+    quote.healthy = false;
+    return quote;
+  }
+
+  const BookLevelMetric bid =
+      json_first_book_level(body, "bids");
+
+  const BookLevelMetric ask =
+      json_first_book_level(body, "asks");
+
+  if (!bid.valid || !ask.valid) {
+    quote.healthy = false;
+    return quote;
+  }
+
+  quote.bid = bid.price;
+  quote.bid_quantity = bid.quantity;
+  quote.ask = ask.price;
+  quote.ask_quantity = ask.quantity;
+
+  if (quote.ask <= quote.bid) {
+    quote.healthy = false;
+  }
+
+  return quote;
+}
+
+std::string consolidated_market_json(const std::string& symbol) {
+  const std::array<std::string, 3> venues{
+      "coinbase", "kraken", "binance"
+  };
+
+  std::array<ConsolidatedVenueQuote, 3> quotes;
+
+  bool found_bid = false;
+  bool found_ask = false;
+
+  ConsolidatedVenueQuote best_bid;
+  ConsolidatedVenueQuote best_ask;
+
+  for (std::size_t index = 0; index < venues.size(); ++index) {
+    quotes[index] = read_consolidated_quote(
+        venues[index],
+        symbol
+    );
+
+    const auto& quote = quotes[index];
+
+    if (!quote.healthy) {
+      continue;
+    }
+
+    if (!found_bid || quote.bid > best_bid.bid) {
+      best_bid = quote;
+      found_bid = true;
+    }
+
+    if (!found_ask || quote.ask < best_ask.ask) {
+      best_ask = quote;
+      found_ask = true;
+    }
+  }
+
+  std::ostringstream out;
+  out << std::setprecision(15);
+
+  out << "{"
+      << "\"symbol\":\"" << json_escape(symbol) << "\","
+      << "\"status\":\""
+      << (found_bid && found_ask ? "live" : "unavailable")
+      << "\",";
+
+  if (found_bid && found_ask) {
+    const double spread = best_ask.ask - best_bid.bid;
+    const double midpoint =
+        (best_bid.bid + best_ask.ask) / 2.0;
+
+    out << "\"bestBid\":{"
+        << "\"venue\":\""
+        << json_escape(best_bid.venue) << "\","
+        << "\"price\":" << best_bid.bid << ","
+        << "\"quantity\":" << best_bid.bid_quantity
+        << "},"
+        << "\"bestAsk\":{"
+        << "\"venue\":\""
+        << json_escape(best_ask.venue) << "\","
+        << "\"price\":" << best_ask.ask << ","
+        << "\"quantity\":" << best_ask.ask_quantity
+        << "},"
+        << "\"spread\":" << spread << ","
+        << "\"midpoint\":" << midpoint << ","
+        << "\"crossed\":"
+        << (spread < 0.0 ? "true" : "false") << ",";
+  } else {
+    out << "\"bestBid\":null,"
+        << "\"bestAsk\":null,"
+        << "\"spread\":null,"
+        << "\"midpoint\":null,"
+        << "\"crossed\":false,";
+  }
+
+  out << "\"venues\":{";
+
+  for (std::size_t index = 0; index < quotes.size(); ++index) {
+    if (index > 0) {
+      out << ",";
+    }
+
+    const auto& quote = quotes[index];
+
+    out << "\"" << json_escape(quote.venue) << "\":{"
+        << "\"healthy\":"
+        << (quote.healthy ? "true" : "false") << ","
+        << "\"ageMs\":" << quote.age_ms << ","
+        << "\"bid\":"
+        << (quote.bid >= 0.0
+                ? std::to_string(quote.bid)
+                : "null")
+        << ","
+        << "\"bidQuantity\":"
+        << (quote.bid_quantity >= 0.0
+                ? std::to_string(quote.bid_quantity)
+                : "null")
+        << ","
+        << "\"ask\":"
+        << (quote.ask >= 0.0
+                ? std::to_string(quote.ask)
+                : "null")
+        << ","
+        << "\"askQuantity\":"
+        << (quote.ask_quantity >= 0.0
+                ? std::to_string(quote.ask_quantity)
+                : "null")
+        << "}";
+  }
+
+  out << "}}";
+
+  return out.str();
+}
+
 std::string prometheus_metrics(const std::string& symbol) {
   const std::array<std::string, 3> venues{
       "coinbase", "kraken", "binance"
@@ -772,6 +940,26 @@ http::response<http::string_body> handle_request(DashboardState& state,
           http::status::ok,
           prometheus_metrics(symbol),
           "text/plain; version=0.0.4; charset=utf-8"
+      );
+    }
+
+    if (req.method() == http::verb::get &&
+        path == "/api/market/consolidated") {
+      const auto query = parse_query(target);
+
+      const std::string symbol = safe_token(
+          query.count("symbol")
+              ? query.at("symbol")
+              : "btcusd"
+      );
+
+      if (symbol.empty()) {
+        throw std::runtime_error("invalid symbol");
+      }
+
+      return response(
+          http::status::ok,
+          consolidated_market_json(symbol)
       );
     }
 
