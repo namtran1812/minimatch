@@ -3,6 +3,7 @@
 #include "minimatch/router.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -48,8 +49,20 @@ struct RoutedExecutionSummary {
 };
 
 struct ExecutionSimulationConfig {
-  // 1.0 means every routed leg fills completely.
+  // 1.0 means every accepted routed leg fills completely.
   double fill_ratio{1.0};
+
+  // Probability that an individual child order is rejected.
+  double rejection_probability{0.0};
+
+  // Additional simulated execution latency applied to every child.
+  double base_latency_ms{0.0};
+
+  // Maximum uniformly distributed latency jitter per child.
+  double latency_jitter_ms{0.0};
+
+  // Produces deterministic simulation results.
+  std::uint64_t seed{1};
 };
 
 RoutedExecutionSummary simulate_route_execution(

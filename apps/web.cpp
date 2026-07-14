@@ -1160,7 +1160,7 @@ std::string routed_execution_json(
     const minimatch::RoutedExecutionSummary& summary,
     const std::string& symbol,
     minimatch::RouteSide side,
-    double fill_ratio) {
+    const minimatch::ExecutionSimulationConfig& config) {
   std::ostringstream out;
   out << std::setprecision(15);
 
@@ -1186,7 +1186,14 @@ std::string routed_execution_json(
       << "\"totalLatencyMs\":"
       << summary.total_latency_ms << ","
       << "\"simulation\":{"
-      << "\"fillRatio\":" << fill_ratio
+      << "\"fillRatio\":" << config.fill_ratio << ","
+      << "\"rejectionProbability\":"
+      << config.rejection_probability << ","
+      << "\"baseLatencyMs\":"
+      << config.base_latency_ms << ","
+      << "\"latencyJitterMs\":"
+      << config.latency_jitter_ms << ","
+      << "\"seed\":" << config.seed
       << "},"
       << "\"children\":[";
 
@@ -1383,6 +1390,30 @@ http::response<http::string_body> handle_request(DashboardState& state,
               ? std::stod(fields.at("fillRatio"))
               : 1.0;
 
+      const double rejection_probability =
+          fields.count("rejectionProbability")
+              ? std::stod(
+                    fields.at("rejectionProbability")
+                )
+              : 0.0;
+
+      const double base_latency_ms =
+          fields.count("baseLatencyMs")
+              ? std::stod(fields.at("baseLatencyMs"))
+              : 0.0;
+
+      const double latency_jitter_ms =
+          fields.count("latencyJitterMs")
+              ? std::stod(fields.at("latencyJitterMs"))
+              : 0.0;
+
+      const std::uint64_t seed =
+          fields.count("seed")
+              ? static_cast<std::uint64_t>(
+                    std::stoull(fields.at("seed"))
+                )
+              : 1ULL;
+
       const minimatch::RouteRequest route_request{
           side,
           quantity
@@ -1401,7 +1432,14 @@ http::response<http::string_body> handle_request(DashboardState& state,
           minimatch::simulate_route_execution(
               plan,
               minimatch::ExecutionSimulationConfig{
-                  .fill_ratio = fill_ratio
+                  .fill_ratio = fill_ratio,
+                  .rejection_probability =
+                      rejection_probability,
+                  .base_latency_ms =
+                      base_latency_ms,
+                  .latency_jitter_ms =
+                      latency_jitter_ms,
+                  .seed = seed
               }
           );
 
@@ -1411,7 +1449,16 @@ http::response<http::string_body> handle_request(DashboardState& state,
               summary,
               symbol,
               side,
-              fill_ratio
+              minimatch::ExecutionSimulationConfig{
+                  .fill_ratio = fill_ratio,
+                  .rejection_probability =
+                      rejection_probability,
+                  .base_latency_ms =
+                      base_latency_ms,
+                  .latency_jitter_ms =
+                      latency_jitter_ms,
+                  .seed = seed
+              }
           )
       );
     }
