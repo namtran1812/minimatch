@@ -32,13 +32,18 @@ double effective_price(
     RouteSide side
 ) {
   const double price = executable_price(quote, side);
-  const double fee_rate = quote.taker_fee_bps / 10000.0;
+
+  const double total_cost_bps =
+      quote.taker_fee_bps +
+      quote.latency_ms * quote.latency_cost_bps_per_ms;
+
+  const double cost_rate = total_cost_bps / 10000.0;
 
   if (side == RouteSide::Buy) {
-    return price * (1.0 + fee_rate);
+    return price * (1.0 + cost_rate);
   }
 
-  return price * (1.0 - fee_rate);
+  return price * (1.0 - cost_rate);
 }
 
 }  // namespace
@@ -127,7 +132,10 @@ RoutePlan build_route_plan(
             quote.venue,
             price,
             routed,
-            fee
+            fee,
+            effective_price(quote, request.side),
+            quote.latency_ms,
+            quote.taker_fee_bps
         }
     );
 

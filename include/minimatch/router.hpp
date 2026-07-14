@@ -19,6 +19,7 @@ struct VenueQuote {
   double ask_quantity{0.0};
   double taker_fee_bps{0.0};
   double latency_ms{0.0};
+  double latency_cost_bps_per_ms{0.0};
   bool healthy{false};
 };
 
@@ -32,6 +33,10 @@ struct RouteLeg {
   double price{0.0};
   double quantity{0.0};
   double estimated_fee{0.0};
+  double effective_price{0.0};
+  double latency_ms{0.0};
+  double taker_fee_bps{0.0};
+  double latency_cost_bps_per_ms{0.0};
 };
 
 struct RoutePlan {

@@ -658,6 +658,29 @@ ConsolidatedVenueQuote read_consolidated_quote(
 }
 
 
+
+double environment_double(
+    const char* name,
+    double fallback) {
+  const char* raw = std::getenv(name);
+
+  if (raw == nullptr || *raw == '\0') {
+    return fallback;
+  }
+
+  try {
+    const double value = std::stod(raw);
+
+    if (!std::isfinite(value)) {
+      return fallback;
+    }
+
+    return value;
+  } catch (...) {
+    return fallback;
+  }
+}
+
 std::vector<minimatch::VenueQuote> read_router_quotes(
     const std::string& symbol) {
   const std::array<std::string, 3> venues{
@@ -672,15 +695,52 @@ std::vector<minimatch::VenueQuote> read_router_quotes(
         read_consolidated_quote(venue, symbol);
 
     double taker_fee_bps = 0.0;
-    double latency_ms = quote.age_ms;
+    double latency_penalty_ms = 0.0;
 
     if (venue == "coinbase") {
-      taker_fee_bps = 60.0;
+      taker_fee_bps = environment_double(
+          "ROUTER_COINBASE_TAKER_FEE_BPS",
+          60.0
+      );
+
+      latency_penalty_ms = environment_double(
+          "ROUTER_COINBASE_LATENCY_MS",
+          0.0
+      );
     } else if (venue == "kraken") {
-      taker_fee_bps = 40.0;
+      taker_fee_bps = environment_double(
+          "ROUTER_KRAKEN_TAKER_FEE_BPS",
+          40.0
+      );
+
+      latency_penalty_ms = environment_double(
+          "ROUTER_KRAKEN_LATENCY_MS",
+          0.0
+      );
     } else if (venue == "binance") {
-      taker_fee_bps = 10.0;
+      taker_fee_bps = environment_double(
+          "ROUTER_BINANCE_TAKER_FEE_BPS",
+          10.0
+      );
+
+      latency_penalty_ms = environment_double(
+          "ROUTER_BINANCE_LATENCY_MS",
+          0.0
+      );
     }
+
+    const double latency_ms =
+        std::max(0.0, quote.age_ms) +
+        std::max(0.0, latency_penalty_ms);
+
+    const double latency_cost_bps_per_ms =
+        std::max(
+            0.0,
+            environment_double(
+                "ROUTER_LATENCY_COST_BPS_PER_MS",
+                0.0
+            )
+        );
 
     quotes.push_back(
         minimatch::VenueQuote{
@@ -691,6 +751,7 @@ std::vector<minimatch::VenueQuote> read_router_quotes(
             quote.ask_quantity,
             taker_fee_bps,
             latency_ms,
+            latency_cost_bps_per_ms,
             quote.healthy
         }
     );
@@ -732,7 +793,12 @@ std::string route_plan_json(
         << "\"venue\":\"" << json_escape(leg.venue) << "\","
         << "\"price\":" << leg.price << ","
         << "\"quantity\":" << leg.quantity << ","
-        << "\"estimatedFee\":" << leg.estimated_fee
+        << "\"estimatedFee\":" << leg.estimated_fee << ","
+        << "\"effectivePrice\":" << leg.effective_price << ","
+        << "\"latencyMs\":" << leg.latency_ms << ","
+        << "\"takerFeeBps\":" << leg.taker_fee_bps << ","
+        << "\"latencyCostBpsPerMs\":"
+        << leg.latency_cost_bps_per_ms
         << "}";
   }
 
