@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -31,6 +33,15 @@ struct VenueQuote {
 struct RouteRequest {
   RouteSide side{RouteSide::Buy};
   double quantity{0.0};
+
+  double limit_price{0.0};
+  double max_slippage_bps{10000.0};
+
+  std::size_t max_venue_count{
+      std::numeric_limits<std::size_t>::max()
+  };
+
+  bool all_or_none{false};
 };
 
 struct RouteLeg {

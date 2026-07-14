@@ -4,6 +4,7 @@
 #include "minimatch/router.hpp"
 #include "minimatch/execution_engine.hpp"
 #include "minimatch/execution_store.hpp"
+#include <limits>
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -1498,7 +1499,26 @@ http::response<http::string_body> handle_request(DashboardState& state,
 
       const minimatch::RouteRequest route_request{
           side,
-          quantity
+          quantity,
+          fields.count("limitPrice")
+              ? std::stod(fields.at("limitPrice"))
+              : 0.0,
+          fields.count("maxSlippageBps")
+              ? std::stod(
+                    fields.at("maxSlippageBps")
+                )
+              : 10000.0,
+          fields.count("maxVenueCount")
+              ? static_cast<std::size_t>(
+                    std::stoull(
+                        fields.at("maxVenueCount")
+                    )
+                )
+              : std::numeric_limits<std::size_t>::max(),
+          fields.count("allOrNone")
+              ? fields.at("allOrNone") == "true" ||
+                    fields.at("allOrNone") == "1"
+              : false
       };
 
       const auto quotes =
@@ -1616,7 +1636,26 @@ http::response<http::string_body> handle_request(DashboardState& state,
 
       const minimatch::RouteRequest route_request{
           side,
-          quantity
+          quantity,
+          fields.count("limitPrice")
+              ? std::stod(fields.at("limitPrice"))
+              : 0.0,
+          fields.count("maxSlippageBps")
+              ? std::stod(
+                    fields.at("maxSlippageBps")
+                )
+              : 10000.0,
+          fields.count("maxVenueCount")
+              ? static_cast<std::size_t>(
+                    std::stoull(
+                        fields.at("maxVenueCount")
+                    )
+                )
+              : std::numeric_limits<std::size_t>::max(),
+          fields.count("allOrNone")
+              ? fields.at("allOrNone") == "true" ||
+                    fields.at("allOrNone") == "1"
+              : false
       };
 
       const auto quotes = read_router_quotes(symbol);
