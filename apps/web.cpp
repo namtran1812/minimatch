@@ -1,6 +1,7 @@
 #include "minimatch/exchange.hpp"
 #include <array>
 #include <iomanip>
+#include "minimatch/router.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -656,6 +657,90 @@ ConsolidatedVenueQuote read_consolidated_quote(
   return quote;
 }
 
+
+std::vector<minimatch::VenueQuote> read_router_quotes(
+    const std::string& symbol) {
+  const std::array<std::string, 3> venues{
+      "coinbase", "kraken", "binance"
+  };
+
+  std::vector<minimatch::VenueQuote> quotes;
+  quotes.reserve(venues.size());
+
+  for (const auto& venue : venues) {
+    const ConsolidatedVenueQuote quote =
+        read_consolidated_quote(venue, symbol);
+
+    double taker_fee_bps = 0.0;
+    double latency_ms = quote.age_ms;
+
+    if (venue == "coinbase") {
+      taker_fee_bps = 60.0;
+    } else if (venue == "kraken") {
+      taker_fee_bps = 40.0;
+    } else if (venue == "binance") {
+      taker_fee_bps = 10.0;
+    }
+
+    quotes.push_back(
+        minimatch::VenueQuote{
+            venue,
+            quote.bid,
+            quote.bid_quantity,
+            quote.ask,
+            quote.ask_quantity,
+            taker_fee_bps,
+            latency_ms,
+            quote.healthy
+        }
+    );
+  }
+
+  return quotes;
+}
+
+std::string route_plan_json(
+    const minimatch::RouteRequest& request,
+    const minimatch::RoutePlan& plan,
+    const std::string& symbol) {
+  std::ostringstream out;
+  out << std::setprecision(15);
+
+  out << "{"
+      << "\"symbol\":\"" << json_escape(symbol) << "\","
+      << "\"side\":\""
+      << (request.side == minimatch::RouteSide::Buy
+              ? "BUY"
+              : "SELL")
+      << "\","
+      << "\"requestedQuantity\":" << plan.requested_quantity << ","
+      << "\"routedQuantity\":" << plan.routed_quantity << ","
+      << "\"complete\":" << (plan.complete ? "true" : "false") << ","
+      << "\"averagePrice\":" << plan.average_price << ","
+      << "\"estimatedNotional\":" << plan.estimated_notional << ","
+      << "\"estimatedFees\":" << plan.estimated_fees << ","
+      << "\"legs\":[";
+
+  for (std::size_t index = 0; index < plan.legs.size(); ++index) {
+    if (index > 0) {
+      out << ",";
+    }
+
+    const auto& leg = plan.legs[index];
+
+    out << "{"
+        << "\"venue\":\"" << json_escape(leg.venue) << "\","
+        << "\"price\":" << leg.price << ","
+        << "\"quantity\":" << leg.quantity << ","
+        << "\"estimatedFee\":" << leg.estimated_fee
+        << "}";
+  }
+
+  out << "]}";
+
+  return out.str();
+}
+
 std::string consolidated_market_json(const std::string& symbol) {
   const std::array<std::string, 3> venues{
       "coinbase", "kraken", "binance"
@@ -1029,6 +1114,65 @@ http::response<http::string_body> handle_request(DashboardState& state,
       SymbolId symbol = 1;
       if (const auto it = query.find("symbol"); it != query.end()) symbol = static_cast<SymbolId>(std::stoul(it->second));
       return response(http::status::ok, state_json(state, symbol));
+    }
+
+    if (req.method() == http::verb::post &&
+        path == "/api/router/preview") {
+      const auto fields = parse_form(req.body());
+
+      const std::string symbol = safe_token(
+          fields.count("symbol")
+              ? fields.at("symbol")
+              : "btcusd"
+      );
+
+      if (symbol.empty()) {
+        throw std::runtime_error("invalid symbol");
+      }
+
+      const std::string side_value =
+          fields.count("side")
+              ? fields.at("side")
+              : "";
+
+      minimatch::RouteSide side;
+
+      if (side_value == "buy" || side_value == "BUY") {
+        side = minimatch::RouteSide::Buy;
+      } else if (side_value == "sell" || side_value == "SELL") {
+        side = minimatch::RouteSide::Sell;
+      } else {
+        throw std::runtime_error(
+            "side must be buy or sell"
+        );
+      }
+
+      const double quantity =
+          fields.count("quantity")
+              ? std::stod(fields.at("quantity"))
+              : 0.0;
+
+      const minimatch::RouteRequest route_request{
+          side,
+          quantity
+      };
+
+      const auto quotes = read_router_quotes(symbol);
+
+      const minimatch::RoutePlan plan =
+          minimatch::build_route_plan(
+              route_request,
+              quotes
+          );
+
+      return response(
+          http::status::ok,
+          route_plan_json(
+              route_request,
+              plan,
+              symbol
+          )
+      );
     }
 
     if (req.method() == http::verb::post && path == "/api/order") {
