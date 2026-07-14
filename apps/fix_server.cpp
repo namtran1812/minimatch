@@ -1,6 +1,7 @@
 #include "minimatch/fix.hpp"
 #include "minimatch/fix_gateway.hpp"
 #include "minimatch/fix_session.hpp"
+#include "minimatch/fix_store.hpp"
 #include "minimatch/oms.hpp"
 
 #include <boost/asio.hpp>
@@ -30,6 +31,29 @@ std::uint64_t now_ns() {
           std::chrono::system_clock::now()
               .time_since_epoch()
       ).count()
+  );
+}
+
+
+int fix_sequence_number(
+    const minimatch::FixMessage& message
+) {
+  const auto value = message.get(34);
+
+  if (!value.has_value()) {
+    throw std::runtime_error(
+        "FIX message is missing MsgSeqNum"
+    );
+  }
+
+  return std::stoi(*value);
+}
+
+std::string fix_message_type_code(
+    const minimatch::FixMessage& message
+) {
+  return minimatch::fix_message_code(
+      message.message_type
   );
 }
 
@@ -130,10 +154,26 @@ class SharedTradingState {
 
 void send_fix(
     tcp::socket& socket,
-    const minimatch::FixMessage& message
+    minimatch::FixStore& store,
+    const std::string& session_id,
+    const minimatch::FixMessage& message,
+    std::uint64_t timestamp_ns
 ) {
   const std::string wire =
       minimatch::encode_fix_message(message);
+
+  store.append_message(
+      minimatch::StoredFixMessage{
+          .session_id = session_id,
+          .direction = "OUT",
+          .sequence_number =
+              fix_sequence_number(message),
+          .message_type =
+              fix_message_type_code(message),
+          .wire_message = wire,
+          .timestamp_ns = timestamp_ns
+      }
+  );
 
   boost::asio::write(
       socket,
@@ -149,11 +189,17 @@ void send_fix(
 void handle_client(
     tcp::socket socket,
     std::shared_ptr<SharedTradingState> trading_state,
+    std::shared_ptr<minimatch::FixStore> fix_store,
     std::string sender_comp_id,
     std::string target_comp_id,
     int heartbeat_seconds
 ) {
   try {
+    const std::string session_id =
+        sender_comp_id +
+        "->" +
+        target_comp_id;
+
     minimatch::FixSession session(
         minimatch::FixSessionConfig{
             .sender_comp_id =
@@ -164,6 +210,27 @@ void handle_client(
                 heartbeat_seconds
         }
     );
+
+    const auto snapshot =
+        fix_store->load_session(
+            session_id
+        );
+
+    session.restore_sequence_state(
+        snapshot.next_incoming_sequence,
+        snapshot.next_outgoing_sequence,
+        snapshot.last_received_time_ns,
+        snapshot.last_sent_time_ns
+    );
+
+    std::cout
+        << "Restored FIX session "
+        << session_id
+        << " incoming="
+        << session.expected_incoming_sequence()
+        << " outgoing="
+        << session.next_outgoing_sequence()
+        << '\n';
 
     std::array<char, 8192> read_buffer{};
     std::string accumulated;
@@ -223,6 +290,23 @@ void handle_client(
         const std::uint64_t timestamp =
             now_ns();
 
+        fix_store->append_message(
+            minimatch::StoredFixMessage{
+                .session_id = session_id,
+                .direction = "IN",
+                .sequence_number =
+                    fix_sequence_number(
+                        parsed.message
+                    ),
+                .message_type =
+                    fix_message_type_code(
+                        parsed.message
+                    ),
+                .wire_message = wire,
+                .timestamp_ns = timestamp
+            }
+        );
+
         const auto session_result =
             session.receive(
                 parsed.message,
@@ -232,9 +316,26 @@ void handle_client(
         if (session_result.response.has_value()) {
           send_fix(
               socket,
-              *session_result.response
+              *fix_store,
+              session_id,
+              *session_result.response,
+              timestamp
           );
         }
+
+        fix_store->save_session(
+            minimatch::FixSessionSnapshot{
+                .session_id = session_id,
+                .next_incoming_sequence =
+                    session.expected_incoming_sequence(),
+                .next_outgoing_sequence =
+                    session.next_outgoing_sequence(),
+                .last_received_time_ns =
+                    session.last_received_time_ns(),
+                .last_sent_time_ns =
+                    session.last_sent_time_ns()
+            }
+        );
 
         if (!session_result.accepted) {
           std::cerr
@@ -271,7 +372,24 @@ void handle_client(
 
         send_fix(
             socket,
-            response
+            *fix_store,
+            session_id,
+            response,
+            timestamp
+        );
+
+        fix_store->save_session(
+            minimatch::FixSessionSnapshot{
+                .session_id = session_id,
+                .next_incoming_sequence =
+                    session.expected_incoming_sequence(),
+                .next_outgoing_sequence =
+                    session.next_outgoing_sequence(),
+                .last_received_time_ns =
+                    session.last_received_time_ns(),
+                .last_sent_time_ns =
+                    session.last_sent_time_ns()
+            }
         );
       }
     }
@@ -309,6 +427,16 @@ int main(int argc, char** argv) {
             ? std::stoi(argv[4])
             : 30;
 
+    const std::string database_path =
+        argc > 5
+            ? argv[5]
+            : "minimatch_fix.sqlite";
+
+    auto fix_store =
+        std::make_shared<
+            minimatch::FixStore
+        >(database_path);
+
     boost::asio::io_context io_context;
 
     tcp::acceptor acceptor(
@@ -331,6 +459,8 @@ int main(int argc, char** argv) {
         << sender_comp_id
         << " target="
         << target_comp_id
+        << " database="
+        << database_path
         << '\n';
 
     for (;;) {
@@ -346,6 +476,7 @@ int main(int argc, char** argv) {
           handle_client,
           std::move(socket),
           trading_state,
+          fix_store,
           sender_comp_id,
           target_comp_id,
           heartbeat_seconds

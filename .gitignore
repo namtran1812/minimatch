@@ -16,3 +16,6 @@ __pycache__/
 data/live/
 *.before-*
 data/executions/
+
+# Runtime FIX session database
+minimatch_fix.sqlite
