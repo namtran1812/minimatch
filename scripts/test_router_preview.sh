@@ -59,6 +59,7 @@ for leg in plan["legs"]:
     assert float(leg["latencyMs"]) >= 0
     assert float(leg["takerFeeBps"]) >= 0
     assert float(leg["latencyCostBpsPerMs"]) >= 0
+    assert int(leg["levelIndex"]) >= 0
 
 print("PASS:", plan["side"], len(plan["legs"]), "legs")
 '

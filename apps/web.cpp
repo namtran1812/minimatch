@@ -681,6 +681,77 @@ double environment_double(
   }
 }
 
+
+std::vector<minimatch::VenueLevel> json_book_levels(
+    const std::string& body,
+    const std::string& side,
+    std::size_t maximum_levels = 20) {
+  std::vector<minimatch::VenueLevel> levels;
+
+  const std::string marker =
+      "\"" + side + "\":[";
+
+  const std::size_t array_begin =
+      body.find(marker);
+
+  if (array_begin == std::string::npos) {
+    return levels;
+  }
+
+  std::size_t position =
+      array_begin + marker.size();
+
+  while (levels.size() < maximum_levels) {
+    const std::size_t object_begin =
+        body.find('{', position);
+
+    const std::size_t array_end =
+        body.find(']', position);
+
+    if (object_begin == std::string::npos ||
+        array_end == std::string::npos ||
+        object_begin > array_end) {
+      break;
+    }
+
+    const std::size_t object_end =
+        body.find('}', object_begin);
+
+    if (object_end == std::string::npos ||
+        object_end > array_end) {
+      break;
+    }
+
+    const std::string object =
+        body.substr(
+            object_begin,
+            object_end - object_begin + 1
+        );
+
+    const auto price =
+        json_number_field(object, "price");
+
+    const auto quantity =
+        json_number_field(object, "quantity");
+
+    if (price &&
+        quantity &&
+        *price > 0.0 &&
+        *quantity > 0.0) {
+      levels.push_back(
+          minimatch::VenueLevel{
+              *price,
+              *quantity
+          }
+      );
+    }
+
+    position = object_end + 1;
+  }
+
+  return levels;
+}
+
 std::vector<minimatch::VenueQuote> read_router_quotes(
     const std::string& symbol) {
   const std::array<std::string, 3> venues{
@@ -691,8 +762,18 @@ std::vector<minimatch::VenueQuote> read_router_quotes(
   quotes.reserve(venues.size());
 
   for (const auto& venue : venues) {
-    const ConsolidatedVenueQuote quote =
-        read_consolidated_quote(venue, symbol);
+    const VenueHealth health =
+        read_venue_health(venue, symbol);
+
+    const std::string body = load_file(
+        "data/live/" + venue + "_" + symbol + ".json"
+    );
+
+    const auto bids =
+        json_book_levels(body, "bids", 20);
+
+    const auto asks =
+        json_book_levels(body, "asks", 20);
 
     double taker_fee_bps = 0.0;
     double latency_penalty_ms = 0.0;
@@ -730,7 +811,7 @@ std::vector<minimatch::VenueQuote> read_router_quotes(
     }
 
     const double latency_ms =
-        std::max(0.0, quote.age_ms) +
+        std::max(0.0, health.age_ms) +
         std::max(0.0, latency_penalty_ms);
 
     const double latency_cost_bps_per_ms =
@@ -742,17 +823,20 @@ std::vector<minimatch::VenueQuote> read_router_quotes(
             )
         );
 
+    const bool healthy =
+        health.healthy &&
+        !bids.empty() &&
+        !asks.empty();
+
     quotes.push_back(
         minimatch::VenueQuote{
             venue,
-            quote.bid,
-            quote.bid_quantity,
-            quote.ask,
-            quote.ask_quantity,
+            bids,
+            asks,
             taker_fee_bps,
             latency_ms,
             latency_cost_bps_per_ms,
-            quote.healthy
+            healthy
         }
     );
   }
@@ -798,7 +882,8 @@ std::string route_plan_json(
         << "\"latencyMs\":" << leg.latency_ms << ","
         << "\"takerFeeBps\":" << leg.taker_fee_bps << ","
         << "\"latencyCostBpsPerMs\":"
-        << leg.latency_cost_bps_per_ms
+        << leg.latency_cost_bps_per_ms << ","
+        << "\"levelIndex\":" << leg.level_index
         << "}";
   }
 
