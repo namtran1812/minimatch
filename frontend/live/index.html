@@ -259,6 +259,42 @@
     </section>
   </div>
 
+  <section
+    id="replay-controls"
+    class="panel"
+    style="margin-top: 16px; display: none"
+  >
+    <h2>Replay Controls</h2>
+
+    <button id="replay-play">Play</button>
+    <button id="replay-pause">Pause</button>
+    <button id="replay-restart">Restart</button>
+
+    <label>
+      Speed
+      <select id="replay-speed">
+        <option value="1">1×</option>
+        <option value="10" selected>10×</option>
+        <option value="100">100×</option>
+        <option value="0">Maximum</option>
+      </select>
+    </label>
+
+    <label>
+      Seek record
+      <input
+        id="replay-seek"
+        type="number"
+        min="0"
+        value="0"
+      />
+    </label>
+
+    <button id="replay-seek-button">
+      Seek
+    </button>
+  </section>
+
   <h2 style="margin-top: 24px">
     Venue Level-2 Books
   </h2>
@@ -459,8 +495,22 @@
         "market-mode"
       ).textContent =
         data.mode === "replay"
-          ? `replay ${data.replay.speed}×`
+          ? `replay ${data.replay.speed}× — ${data.replay.status}`
           : "live";
+
+      document.getElementById(
+        "replay-controls"
+      ).style.display =
+        data.mode === "replay"
+          ? "block"
+          : "none";
+
+      if (data.mode === "replay") {
+        document.getElementById(
+          "replay-seek"
+        ).max =
+          data.replay.totalRecords;
+      }
 
       document.getElementById(
         "replay-progress"
@@ -491,9 +541,68 @@
           .join("");
     }
 
+    let activeSocket = null;
+
+    function sendReplayCommand(payload) {
+      if (
+        activeSocket &&
+        activeSocket.readyState ===
+          WebSocket.OPEN
+      ) {
+        activeSocket.send(
+          JSON.stringify(payload)
+        );
+      }
+    }
+
+    document.getElementById(
+      "replay-play"
+    ).onclick = () =>
+      sendReplayCommand({
+        command: "play",
+      });
+
+    document.getElementById(
+      "replay-pause"
+    ).onclick = () =>
+      sendReplayCommand({
+        command: "pause",
+      });
+
+    document.getElementById(
+      "replay-restart"
+    ).onclick = () =>
+      sendReplayCommand({
+        command: "restart",
+      });
+
+    document.getElementById(
+      "replay-speed"
+    ).onchange = (event) =>
+      sendReplayCommand({
+        command: "speed",
+        speed: Number(
+          event.target.value
+        ),
+      });
+
+    document.getElementById(
+      "replay-seek-button"
+    ).onclick = () =>
+      sendReplayCommand({
+        command: "seek",
+        recordIndex: Number(
+          document.getElementById(
+            "replay-seek"
+          ).value
+        ),
+      });
+
     function connect() {
       const socket =
         new WebSocket(socketUrl);
+
+      activeSocket = socket;
 
       socket.addEventListener(
         "open",

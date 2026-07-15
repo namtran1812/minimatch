@@ -1,17 +1,23 @@
 #include "minimatch/market_recorder.hpp"
+#include "minimatch/replay_control.hpp"
 #include "minimatch/router_market_data.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -26,6 +32,10 @@ namespace websocket = beast::websocket;
 
 using tcp = asio::ip::tcp;
 
+struct LoadedRecording {
+  std::vector<minimatch::MarketRecord> records;
+};
+
 std::string escape_json(
     const std::string& value
 ) {
@@ -36,23 +46,18 @@ std::string escape_json(
       case '"':
         output << "\\\"";
         break;
-
       case '\\':
         output << "\\\\";
         break;
-
       case '\n':
         output << "\\n";
         break;
-
       case '\r':
         output << "\\r";
         break;
-
       case '\t':
         output << "\\t";
         break;
-
       default:
         output << character;
         break;
@@ -86,7 +91,6 @@ std::string depth_json(
   }
 
   output << ']';
-
   return output.str();
 }
 
@@ -98,11 +102,7 @@ std::string route_json(
   output
       << '{'
       << "\"complete\":"
-      << (
-             plan.complete
-                 ? "true"
-                 : "false"
-         )
+      << (plan.complete ? "true" : "false")
       << ",\"requestedQuantity\":"
       << plan.requested_quantity
       << ",\"routedQuantity\":"
@@ -138,19 +138,149 @@ std::string route_json(
   }
 
   output << "]}";
-
   return output.str();
+}
+
+LoadedRecording load_recording(
+    const std::string& path
+) {
+  minimatch::MarketRecordReader reader(path);
+
+  LoadedRecording loaded;
+  minimatch::MarketRecord record;
+
+  while (reader.next(record)) {
+    loaded.records.push_back(
+        std::move(record)
+    );
+
+    record = minimatch::MarketRecord{};
+  }
+
+  if (loaded.records.empty()) {
+    throw std::runtime_error(
+        "market recording contains no records"
+    );
+  }
+
+  return loaded;
+}
+
+bool apply_record(
+    const minimatch::MarketRecord& record,
+    minimatch::ConsolidatedMarketData& market
+) {
+  minimatch::MarketDataDecision decision;
+
+  if (
+      record.type ==
+      minimatch::MarketRecordType::Snapshot
+  ) {
+    decision =
+        market.apply_snapshot(
+            record.snapshot
+        );
+  } else {
+    decision =
+        market.apply_batch(
+            record.updates
+        );
+  }
+
+  return decision.accepted;
+}
+
+void rebuild_to_record(
+    const LoadedRecording& recording,
+    std::size_t target_record,
+    minimatch::ConsolidatedMarketData& market,
+    std::size_t& rejected
+) {
+  market =
+      minimatch::ConsolidatedMarketData{};
+
+  rejected = 0;
+
+  const std::size_t end =
+      std::min(
+          target_record,
+          recording.records.size()
+      );
+
+  for (std::size_t index = 0;
+       index < end;
+       ++index) {
+    if (!apply_record(
+            recording.records[index],
+            market
+        )) {
+      ++rejected;
+    }
+  }
+}
+
+void sleep_interruptibly(
+    minimatch::ReplayController& controller,
+    std::uint64_t recorded_delta_ns
+) {
+  const auto state =
+      controller.snapshot();
+
+  if (state.speed <= 0.0 ||
+      recorded_delta_ns == 0) {
+    return;
+  }
+
+  const auto scaled =
+      static_cast<std::uint64_t>(
+          static_cast<double>(
+              recorded_delta_ns
+          ) /
+          state.speed
+      );
+
+  constexpr std::uint64_t chunk_ns =
+      10'000'000;
+
+  std::uint64_t remaining = scaled;
+
+  while (remaining > 0) {
+    const auto current =
+        controller.snapshot();
+
+    if (
+        current.status ==
+            minimatch::ReplayStatus::Paused ||
+        current.restart_requested ||
+        current.seek_record.has_value() ||
+        controller.stopped()
+    ) {
+      return;
+    }
+
+    const auto sleep_ns =
+        std::min(
+            remaining,
+            chunk_ns
+        );
+
+    std::this_thread::sleep_for(
+        std::chrono::nanoseconds(
+            sleep_ns
+        )
+    );
+
+    remaining -= sleep_ns;
+  }
 }
 
 std::string market_json(
     const minimatch::ConsolidatedMarketData& market,
     const std::string& symbol,
     std::uint64_t timestamp_ns,
-    std::size_t record_index,
-    std::size_t applied_records,
+    const minimatch::ReplayControlSnapshot& control,
     std::size_t rejected_records,
-    double speed,
-    bool replay_complete
+    std::uint64_t checksum
 ) {
   const auto bbo =
       market.consolidated_bbo(symbol);
@@ -195,43 +325,44 @@ std::string market_json(
       << "\"mode\":\"replay\","
       << "\"symbol\":\""
       << escape_json(symbol)
-      << "\","
-      << "\"timestampNs\":"
+      << "\",\"timestampNs\":"
       << timestamp_ns
       << ",\"coinbaseReady\":"
-      << (
-             bbo.valid
-                 ? "true"
-                 : "false"
-         )
+      << (bbo.valid ? "true" : "false")
       << ",\"coinbaseSnapshots\":1"
       << ",\"coinbaseUpdates\":"
-      << applied_records
+      << control.current_record
       << ",\"recordingEnabled\":false"
       << ",\"recordedRecords\":0"
       << ",\"recordedBytes\":0"
       << ",\"replay\":{"
-      << "\"recordIndex\":"
-      << record_index
-      << ",\"appliedRecords\":"
-      << applied_records
+      << "\"status\":\""
+      << minimatch::to_string(
+             control.status
+         )
+      << "\",\"recordIndex\":"
+      << control.current_record
+      << ",\"totalRecords\":"
+      << control.total_records
       << ",\"rejectedRecords\":"
       << rejected_records
       << ",\"speed\":"
-      << speed
+      << control.speed
+      << ",\"generation\":"
+      << control.generation
       << ",\"complete\":"
       << (
-             replay_complete
+             control.status ==
+                     minimatch::ReplayStatus::
+                         Complete
                  ? "true"
                  : "false"
          )
+      << ",\"checksum\":"
+      << checksum
       << "},\"bbo\":{"
       << "\"valid\":"
-      << (
-             bbo.valid
-                 ? "true"
-                 : "false"
-         )
+      << (bbo.valid ? "true" : "false")
       << ",\"bidPrice\":"
       << bbo.bid_price
       << ",\"bidQuantity\":"
@@ -250,12 +381,10 @@ std::string market_json(
       << bbo.spread
       << "},\"venues\":[";
 
-  const auto venues =
-      market.venues_for_symbol(symbol);
+  bool first = true;
 
-  bool first_venue = true;
-
-  for (const auto& venue : venues) {
+  for (const auto& venue :
+       market.venues_for_symbol(symbol)) {
     const auto book =
         market.find_book(
             venue,
@@ -266,11 +395,11 @@ std::string market_json(
       continue;
     }
 
-    if (!first_venue) {
+    if (!first) {
       output << ',';
     }
 
-    first_venue = false;
+    first = false;
 
     output
         << '{'
@@ -302,42 +431,82 @@ std::string market_json(
   return output.str();
 }
 
-void sleep_for_replay_delta(
-    std::uint64_t previous_timestamp_ns,
-    std::uint64_t current_timestamp_ns,
-    double speed
+minimatch::ReplayCommand parse_command(
+    const std::string& json
 ) {
-  if (speed <= 0.0 ||
-      previous_timestamp_ns == 0 ||
-      current_timestamp_ns <=
-          previous_timestamp_ns) {
-    return;
-  }
+  boost::property_tree::ptree root;
+  std::istringstream input(json);
 
-  const auto recorded_delta =
-      current_timestamp_ns -
-      previous_timestamp_ns;
+  boost::property_tree::read_json(
+      input,
+      root
+  );
 
-  const auto scaled_delta =
-      static_cast<std::uint64_t>(
-          static_cast<double>(
-              recorded_delta
-          ) /
-          speed
+  const std::string command =
+      root.get<std::string>(
+          "command"
       );
 
-  std::this_thread::sleep_for(
-      std::chrono::nanoseconds(
-          scaled_delta
-      )
+  if (command == "play") {
+    return minimatch::ReplayCommand{
+        .type =
+            minimatch::ReplayCommandType::Play
+    };
+  }
+
+  if (command == "pause") {
+    return minimatch::ReplayCommand{
+        .type =
+            minimatch::ReplayCommandType::Pause
+    };
+  }
+
+  if (command == "restart") {
+    return minimatch::ReplayCommand{
+        .type =
+            minimatch::ReplayCommandType::Restart
+    };
+  }
+
+  if (command == "stop") {
+    return minimatch::ReplayCommand{
+        .type =
+            minimatch::ReplayCommandType::Stop
+    };
+  }
+
+  if (command == "speed") {
+    return minimatch::ReplayCommand{
+        .type =
+            minimatch::ReplayCommandType::
+                SetSpeed,
+        .speed =
+            root.get<double>("speed")
+    };
+  }
+
+  if (command == "seek") {
+    return minimatch::ReplayCommand{
+        .type =
+            minimatch::ReplayCommandType::
+                SeekRecord,
+        .record_index =
+            root.get<std::size_t>(
+                "recordIndex"
+            )
+    };
+  }
+
+  throw std::invalid_argument(
+      "unsupported replay command"
   );
 }
 
-void replay_to_client(
+void handle_client(
     tcp::socket socket,
-    const std::string& recording_path,
+    const LoadedRecording& recording,
     const std::string& symbol,
-    double speed
+    double initial_speed
 ) {
   websocket::stream<tcp::socket> stream(
       std::move(socket)
@@ -352,115 +521,240 @@ void replay_to_client(
 
   stream.accept();
 
-  std::cout
-      << "Replay dashboard client connected"
-      << " speed="
-      << speed
-      << "x\n";
+  auto controller =
+      std::make_shared<
+          minimatch::ReplayController
+      >(initial_speed);
 
-  minimatch::MarketRecordReader reader(
-      recording_path
+  controller->update_progress(
+      0,
+      recording.records.size()
+  );
+
+  controller->play();
+
+  std::mutex write_mutex;
+  std::atomic<bool> connected{true};
+
+  std::thread command_thread(
+      [&stream,
+       &write_mutex,
+       &connected,
+       controller]() {
+        try {
+          while (connected.load()) {
+            beast::flat_buffer buffer;
+
+            stream.read(buffer);
+
+            const auto command =
+                parse_command(
+                    beast::buffers_to_string(
+                        buffer.data()
+                    )
+                );
+
+            controller->apply(command);
+          }
+        } catch (...) {
+          connected.store(false);
+          controller->stop();
+        }
+      }
   );
 
   minimatch::ConsolidatedMarketData market;
 
-  minimatch::MarketRecord record;
-
-  std::size_t record_index = 0;
-  std::size_t applied_records = 0;
+  std::size_t current_record = 0;
   std::size_t rejected_records = 0;
+  std::uint64_t previous_timestamp = 0;
+  std::uint64_t latest_timestamp = 0;
 
-  std::uint64_t previous_timestamp_ns = 0;
-  std::uint64_t latest_timestamp_ns = 0;
+  try {
+    while (connected.load() &&
+           !controller->stopped()) {
+      controller->wait_until_runnable();
 
-  while (reader.next(record)) {
-    ++record_index;
+      if (controller->stopped()) {
+        break;
+      }
 
-    sleep_for_replay_delta(
-        previous_timestamp_ns,
-        record.recorded_timestamp_ns,
-        speed
-    );
+      if (
+          controller
+              ->consume_restart_request()
+      ) {
+        current_record = 0;
+        previous_timestamp = 0;
+        latest_timestamp = 0;
 
-    minimatch::MarketDataDecision decision;
-
-    if (
-        record.type ==
-        minimatch::MarketRecordType::Snapshot
-    ) {
-      decision =
-          market.apply_snapshot(
-              record.snapshot
-          );
-    } else {
-      decision =
-          market.apply_batch(
-              record.updates
-          );
-    }
-
-    if (decision.accepted) {
-      ++applied_records;
-    } else {
-      ++rejected_records;
-
-      std::cerr
-          << "Replay record rejected"
-          << " index="
-          << record_index
-          << " message="
-          << decision.message
-          << '\n';
-    }
-
-    latest_timestamp_ns =
-        record.recorded_timestamp_ns;
-
-    const std::string message =
-        market_json(
+        rebuild_to_record(
+            recording,
+            0,
             market,
-            symbol,
-            latest_timestamp_ns,
-            record_index,
-            applied_records,
-            rejected_records,
-            speed,
-            false
+            rejected_records
         );
 
-    stream.write(
-        asio::buffer(message)
-    );
+        controller->update_progress(
+            0,
+            recording.records.size()
+        );
+      }
 
-    previous_timestamp_ns =
-        record.recorded_timestamp_ns;
-  }
+      const auto seek =
+          controller
+              ->consume_seek_request();
 
-  const std::string final_message =
-      market_json(
-          market,
-          symbol,
-          latest_timestamp_ns,
-          record_index,
-          applied_records,
-          rejected_records,
-          speed,
-          true
+      if (seek.has_value()) {
+        current_record =
+            std::min(
+                *seek,
+                recording.records.size()
+            );
+
+        rebuild_to_record(
+            recording,
+            current_record,
+            market,
+            rejected_records
+        );
+
+        previous_timestamp =
+            current_record > 0
+                ? recording
+                      .records[
+                          current_record - 1
+                      ]
+                      .recorded_timestamp_ns
+                : 0;
+
+        latest_timestamp =
+            previous_timestamp;
+
+        controller->update_progress(
+            current_record,
+            recording.records.size()
+        );
+      }
+
+      if (
+          current_record >=
+          recording.records.size()
+      ) {
+        controller->mark_complete();
+
+        const auto state =
+            controller->snapshot();
+
+        const std::string message =
+            market_json(
+                market,
+                symbol,
+                latest_timestamp,
+                state,
+                rejected_records,
+                minimatch::
+                    market_state_checksum(
+                        market,
+                        symbol
+                    )
+            );
+
+        {
+          std::lock_guard<std::mutex> lock(
+              write_mutex
+          );
+
+          stream.write(
+              asio::buffer(message)
+          );
+        }
+
+        controller->pause();
+        continue;
+      }
+
+      const auto& record =
+          recording.records[
+              current_record
+          ];
+
+      if (
+          previous_timestamp > 0 &&
+          record.recorded_timestamp_ns >
+              previous_timestamp
+      ) {
+        sleep_interruptibly(
+            *controller,
+            record.recorded_timestamp_ns -
+                previous_timestamp
+        );
+      }
+
+      const auto before_apply =
+          controller->snapshot();
+
+      if (
+          before_apply.status ==
+              minimatch::ReplayStatus::
+                  Paused ||
+          before_apply.restart_requested ||
+          before_apply.seek_record
+              .has_value()
+      ) {
+        continue;
+      }
+
+      if (!apply_record(record, market)) {
+        ++rejected_records;
+      }
+
+      ++current_record;
+
+      latest_timestamp =
+          record.recorded_timestamp_ns;
+
+      previous_timestamp =
+          record.recorded_timestamp_ns;
+
+      controller->update_progress(
+          current_record,
+          recording.records.size()
       );
 
-  stream.write(
-      asio::buffer(final_message)
-  );
+      const auto state =
+          controller->snapshot();
 
-  std::cout
-      << "Replay complete"
-      << " records="
-      << record_index
-      << " applied="
-      << applied_records
-      << " rejected="
-      << rejected_records
-      << '\n';
+      const std::string message =
+          market_json(
+              market,
+              symbol,
+              latest_timestamp,
+              state,
+              rejected_records,
+              minimatch::
+                  market_state_checksum(
+                      market,
+                      symbol
+                  )
+          );
+
+      {
+        std::lock_guard<std::mutex> lock(
+            write_mutex
+        );
+
+        stream.write(
+            asio::buffer(message)
+        );
+      }
+    }
+  } catch (...) {
+    connected.store(false);
+    controller->stop();
+  }
+
+  connected.store(false);
+  controller->stop();
 
   beast::error_code close_error;
 
@@ -469,42 +763,9 @@ void replay_to_client(
       close_error
   );
 
-  if (
-      close_error &&
-      close_error !=
-          websocket::error::closed
-  ) {
-    std::cerr
-        << "Replay socket close warning: "
-        << close_error.message()
-        << '\n';
+  if (command_thread.joinable()) {
+    command_thread.join();
   }
-}
-
-void print_usage(
-    const char* program
-) {
-  std::cerr
-      << "Usage:\n  "
-      << program
-      << " <port>"
-      << " <recording.bin>"
-      << " [symbol]"
-      << " [speed]\n\n"
-      << "Examples:\n"
-      << "  "
-      << program
-      << " 8090 session.bin BTC-USD 1\n"
-      << "  "
-      << program
-      << " 8090 session.bin BTC-USD 10\n"
-      << "  "
-      << program
-      << " 8090 session.bin BTC-USD 100\n"
-      << "  "
-      << program
-      << " 8090 session.bin BTC-USD 0\n\n"
-      << "speed=0 means maximum speed\n";
 }
 
 }  // namespace
@@ -512,7 +773,12 @@ void print_usage(
 int main(int argc, char** argv) {
   try {
     if (argc < 3) {
-      print_usage(argv[0]);
+      std::cerr
+          << "Usage: "
+          << argv[0]
+          << " <port> <recording.bin>"
+          << " [symbol] [speed]\n";
+
       return EXIT_FAILURE;
     }
 
@@ -521,8 +787,7 @@ int main(int argc, char** argv) {
             std::stoul(argv[1])
         );
 
-    const std::string recording_path =
-        argv[2];
+    const std::string path = argv[2];
 
     const std::string symbol =
         argc > 3
@@ -534,19 +799,8 @@ int main(int argc, char** argv) {
             ? std::stod(argv[4])
             : 1.0;
 
-    if (!std::isfinite(speed) ||
-        speed < 0.0) {
-      throw std::invalid_argument(
-          "replay speed must be non-negative"
-      );
-    }
-
-    // Validate the recording before opening the port.
-    minimatch::MarketRecordReader validator(
-        recording_path
-    );
-
-    static_cast<void>(validator);
+    const LoadedRecording recording =
+        load_recording(path);
 
     asio::io_context io_context;
 
@@ -559,63 +813,29 @@ int main(int argc, char** argv) {
     );
 
     std::cout
-        << "MiniMatch replay WebSocket server listening on "
+        << "Interactive replay server listening on "
         << "ws://0.0.0.0:"
         << port
-        << " recording="
-        << recording_path
-        << " symbol="
-        << symbol
+        << " records="
+        << recording.records.size()
         << " speed="
         << speed
         << "x\n";
 
     for (;;) {
       tcp::socket socket(io_context);
-
       acceptor.accept(socket);
 
-      try {
-        replay_to_client(
-            std::move(socket),
-            recording_path,
-            symbol,
-            speed
-        );
-      } catch (
-          const boost::system::system_error&
-              error
-      ) {
-        if (
-            error.code() ==
-                websocket::error::closed ||
-            error.code() ==
-                asio::error::eof ||
-            error.code() ==
-                asio::error::connection_reset ||
-            error.code() ==
-                asio::error::broken_pipe
-        ) {
-          std::cout
-              << "Replay dashboard client disconnected\n";
-
-          continue;
-        }
-
-        std::cerr
-            << "Replay client failed: "
-            << error.what()
-            << '\n';
-      } catch (const std::exception& error) {
-        std::cerr
-            << "Replay client failed: "
-            << error.what()
-            << '\n';
-      }
+      handle_client(
+          std::move(socket),
+          recording,
+          symbol,
+          speed
+      );
     }
   } catch (const std::exception& error) {
     std::cerr
-        << "Replay WebSocket server failed: "
+        << "Interactive replay server failed: "
         << error.what()
         << '\n';
 
