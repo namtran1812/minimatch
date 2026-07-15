@@ -212,6 +212,10 @@ class LiveMarketState {
   void apply_coinbase_snapshot(
       minimatch::MarketDataSnapshot snapshot
   ) {
+    minimatch::ScopedLatencyRecorder latency_timer(
+        latency_,
+        "coinbase_snapshot_apply_total"
+    );
     std::lock_guard<std::mutex> lock(
         mutex_
     );
@@ -257,6 +261,10 @@ class LiveMarketState {
           minimatch::MarketDataUpdate
       > updates
   ) {
+    minimatch::ScopedLatencyRecorder latency_timer(
+        latency_,
+        "coinbase_update_apply_total"
+    );
     std::lock_guard<std::mutex> lock(
         mutex_
     );
@@ -373,6 +381,10 @@ class LiveMarketState {
   void apply_binance_snapshot(
       minimatch::MarketDataSnapshot snapshot
   ) {
+    minimatch::ScopedLatencyRecorder latency_timer(
+        latency_,
+        "binance_snapshot_apply_total"
+    );
     std::lock_guard<std::mutex> lock(
         mutex_
     );
@@ -413,6 +425,10 @@ class LiveMarketState {
           minimatch::MarketDataUpdate
       >& updates
   ) {
+    minimatch::ScopedLatencyRecorder latency_timer(
+        latency_,
+        "binance_update_apply_total"
+    );
     std::lock_guard<std::mutex> lock(
         mutex_
     );
@@ -465,6 +481,10 @@ class LiveMarketState {
       const minimatch::MarketDataSnapshot&
           snapshot
   ) {
+    minimatch::ScopedLatencyRecorder latency_timer(
+        latency_,
+        "kraken_snapshot_apply_total"
+    );
     std::lock_guard<std::mutex> lock(
         mutex_
     );
@@ -505,6 +525,10 @@ class LiveMarketState {
           minimatch::MarketDataUpdate
       >& updates
   ) {
+    minimatch::ScopedLatencyRecorder latency_timer(
+        latency_,
+        "kraken_update_apply_total"
+    );
     std::lock_guard<std::mutex> lock(
         mutex_
     );
