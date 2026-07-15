@@ -157,6 +157,12 @@ std::string to_string(
     case FixMessageType::TestRequest:
       return "TEST_REQUEST";
 
+    case FixMessageType::ResendRequest:
+      return "RESEND_REQUEST";
+
+    case FixMessageType::SequenceReset:
+      return "SEQUENCE_RESET";
+
     case FixMessageType::NewOrderSingle:
       return "NEW_ORDER_SINGLE";
 
@@ -195,6 +201,14 @@ FixMessageType fix_message_type_from_code(
     return FixMessageType::TestRequest;
   }
 
+  if (code == "2") {
+    return FixMessageType::ResendRequest;
+  }
+
+  if (code == "4") {
+    return FixMessageType::SequenceReset;
+  }
+
   if (code == "D") {
     return FixMessageType::NewOrderSingle;
   }
@@ -229,6 +243,12 @@ std::string fix_message_code(
 
     case FixMessageType::TestRequest:
       return "1";
+
+    case FixMessageType::ResendRequest:
+      return "2";
+
+    case FixMessageType::SequenceReset:
+      return "4";
 
     case FixMessageType::NewOrderSingle:
       return "D";
@@ -512,5 +532,100 @@ FixParseResult parse_fix_message(
 
   return result;
 }
+
+
+FixMessage prepare_fix_resend(
+    const FixMessage& original,
+    std::uint64_t resend_timestamp_ns
+) {
+  FixMessage resent = original;
+
+  const auto original_sending_time =
+      original.get(52);
+
+  if (!original_sending_time.has_value()) {
+    throw std::invalid_argument(
+        "cannot resend FIX message without SendingTime"
+    );
+  }
+
+  resent.set(43, "Y");
+  resent.set(122, *original_sending_time);
+
+  resent.set(
+      52,
+      std::to_string(resend_timestamp_ns)
+  );
+
+  return resent;
+}
+
+FixMessage create_fix_gap_fill(
+    int message_sequence_number,
+    int new_sequence_number,
+    const std::string& sender_comp_id,
+    const std::string& target_comp_id,
+    std::uint64_t timestamp_ns
+) {
+  if (message_sequence_number <= 0 ||
+      new_sequence_number <=
+          message_sequence_number) {
+    throw std::invalid_argument(
+        "invalid FIX gap-fill sequence range"
+    );
+  }
+
+  if (sender_comp_id.empty() ||
+      target_comp_id.empty()) {
+    throw std::invalid_argument(
+        "FIX gap-fill CompIDs cannot be empty"
+    );
+  }
+
+  FixMessage gap_fill;
+
+  gap_fill.message_type =
+      FixMessageType::SequenceReset;
+
+  gap_fill.set(
+      34,
+      std::to_string(
+          message_sequence_number
+      )
+  );
+
+  gap_fill.set(43, "Y");
+  gap_fill.set(123, "Y");
+
+  gap_fill.set(
+      36,
+      std::to_string(
+          new_sequence_number
+      )
+  );
+
+  gap_fill.set(
+      49,
+      sender_comp_id
+  );
+
+  gap_fill.set(
+      56,
+      target_comp_id
+  );
+
+  gap_fill.set(
+      52,
+      std::to_string(timestamp_ns)
+  );
+
+  gap_fill.set(
+      122,
+      std::to_string(timestamp_ns)
+  );
+
+  return gap_fill;
+}
+
 
 }  // namespace minimatch

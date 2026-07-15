@@ -16,6 +16,8 @@ enum class FixMessageType {
   Logout,
   Heartbeat,
   TestRequest,
+  ResendRequest,
+  SequenceReset,
   NewOrderSingle,
   OrderCancelRequest,
   ExecutionReport,
@@ -73,6 +75,19 @@ fix_message_type_from_code(
 
 [[nodiscard]] FixParseResult parse_fix_message(
     std::string_view wire_message
+);
+
+[[nodiscard]] FixMessage prepare_fix_resend(
+    const FixMessage& original,
+    std::uint64_t resend_timestamp_ns
+);
+
+[[nodiscard]] FixMessage create_fix_gap_fill(
+    int message_sequence_number,
+    int new_sequence_number,
+    const std::string& sender_comp_id,
+    const std::string& target_comp_id,
+    std::uint64_t timestamp_ns
 );
 
 }  // namespace minimatch

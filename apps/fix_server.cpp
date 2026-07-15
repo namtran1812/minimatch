@@ -346,6 +346,159 @@ void handle_client(
           continue;
         }
 
+        if (
+            parsed.message.message_type ==
+                minimatch::FixMessageType::ResendRequest &&
+            session_result.resend_begin_sequence.has_value() &&
+            session_result.resend_end_sequence.has_value()
+        ) {
+          const int begin_sequence =
+              *session_result.resend_begin_sequence;
+
+          const int end_sequence =
+              *session_result.resend_end_sequence;
+
+          const auto stored_messages =
+              fix_store->outbound_messages_from_sequence(
+                  session_id,
+                  begin_sequence
+              );
+
+          int pending_gap_begin = 0;
+          int pending_gap_end = 0;
+
+          const auto send_gap_fill =
+              [&](int gap_begin,
+                  int gap_end) {
+                if (gap_begin <= 0 ||
+                    gap_end < gap_begin) {
+                  return;
+                }
+
+                const auto gap_fill =
+                    minimatch::create_fix_gap_fill(
+                        gap_begin,
+                        gap_end + 1,
+                        sender_comp_id,
+                        target_comp_id,
+                        timestamp
+                    );
+
+                const std::string gap_wire =
+                    minimatch::encode_fix_message(
+                        gap_fill
+                    );
+
+                boost::asio::write(
+                    socket,
+                    boost::asio::buffer(
+                        gap_wire
+                    )
+                );
+
+                std::cout
+                    << "FIX GAPFILL "
+                    << printable_fix(
+                        gap_wire
+                    )
+                    << '\n';
+              };
+
+          for (const auto& stored :
+               stored_messages) {
+            if (stored.sequence_number >
+                end_sequence) {
+              break;
+            }
+
+            const auto parsed_stored =
+                minimatch::parse_fix_message(
+                    stored.wire_message
+                );
+
+            if (!parsed_stored.valid) {
+              std::cerr
+                  << "Skipping invalid stored FIX message: "
+                  << parsed_stored.error
+                  << '\n';
+
+              continue;
+            }
+
+            const bool administrative =
+                parsed_stored.message.message_type ==
+                    minimatch::FixMessageType::Logon ||
+                parsed_stored.message.message_type ==
+                    minimatch::FixMessageType::Logout ||
+                parsed_stored.message.message_type ==
+                    minimatch::FixMessageType::Heartbeat ||
+                parsed_stored.message.message_type ==
+                    minimatch::FixMessageType::TestRequest ||
+                parsed_stored.message.message_type ==
+                    minimatch::FixMessageType::ResendRequest ||
+                parsed_stored.message.message_type ==
+                    minimatch::FixMessageType::SequenceReset ||
+                parsed_stored.message.message_type ==
+                    minimatch::FixMessageType::Reject;
+
+            if (administrative) {
+              if (pending_gap_begin == 0) {
+                pending_gap_begin =
+                    stored.sequence_number;
+              }
+
+              pending_gap_end =
+                  stored.sequence_number;
+
+              continue;
+            }
+
+            if (pending_gap_begin != 0) {
+              send_gap_fill(
+                  pending_gap_begin,
+                  pending_gap_end
+              );
+
+              pending_gap_begin = 0;
+              pending_gap_end = 0;
+            }
+
+            const auto resent =
+                minimatch::prepare_fix_resend(
+                    parsed_stored.message,
+                    timestamp
+                );
+
+            const std::string resend_wire =
+                minimatch::encode_fix_message(
+                    resent
+                );
+
+            boost::asio::write(
+                socket,
+                boost::asio::buffer(
+                    resend_wire
+                )
+            );
+
+            std::cout
+                << "FIX RESEND "
+                << printable_fix(
+                    resend_wire
+                )
+                << '\n';
+          }
+
+          if (pending_gap_begin != 0) {
+            send_gap_fill(
+                pending_gap_begin,
+                pending_gap_end
+            );
+          }
+
+          continue;
+        }
+
         const bool application_message =
             parsed.message.message_type ==
                 minimatch::FixMessageType::

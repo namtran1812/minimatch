@@ -249,4 +249,100 @@ TEST(FixCodec, SupportsCancelAndExecutionReport) {
   );
 }
 
+
+TEST(FixCodec, PreparesPossDupResend) {
+  FixMessage original;
+
+  original.message_type =
+      FixMessageType::ExecutionReport;
+
+  original.set(34, "7");
+  original.set(49, "MINIMATCH");
+  original.set(56, "CLIENT");
+  original.set(52, "1000");
+  original.set(11, "ORDER-1");
+  original.set(17, "EXEC-1");
+  original.set(150, "0");
+  original.set(39, "0");
+
+  const auto resent =
+      minimatch::prepare_fix_resend(
+          original,
+          2000
+      );
+
+  EXPECT_EQ(
+      resent.get(34),
+      std::optional<std::string>("7")
+  );
+
+  EXPECT_EQ(
+      resent.get(43),
+      std::optional<std::string>("Y")
+  );
+
+  EXPECT_EQ(
+      resent.get(122),
+      std::optional<std::string>("1000")
+  );
+
+  EXPECT_EQ(
+      resent.get(52),
+      std::optional<std::string>("2000")
+  );
+
+  const auto parsed =
+      parse_fix_message(
+          encode_fix_message(resent)
+      );
+
+  EXPECT_TRUE(parsed.valid)
+      << parsed.error;
+}
+
+TEST(FixCodec, CreatesSequenceResetGapFill) {
+  const auto gap_fill =
+      minimatch::create_fix_gap_fill(
+          2,
+          5,
+          "MINIMATCH",
+          "CLIENT",
+          3000
+      );
+
+  EXPECT_EQ(
+      gap_fill.message_type,
+      FixMessageType::SequenceReset
+  );
+
+  EXPECT_EQ(
+      gap_fill.get(34),
+      std::optional<std::string>("2")
+  );
+
+  EXPECT_EQ(
+      gap_fill.get(123),
+      std::optional<std::string>("Y")
+  );
+
+  EXPECT_EQ(
+      gap_fill.get(36),
+      std::optional<std::string>("5")
+  );
+
+  EXPECT_EQ(
+      gap_fill.get(43),
+      std::optional<std::string>("Y")
+  );
+
+  const auto parsed =
+      parse_fix_message(
+          encode_fix_message(gap_fill)
+      );
+
+  EXPECT_TRUE(parsed.valid)
+      << parsed.error;
+}
+
+
 }  // namespace
