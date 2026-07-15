@@ -1,6 +1,7 @@
 #include "minimatch/coinbase_l2.hpp"
 #include "minimatch/binance_l2.hpp"
 #include "minimatch/binance_feed.hpp"
+#include "minimatch/kraken_feed.hpp"
 #include "minimatch/market_data.hpp"
 #include "minimatch/market_recorder.hpp"
 #include "minimatch/router_market_data.hpp"
@@ -418,48 +419,75 @@ class LiveMarketState {
     }
   }
 
-  void apply_simulated_snapshot(
-      const std::string& venue,
-      std::uint64_t sequence,
-      double bid,
-      double ask,
-      double bid_quantity,
-      double ask_quantity
+  void apply_kraken_snapshot(
+      const minimatch::MarketDataSnapshot&
+          snapshot
   ) {
     std::lock_guard<std::mutex> lock(
         mutex_
     );
 
     const auto decision =
-        market_.apply_snapshot(
-            minimatch::MarketDataSnapshot{
-                .venue = venue,
-                .symbol = product_id_,
-                .sequence = sequence,
-                .timestamp_ns = now_ns(),
-                .bids = {
-                    {bid, bid_quantity},
-                    {bid - 0.05,
-                     bid_quantity * 1.5},
-                    {bid - 0.10,
-                     bid_quantity * 2.0}
-                },
-                .asks = {
-                    {ask, ask_quantity},
-                    {ask + 0.05,
-                     ask_quantity * 1.5},
-                    {ask + 0.10,
-                     ask_quantity * 2.0}
-                }
-            }
-        );
+        market_.apply_snapshot(snapshot);
 
     if (!decision.accepted) {
       throw std::runtime_error(
-          venue +
-          " snapshot rejected: " +
+          "Kraken snapshot rejected: " +
           decision.message
       );
+    }
+
+    if (recorder_) {
+      recorder_->write_snapshot(
+          snapshot,
+          now_ns()
+      );
+    }
+
+    kraken_ready_ = true;
+    ++kraken_snapshot_count_;
+  }
+
+  void apply_kraken_updates(
+      const std::vector<
+          minimatch::MarketDataUpdate
+      >& updates
+  ) {
+    std::lock_guard<std::mutex> lock(
+        mutex_
+    );
+
+    if (!kraken_ready_ ||
+        updates.empty()) {
+      return;
+    }
+
+    const auto decision =
+        market_.apply_batch(updates);
+
+    if (!decision.accepted) {
+      kraken_ready_ = false;
+
+      throw std::runtime_error(
+          "Kraken update rejected: " +
+          decision.message
+      );
+    }
+
+    if (recorder_) {
+      recorder_->write_update_batch(
+          updates,
+          now_ns()
+      );
+    }
+
+    ++kraken_update_count_;
+
+    if (
+        recorder_ &&
+        kraken_update_count_ % 100 == 0
+    ) {
+      recorder_->flush();
     }
   }
 
@@ -536,6 +564,16 @@ class LiveMarketState {
         << binance_snapshot_count_
         << ",\"binanceUpdates\":"
         << binance_update_count_
+        << ",\"krakenReady\":"
+        << (
+               kraken_ready_
+                   ? "true"
+                   : "false"
+           )
+        << ",\"krakenSnapshots\":"
+        << kraken_snapshot_count_
+        << ",\"krakenUpdates\":"
+        << kraken_update_count_
         << ",\"recordingEnabled\":"
         << (
                recorder_
@@ -658,50 +696,84 @@ class LiveMarketState {
 
   std::uint64_t
       binance_update_count_{0};
+
+  bool kraken_ready_{false};
+
+  std::uint64_t
+      kraken_snapshot_count_{0};
+
+  std::uint64_t
+      kraken_update_count_{0};
 };
 
-void run_simulated_venues(
+void run_kraken_feed(
     const std::shared_ptr<
         LiveMarketState
     >& state,
+    const std::string& product_id,
     std::atomic<bool>& running
 ) {
-  std::mt19937_64 random(42);
-
-  std::normal_distribution<double>
-      movement(0.0, 0.03);
-
-  std::uint64_t kraken_sequence = 1;
-
-  double fallback_midpoint = 64610.0;
-
-  while (running.load()) {
-    const auto live_midpoint =
-        state->coinbase_midpoint();
-
-    if (live_midpoint.has_value()) {
-      fallback_midpoint =
-          *live_midpoint;
-    }
-
-    const double kraken_mid =
-        fallback_midpoint +
-        movement(random);
-
-
-    state->apply_simulated_snapshot(
-        "KRAKEN",
-        kraken_sequence++,
-        kraken_mid - 0.08,
-        kraken_mid + 0.08,
-        1.5,
-        1.8
+  try {
+    minimatch::KrakenFeed feed(
+        minimatch::KrakenFeedConfig{
+            .exchange_symbol = "BTC/USD",
+            .normalized_symbol = product_id,
+            .depth = 10
+        }
     );
 
-
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(200)
+    feed.run(
+        running,
+        [state](
+            const minimatch::
+                MarketDataSnapshot& snapshot
+        ) {
+          state->apply_kraken_snapshot(
+              snapshot
+          );
+        },
+        [state](
+            const std::vector<
+                minimatch::MarketDataUpdate
+            >& updates
+        ) {
+          state->apply_kraken_updates(
+              updates
+          );
+        },
+        [](
+            const minimatch::
+                KrakenFeedStats& stats
+        ) {
+          if (
+              stats.accepted_updates > 0 &&
+              stats.accepted_updates % 1000 ==
+                  0
+          ) {
+            std::cout
+                << "Kraken feed accepted="
+                << stats.accepted_updates
+                << " ignored="
+                << stats.ignored_messages
+                << " reconnects="
+                << stats.reconnects
+                << " synchronized="
+                << (
+                       stats.synchronized
+                           ? "true"
+                           : "false"
+                   )
+                << '\n';
+          }
+        }
     );
+  } catch (const std::exception& error) {
+    std::cerr
+        << "Kraken feed stopped: "
+        << error.what()
+        << '\n';
+
+    running.store(false);
   }
 }
 
@@ -1088,9 +1160,10 @@ int main(int argc, char** argv) {
         std::ref(running)
     );
 
-    std::thread simulated_thread(
-        run_simulated_venues,
+    std::thread kraken_thread(
+        run_kraken_feed,
         state,
+        product_id,
         std::ref(running)
     );
 
@@ -1118,7 +1191,7 @@ int main(int argc, char** argv) {
 
     coinbase_thread.join();
     binance_thread.join();
-    simulated_thread.join();
+    kraken_thread.join();
 
     return EXIT_SUCCESS;
   } catch (const std::exception& error) {

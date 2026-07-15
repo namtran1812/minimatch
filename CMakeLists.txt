@@ -4,6 +4,7 @@ project(MiniMatch VERSION 1.0.0 LANGUAGES CXX)
 find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(ZLIB REQUIRED)
 
 if(TARGET SQLite3::SQLite3)
   set(MINIMATCH_SQLITE_TARGET SQLite3::SQLite3)
@@ -122,6 +123,7 @@ target_link_libraries(
     Threads::Threads
     OpenSSL::SSL
     OpenSSL::Crypto
+    ZLIB::ZLIB
 )
 target_compile_options(minimatch PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 
