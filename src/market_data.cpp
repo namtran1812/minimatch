@@ -117,12 +117,6 @@ MarketDataDecision Level2Book::apply_snapshot(
       snapshot.symbol
   );
 
-  if (snapshot.sequence == 0) {
-    throw std::invalid_argument(
-        "snapshot sequence must be positive"
-    );
-  }
-
   std::map<
       double,
       double,
@@ -276,6 +270,142 @@ MarketDataDecision Level2Book::apply(
   };
 }
 
+
+MarketDataDecision Level2Book::apply_batch(
+    const std::vector<MarketDataUpdate>& updates
+) {
+  if (updates.empty()) {
+    return MarketDataDecision{
+        .accepted = true,
+        .sequence_gap = false,
+        .expected_sequence = sequence_,
+        .received_sequence = sequence_,
+        .message = "empty update batch accepted"
+    };
+  }
+
+  const auto& first = updates.front();
+
+  validate_identity(
+      first.venue,
+      first.symbol
+  );
+
+  if (!synchronized_) {
+    return MarketDataDecision{
+        .accepted = false,
+        .sequence_gap = true,
+        .expected_sequence = sequence_ + 1,
+        .received_sequence = first.sequence,
+        .message =
+            "snapshot required before incrementals"
+    };
+  }
+
+  const std::uint64_t expected =
+      sequence_ + 1;
+
+  if (first.sequence != expected) {
+    synchronized_ = false;
+
+    return MarketDataDecision{
+        .accepted = false,
+        .sequence_gap = true,
+        .expected_sequence = expected,
+        .received_sequence = first.sequence,
+        .message =
+            "market-data sequence gap detected"
+    };
+  }
+
+  auto next_bids = bids_;
+  auto next_asks = asks_;
+
+  std::uint64_t latest_timestamp =
+      first.timestamp_ns;
+
+  for (const auto& update : updates) {
+    validate_identity(
+        update.venue,
+        update.symbol
+    );
+
+    if (update.venue != first.venue ||
+        update.symbol != first.symbol) {
+      throw std::invalid_argument(
+          "market-data batch mixes books"
+      );
+    }
+
+    if (update.sequence != first.sequence) {
+      throw std::invalid_argument(
+          "market-data batch mixes sequences"
+      );
+    }
+
+    validate_price(update.price);
+    validate_quantity(update.quantity);
+
+    latest_timestamp =
+        std::max(
+            latest_timestamp,
+            update.timestamp_ns
+        );
+
+    const bool remove =
+        update.type ==
+            MarketDataUpdateType::Delete ||
+        update.quantity <= epsilon;
+
+    if (update.side == MarketDataSide::Bid) {
+      if (remove) {
+        next_bids.erase(update.price);
+      } else {
+        next_bids[update.price] =
+            update.quantity;
+      }
+    } else {
+      if (remove) {
+        next_asks.erase(update.price);
+      } else {
+        next_asks[update.price] =
+            update.quantity;
+      }
+    }
+  }
+
+  if (!next_bids.empty() &&
+      !next_asks.empty() &&
+      next_bids.begin()->first >=
+          next_asks.begin()->first) {
+    synchronized_ = false;
+
+    return MarketDataDecision{
+        .accepted = false,
+        .sequence_gap = false,
+        .expected_sequence = expected,
+        .received_sequence = first.sequence,
+        .message =
+            "incremental batch crossed the market"
+    };
+  }
+
+  bids_ = std::move(next_bids);
+  asks_ = std::move(next_asks);
+
+  sequence_ = first.sequence;
+  timestamp_ns_ = latest_timestamp;
+
+  return MarketDataDecision{
+      .accepted = true,
+      .sequence_gap = false,
+      .expected_sequence = expected,
+      .received_sequence = first.sequence,
+      .message =
+          "incremental update batch accepted"
+  };
+}
+
 std::optional<MarketDataLevel>
 Level2Book::best_bid() const {
   if (bids_.empty()) {
@@ -347,6 +477,25 @@ ConsolidatedMarketData::apply(
   return books_[
       key(update.venue, update.symbol)
   ].apply(update);
+}
+
+
+MarketDataDecision
+ConsolidatedMarketData::apply_batch(
+    const std::vector<MarketDataUpdate>& updates
+) {
+  if (updates.empty()) {
+    return MarketDataDecision{
+        .accepted = true,
+        .message = "empty update batch accepted"
+    };
+  }
+
+  const auto& first = updates.front();
+
+  return books_[
+      key(first.venue, first.symbol)
+  ].apply_batch(updates);
 }
 
 std::optional<Level2Book>
@@ -422,14 +571,20 @@ ConsolidatedMarketData::consolidated_bbo(
   }
 
   if (result.valid) {
+    result.spread =
+        result.ask_price -
+        result.bid_price;
+
+    if (result.spread <= 0.0) {
+      result.valid = false;
+      result.midpoint = 0.0;
+      return result;
+    }
+
     result.midpoint =
         (result.bid_price +
          result.ask_price) /
         2.0;
-
-    result.spread =
-        result.ask_price -
-        result.bid_price;
   }
 
   return result;

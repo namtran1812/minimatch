@@ -21,6 +21,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <string>
@@ -231,6 +232,42 @@ class LiveMarketState {
     }
 
     ++coinbase_update_count_;
+  }
+
+  [[nodiscard]] std::optional<double>
+  coinbase_midpoint() const {
+    std::lock_guard<std::mutex> lock(
+        mutex_
+    );
+
+    if (!coinbase_ready_) {
+      return std::nullopt;
+    }
+
+    const auto book =
+        market_.find_book(
+            "COINBASE",
+            product_id_
+        );
+
+    if (!book.has_value() ||
+        !book->synchronized()) {
+      return std::nullopt;
+    }
+
+    const auto bid = book->best_bid();
+    const auto ask = book->best_ask();
+
+    if (!bid.has_value() ||
+        !ask.has_value() ||
+        bid->price >= ask->price) {
+      return std::nullopt;
+    }
+
+    return (
+        bid->price +
+        ask->price
+    ) / 2.0;
   }
 
   void apply_simulated_snapshot(
@@ -446,15 +483,27 @@ void run_simulated_venues(
   std::normal_distribution<double>
       movement(0.0, 0.03);
 
-  double kraken_mid = 64610.0;
-  double binance_mid = 64610.0;
-
   std::uint64_t kraken_sequence = 1;
   std::uint64_t binance_sequence = 1;
 
+  double fallback_midpoint = 64610.0;
+
   while (running.load()) {
-    kraken_mid += movement(random);
-    binance_mid += movement(random);
+    const auto live_midpoint =
+        state->coinbase_midpoint();
+
+    if (live_midpoint.has_value()) {
+      fallback_midpoint =
+          *live_midpoint;
+    }
+
+    const double kraken_mid =
+        fallback_midpoint +
+        movement(random);
+
+    const double binance_mid =
+        fallback_midpoint +
+        movement(random);
 
     state->apply_simulated_snapshot(
         "KRAKEN",

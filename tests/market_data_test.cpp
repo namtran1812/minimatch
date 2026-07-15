@@ -313,4 +313,133 @@ TEST(MarketData, ListsVenuesForSymbol) {
   EXPECT_EQ(venues[1], "KRAKEN");
 }
 
+
+TEST(MarketData, AcceptsSnapshotSequenceZero) {
+  Level2Book book;
+
+  auto initial =
+      snapshot("COINBASE", 0);
+
+  const auto decision =
+      book.apply_snapshot(initial);
+
+  EXPECT_TRUE(decision.accepted);
+  EXPECT_TRUE(book.synchronized());
+  EXPECT_EQ(book.sequence(), 0U);
+}
+
+TEST(MarketData, AppliesMultipleUpdatesWithOneSequence) {
+  Level2Book book;
+
+  book.apply_snapshot(
+      snapshot("COINBASE", 0)
+  );
+
+  const std::vector<MarketDataUpdate> updates{
+      MarketDataUpdate{
+          .venue = "COINBASE",
+          .symbol = "BTCUSD",
+          .sequence = 1,
+          .timestamp_ns = 200,
+          .side = MarketDataSide::Bid,
+          .type = MarketDataUpdateType::Upsert,
+          .price = 100.25,
+          .quantity = 1.5
+      },
+      MarketDataUpdate{
+          .venue = "COINBASE",
+          .symbol = "BTCUSD",
+          .sequence = 1,
+          .timestamp_ns = 201,
+          .side = MarketDataSide::Ask,
+          .type = MarketDataUpdateType::Delete,
+          .price = 100.5,
+          .quantity = 0.0
+      },
+      MarketDataUpdate{
+          .venue = "COINBASE",
+          .symbol = "BTCUSD",
+          .sequence = 1,
+          .timestamp_ns = 202,
+          .side = MarketDataSide::Ask,
+          .type = MarketDataUpdateType::Upsert,
+          .price = 100.4,
+          .quantity = 2.0
+      }
+  };
+
+  const auto decision =
+      book.apply_batch(updates);
+
+  EXPECT_TRUE(decision.accepted);
+  EXPECT_EQ(book.sequence(), 1U);
+
+  ASSERT_TRUE(book.best_bid().has_value());
+  ASSERT_TRUE(book.best_ask().has_value());
+
+  EXPECT_DOUBLE_EQ(
+      book.best_bid()->price,
+      100.25
+  );
+
+  EXPECT_DOUBLE_EQ(
+      book.best_ask()->price,
+      100.4
+  );
+}
+
+
+
+TEST(MarketData, RejectsCrossedConsolidatedBbo) {
+  ConsolidatedMarketData market;
+
+  const MarketDataSnapshot coinbase{
+      .venue = "COINBASE",
+      .symbol = "BTCUSD",
+      .sequence = 10,
+      .timestamp_ns = 100,
+      .bids = {
+          MarketDataLevel{101.0, 1.0}
+      },
+      .asks = {
+          MarketDataLevel{102.0, 1.0}
+      }
+  };
+
+  const MarketDataSnapshot binance{
+      .venue = "BINANCE",
+      .symbol = "BTCUSD",
+      .sequence = 20,
+      .timestamp_ns = 100,
+      .bids = {
+          MarketDataLevel{99.0, 1.0}
+      },
+      .asks = {
+          MarketDataLevel{100.0, 1.0}
+      }
+  };
+
+  EXPECT_TRUE(
+      market.apply_snapshot(
+          coinbase
+      ).accepted
+  );
+
+  EXPECT_TRUE(
+      market.apply_snapshot(
+          binance
+      ).accepted
+  );
+
+  const auto bbo =
+      market.consolidated_bbo(
+          "BTCUSD"
+      );
+
+  EXPECT_FALSE(bbo.valid);
+  EXPECT_DOUBLE_EQ(bbo.midpoint, 0.0);
+  EXPECT_LT(bbo.spread, 0.0);
+}
+
+
 }  // namespace
