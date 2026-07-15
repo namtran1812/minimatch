@@ -4,6 +4,7 @@
 #include "minimatch/kraken_feed.hpp"
 #include "minimatch/market_data.hpp"
 #include "minimatch/venue_health.hpp"
+#include "minimatch/latency_stats.hpp"
 #include "minimatch/market_recorder.hpp"
 #include "minimatch/router_market_data.hpp"
 
@@ -553,6 +554,10 @@ class LiveMarketState {
   }
 
   std::string json() const {
+    minimatch::ScopedLatencyRecorder timer(
+        latency_,
+        "serialize"
+    );
     std::lock_guard<std::mutex> lock(
         mutex_
     );
@@ -561,6 +566,9 @@ class LiveMarketState {
         market_.consolidated_bbo(
             product_id_
         );
+
+    const auto route_start_ns =
+        minimatch::steady_now_ns();
 
     minimatch::RouteRequest buy_request{};
     buy_request.side =
@@ -591,6 +599,16 @@ class LiveMarketState {
             1.0,
             0.01
         );
+
+    const auto route_end_ns =
+        minimatch::steady_now_ns();
+
+    latency_.record(
+        "route",
+        route_end_ns >= route_start_ns
+            ? route_end_ns - route_start_ns
+            : 0
+    );
 
     std::ostringstream output;
 
@@ -773,6 +791,45 @@ class LiveMarketState {
   }
 
   output
+      << "],\"latency\":[";
+
+  {
+    const auto latency_snapshots =
+        latency_.snapshots();
+
+    for (std::size_t index = 0;
+         index < latency_snapshots.size();
+         ++index) {
+      if (index > 0) {
+        output << ',';
+      }
+
+      const auto& latency =
+          latency_snapshots[index];
+
+      output
+          << '{'
+          << "\"name\":\""
+          << escape_json(latency.name)
+          << "\",\"count\":"
+          << latency.count
+          << ",\"minimumNs\":"
+          << latency.minimum_ns
+          << ",\"maximumNs\":"
+          << latency.maximum_ns
+          << ",\"averageNs\":"
+          << latency.average_ns
+          << ",\"p50Ns\":"
+          << latency.p50_ns
+          << ",\"p95Ns\":"
+          << latency.p95_ns
+          << ",\"p99Ns\":"
+          << latency.p99_ns
+          << '}';
+    }
+  }
+
+  output
       << "],\"routing\":{"
         << "\"buy\":"
         << route_json(buy_plan)
@@ -792,6 +849,8 @@ class LiveMarketState {
 
   minimatch::VenueHealthMonitor
       health_;
+
+  mutable minimatch::LatencyStats latency_;
 
   std::shared_ptr<
       minimatch::MarketRecorder
