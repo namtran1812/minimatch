@@ -12,6 +12,7 @@ struct CoinbaseLevel2Message {
   bool valid{false};
   bool snapshot{false};
   bool heartbeat{false};
+  bool ignored{false};
 
   std::string channel;
   std::string product_id;

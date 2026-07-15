@@ -159,18 +159,18 @@ TEST(CoinbaseLevel2, ParsesHeartbeat) {
   EXPECT_TRUE(result.heartbeat);
 }
 
-TEST(CoinbaseLevel2, RejectsUnsupportedChannel) {
+TEST(CoinbaseLevel2, IgnoresUnsupportedChannel) {
   const auto result =
       parse_coinbase_level2_message(
-          R"JSON({"channel":"ticker"})JSON",
+          R"JSON({"channel":"subscriptions"})JSON",
           100
       );
 
-  EXPECT_FALSE(result.valid);
-  EXPECT_EQ(
-      result.error,
-      "unsupported Coinbase channel"
-  );
+  EXPECT_TRUE(result.valid);
+  EXPECT_TRUE(result.ignored);
+  EXPECT_FALSE(result.heartbeat);
+  EXPECT_FALSE(result.snapshot);
+  EXPECT_TRUE(result.updates.empty());
 }
 
 TEST(CoinbaseLevel2, BuildsSubscriptions) {
@@ -189,5 +189,72 @@ TEST(CoinbaseLevel2, BuildsSubscriptions) {
       "\"channel\":\"heartbeats\"}"
   );
 }
+
+
+TEST(
+    CoinbaseLevel2,
+    EnvelopeSequenceGapsDoNotAffectNormalizedBook
+) {
+  const std::string first_update = R"JSON(
+{
+  "channel": "l2_data",
+  "sequence_num": 4,
+  "events": [
+    {
+      "type": "update",
+      "product_id": "BTC-USD",
+      "updates": [
+        {
+          "side": "bid",
+          "price_level": "100.10",
+          "new_quantity": "2.0"
+        }
+      ]
+    }
+  ]
+}
+)JSON";
+
+  const auto parsed =
+      parse_coinbase_level2_message(
+          first_update,
+          200
+      );
+
+  ASSERT_TRUE(parsed.valid);
+  ASSERT_EQ(parsed.updates.size(), 1U);
+
+  auto updates = parsed.updates;
+
+  // The normalized feed owns book sequencing.
+  updates[0].sequence = 1;
+
+  minimatch::Level2Book book;
+
+  EXPECT_TRUE(
+      book.apply_snapshot(
+          minimatch::MarketDataSnapshot{
+              .venue = "COINBASE",
+              .symbol = "BTC-USD",
+              .sequence = 0,
+              .timestamp_ns = 100,
+              .bids = {{100.0, 1.0}},
+              .asks = {{101.0, 1.0}}
+          }
+      ).accepted
+  );
+
+  const auto decision =
+      book.apply_batch(updates);
+
+  EXPECT_TRUE(decision.accepted);
+  EXPECT_EQ(book.sequence(), 1U);
+  ASSERT_TRUE(book.best_bid().has_value());
+  EXPECT_DOUBLE_EQ(
+      book.best_bid()->price,
+      100.10
+  );
+}
+
 
 }  // namespace

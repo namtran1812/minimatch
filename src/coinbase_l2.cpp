@@ -132,9 +132,8 @@ parse_coinbase_level2_message(
     }
 
     if (result.channel != "l2_data") {
-      result.error =
-          "unsupported Coinbase channel";
-
+      result.valid = true;
+      result.ignored = true;
       return result;
     }
 
