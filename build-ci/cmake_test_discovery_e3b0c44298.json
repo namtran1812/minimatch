@@ -1,0 +1,1035 @@
+{
+  "tests": 171,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "OrderBook",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "FifoAtSamePrice",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 5
+        },
+        {
+          "name": "BestPriceBeforeTime",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 6
+        },
+        {
+          "name": "IOCDoesNotRest",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 7
+        },
+        {
+          "name": "MarketDoesNotRest",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 8
+        },
+        {
+          "name": "CancelRemovesOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 9
+        },
+        {
+          "name": "PartialFillRestsLimitRemainder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 10
+        },
+        {
+          "name": "DeterministicStateHash",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 11
+        },
+        {
+          "name": "RejectDuplicate",
+          "file": "\/Users\/namtran\/minimatch\/tests\/order_book_test.cpp",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "name": "AdvancedOrderBook",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "FillOrKillRejectsWithoutMutation",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 7
+        },
+        {
+          "name": "FillOrKillExecutesCompletely",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 16
+        },
+        {
+          "name": "PostOnlyRejectsCrossingOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 27
+        },
+        {
+          "name": "QuantityReductionPreservesPriority",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 35
+        },
+        {
+          "name": "PriceChangeLosesPriority",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 49
+        },
+        {
+          "name": "DepthIncludesOrderCount",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 86
+        }
+      ]
+    },
+    {
+      "name": "AdvancedExchange",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "MultiSymbolIsolation",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 61
+        },
+        {
+          "name": "SnapshotRoundTrip",
+          "file": "\/Users\/namtran\/minimatch\/tests\/advanced_test.cpp",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "name": "RiskEngine",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "RejectsOversizedOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/system_test.cpp",
+          "line": 7
+        },
+        {
+          "name": "EnforcesPositionLimit",
+          "file": "\/Users\/namtran\/minimatch\/tests\/system_test.cpp",
+          "line": 12
+        },
+        {
+          "name": "DailyLossTriggersKillSwitch",
+          "file": "\/Users\/namtran\/minimatch\/tests\/system_test.cpp",
+          "line": 19
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "ComputesDrawdownAndWinRate",
+          "file": "\/Users\/namtran\/minimatch\/tests\/system_test.cpp",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "name": "Options",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "PutCallParityAndImpliedVolatility",
+          "file": "\/Users\/namtran\/minimatch\/tests\/quant_test.cpp",
+          "line": 10
+        },
+        {
+          "name": "MonteCarloConvergesNearBlackScholes",
+          "file": "\/Users\/namtran\/minimatch\/tests\/quant_test.cpp",
+          "line": 22
+        }
+      ]
+    },
+    {
+      "name": "Execution",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "SchedulesConserveQuantity",
+          "file": "\/Users\/namtran\/minimatch\/tests\/quant_test.cpp",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "name": "QueueModel",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "TradesConsumeAheadBeforeOwnOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/quant_test.cpp",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "name": "Pairs",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "RecoversSyntheticHedgeRatio",
+          "file": "\/Users\/namtran\/minimatch\/tests\/quant_test.cpp",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "name": "SpscRing",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "PreservesFifoOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/pipeline_test.cpp",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "name": "Pipeline",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "ProcessesCommandsDeterministically",
+          "file": "\/Users\/namtran\/minimatch\/tests\/pipeline_test.cpp",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "name": "SmartOrderRouter",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "BuyUsesLowestEffectiveAskFirst",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 38
+        },
+        {
+          "name": "ConsumesMultipleLevels",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 64
+        },
+        {
+          "name": "SplitsAcrossVenuesAndLevels",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 94
+        },
+        {
+          "name": "SellUsesHighestBidLevelsFirst",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 133
+        },
+        {
+          "name": "ReportsPartialDepthRoute",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 165
+        },
+        {
+          "name": "IgnoresInvalidLevels",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 186
+        },
+        {
+          "name": "LatencyPenaltyCanChangeVenue",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 208
+        }
+      ]
+    },
+    {
+      "name": "RouterConstraints",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "BuyLimitPriceStopsExpensiveLevels",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 238
+        },
+        {
+          "name": "SellLimitPriceStopsCheapLevels",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 265
+        },
+        {
+          "name": "MaximumVenueCountIsEnforced",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 292
+        },
+        {
+          "name": "AllOrNoneClearsPartialRoute",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 340
+        },
+        {
+          "name": "BuySlippageLimitStopsWorseLevels",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 368
+        },
+        {
+          "name": "SellSlippageLimitStopsWorseLevels",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 398
+        },
+        {
+          "name": "RejectsInvalidControls",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_test.cpp",
+          "line": 428
+        }
+      ]
+    },
+    {
+      "name": "RouterMarketData",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "ConvertsBookToVenueQuotes",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_market_data_test.cpp",
+          "line": 7
+        },
+        {
+          "name": "RoutesUsingMarketData",
+          "file": "\/Users\/namtran\/minimatch\/tests\/router_market_data_test.cpp",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "name": "ExecutionAlgo",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "MarketUsesSingleImmediateSlice",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 28
+        },
+        {
+          "name": "TWAPUsesEqualTimeSlices",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 41
+        },
+        {
+          "name": "VWAPFollowsVolumeProfile",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 62
+        },
+        {
+          "name": "POVRespectsParticipationRate",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 88
+        },
+        {
+          "name": "POVStopsWhenParentQuantityIsFilled",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 113
+        },
+        {
+          "name": "IcebergUsesDisplayedQuantity",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 136
+        },
+        {
+          "name": "BackwardCompatibleTWAPOverload",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 156
+        },
+        {
+          "name": "RejectsInvalidCommonSettings",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 168
+        },
+        {
+          "name": "RejectsInvalidAlgorithmSettings",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_algo_test.cpp",
+          "line": 206
+        }
+      ]
+    },
+    {
+      "name": "ExecutionReplay",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "BuildsDeterministicTimeline",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_replay_test.cpp",
+          "line": 58
+        },
+        {
+          "name": "PreservesChildOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_replay_test.cpp",
+          "line": 92
+        },
+        {
+          "name": "AccumulatesLatency",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_replay_test.cpp",
+          "line": 105
+        },
+        {
+          "name": "RepresentsRejectedChild",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_replay_test.cpp",
+          "line": 127
+        },
+        {
+          "name": "RepresentsPartialFill",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_replay_test.cpp",
+          "line": 165
+        },
+        {
+          "name": "EmptyChildrenStillProducesParentEvents",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_replay_test.cpp",
+          "line": 193
+        }
+      ]
+    },
+    {
+      "name": "MarketReplay",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "SortsEventsByTimestamp",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 33
+        },
+        {
+          "name": "IteratesDeterministically",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 68
+        },
+        {
+          "name": "SeeksByIndex",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 108
+        },
+        {
+          "name": "SeeksByTimestamp",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 139
+        },
+        {
+          "name": "CalculatesStatistics",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 168
+        },
+        {
+          "name": "LoadsCsvFile",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 205
+        },
+        {
+          "name": "RejectsInvalidCsvHeader",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 235
+        },
+        {
+          "name": "RejectsCrossedQuote",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_replay_test.cpp",
+          "line": 251
+        }
+      ]
+    },
+    {
+      "name": "MarketData",
+      "tests": 13,
+      "testsuite": [
+        {
+          "name": "AppliesSnapshot",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 35
+        },
+        {
+          "name": "AppliesIncrementalUpdate",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 61
+        },
+        {
+          "name": "DeletesPriceLevel",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 91
+        },
+        {
+          "name": "DetectsSequenceGap",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 120
+        },
+        {
+          "name": "RequiresSnapshotBeforeIncrementals",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 149
+        },
+        {
+          "name": "ReturnsRequestedDepth",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 171
+        },
+        {
+          "name": "RejectsCrossedSnapshot",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 188
+        },
+        {
+          "name": "BuildsConsolidatedBbo",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 202
+        },
+        {
+          "name": "ExcludesUnsynchronizedVenue",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 258
+        },
+        {
+          "name": "ListsVenuesForSymbol",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 297
+        },
+        {
+          "name": "AcceptsSnapshotSequenceZero",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 317
+        },
+        {
+          "name": "AppliesMultipleUpdatesWithOneSequence",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 331
+        },
+        {
+          "name": "RejectsCrossedConsolidatedBbo",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_data_test.cpp",
+          "line": 393
+        }
+      ]
+    },
+    {
+      "name": "MarketRecorder",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "WritesAndReadsSnapshot",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_recorder_test.cpp",
+          "line": 93
+        },
+        {
+          "name": "WritesAndReadsUpdateBatch",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_recorder_test.cpp",
+          "line": 162
+        },
+        {
+          "name": "ReplaysDeterministically",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_recorder_test.cpp",
+          "line": 207
+        },
+        {
+          "name": "SupportsTimestampRange",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_recorder_test.cpp",
+          "line": 318
+        },
+        {
+          "name": "RewindsReader",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_recorder_test.cpp",
+          "line": 360
+        },
+        {
+          "name": "RejectsCorruptHeader",
+          "file": "\/Users\/namtran\/minimatch\/tests\/market_recorder_test.cpp",
+          "line": 390
+        }
+      ]
+    },
+    {
+      "name": "CoinbaseLevel2",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "ParsesSnapshot",
+          "file": "\/Users\/namtran\/minimatch\/tests\/coinbase_l2_test.cpp",
+          "line": 13
+        },
+        {
+          "name": "ParsesIncrementalUpdates",
+          "file": "\/Users\/namtran\/minimatch\/tests\/coinbase_l2_test.cpp",
+          "line": 77
+        },
+        {
+          "name": "ParsesHeartbeat",
+          "file": "\/Users\/namtran\/minimatch\/tests\/coinbase_l2_test.cpp",
+          "line": 139
+        },
+        {
+          "name": "IgnoresUnsupportedChannel",
+          "file": "\/Users\/namtran\/minimatch\/tests\/coinbase_l2_test.cpp",
+          "line": 162
+        },
+        {
+          "name": "BuildsSubscriptions",
+          "file": "\/Users\/namtran\/minimatch\/tests\/coinbase_l2_test.cpp",
+          "line": 176
+        },
+        {
+          "name": "EnvelopeSequenceGapsDoNotAffectNormalizedBook",
+          "file": "\/Users\/namtran\/minimatch\/tests\/coinbase_l2_test.cpp",
+          "line": 197
+        }
+      ]
+    },
+    {
+      "name": "BacktestEngine",
+      "tests": 11,
+      "testsuite": [
+        {
+          "name": "RunsTwapAgainstHistoricalQuotes",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 63
+        },
+        {
+          "name": "ReportsPartialFill",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 96
+        },
+        {
+          "name": "CalculatesMarketVwap",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 120
+        },
+        {
+          "name": "RejectsMissingSymbol",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 141
+        },
+        {
+          "name": "RejectsInvalidQuantity",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 162
+        },
+        {
+          "name": "CreatesParentAndChildOrders",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 184
+        },
+        {
+          "name": "CancelsIncompleteParent",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 226
+        },
+        {
+          "name": "FillsReferenceOmsRecords",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 264
+        },
+        {
+          "name": "RejectsChildWhenKillSwitchIsActive",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 311
+        },
+        {
+          "name": "RejectsChildAboveQuantityLimit",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 357
+        },
+        {
+          "name": "AcceptsChildWithinRiskLimits",
+          "file": "\/Users\/namtran\/minimatch\/tests\/backtest_engine_test.cpp",
+          "line": 392
+        }
+      ]
+    },
+    {
+      "name": "RoutedExecutionEngine",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "FullyExecutesRoute",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 48
+        },
+        {
+          "name": "SupportsPartialFills",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 68
+        },
+        {
+          "name": "ComputesAverageFillPrice",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 88
+        },
+        {
+          "name": "ComputesFees",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 101
+        },
+        {
+          "name": "RejectsInvalidFillRatio",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 115
+        },
+        {
+          "name": "RejectsAllChildren",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 128
+        },
+        {
+          "name": "SameSeedProducesSameResults",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 162
+        },
+        {
+          "name": "AddsConfiguredLatency",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 209
+        },
+        {
+          "name": "RejectsInvalidSimulationSettings",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_engine_test.cpp",
+          "line": 239
+        }
+      ]
+    },
+    {
+      "name": "OMS",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "CreatesParentOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 14
+        },
+        {
+          "name": "CreatesChildAndMovesParentToWorking",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 43
+        },
+        {
+          "name": "RecordsPartialChildFill",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 86
+        },
+        {
+          "name": "CompletesParentAcrossMultipleChildren",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 166
+        },
+        {
+          "name": "RejectsOverfill",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 245
+        },
+        {
+          "name": "CancelsParentAndWorkingChildren",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 281
+        },
+        {
+          "name": "RejectsChildAndUpdatesParent",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 338
+        },
+        {
+          "name": "ReturnsChildrenAndFillsForParent",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 377
+        },
+        {
+          "name": "RejectsInvalidParentAndChildRequests",
+          "file": "\/Users\/namtran\/minimatch\/tests\/oms_test.cpp",
+          "line": 423
+        }
+      ]
+    },
+    {
+      "name": "FixCodec",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "EncodesAndParsesLogon",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_test.cpp",
+          "line": 15
+        },
+        {
+          "name": "EncodesNewOrderSingle",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_test.cpp",
+          "line": 57
+        },
+        {
+          "name": "RejectsInvalidChecksum",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_test.cpp",
+          "line": 107
+        },
+        {
+          "name": "RejectsInvalidBodyLength",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_test.cpp",
+          "line": 143
+        },
+        {
+          "name": "SupportsCancelAndExecutionReport",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_test.cpp",
+          "line": 207
+        },
+        {
+          "name": "PreparesPossDupResend",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_test.cpp",
+          "line": 253
+        },
+        {
+          "name": "CreatesSequenceResetGapFill",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_test.cpp",
+          "line": 303
+        }
+      ]
+    },
+    {
+      "name": "FixSession",
+      "tests": 15,
+      "testsuite": [
+        {
+          "name": "AcceptsLogonAndBecomesActive",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 29
+        },
+        {
+          "name": "RejectsIncorrectSequenceNumber",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 63
+        },
+        {
+          "name": "RejectsApplicationMessageBeforeLogon",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 86
+        },
+        {
+          "name": "AcceptsApplicationMessageAfterLogon",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 108
+        },
+        {
+          "name": "RespondsToTestRequestWithHeartbeat",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 138
+        },
+        {
+          "name": "HandlesLogout",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 182
+        },
+        {
+          "name": "DetectsHeartbeatAndTestRequestDeadlines",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 217
+        },
+        {
+          "name": "RejectsCompIdMismatch",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 271
+        },
+        {
+          "name": "OutgoingMessagesIncrementSequence",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 295
+        },
+        {
+          "name": "ResetRestoresInitialState",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 312
+        },
+        {
+          "name": "SequencesOutboundExecutionReports",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 335
+        },
+        {
+          "name": "RestoresPersistentSequenceState",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 389
+        },
+        {
+          "name": "RequestsResendForSequenceGap",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 422
+        },
+        {
+          "name": "AcceptsValidResendRequest",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 467
+        },
+        {
+          "name": "AppliesSequenceReset",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_session_test.cpp",
+          "line": 508
+        }
+      ]
+    },
+    {
+      "name": "FixStore",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "SavesAndLoadsSessionSequenceState",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_store_test.cpp",
+          "line": 23
+        },
+        {
+          "name": "ReturnsDefaultsForUnknownSession",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_store_test.cpp",
+          "line": 77
+        },
+        {
+          "name": "PersistsInboundAndOutboundMessages",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_store_test.cpp",
+          "line": 96
+        },
+        {
+          "name": "LoadsOutboundMessagesFromSequence",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_store_test.cpp",
+          "line": 140
+        },
+        {
+          "name": "UpdatesExistingSessionSnapshot",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_store_test.cpp",
+          "line": 182
+        }
+      ]
+    },
+    {
+      "name": "FixGateway",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "CreatesOmsOrdersFromNewOrderSingle",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_gateway_test.cpp",
+          "line": 32
+        },
+        {
+          "name": "RejectsDuplicateClientOrderId",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_gateway_test.cpp",
+          "line": 71
+        },
+        {
+          "name": "CancelsExistingOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_gateway_test.cpp",
+          "line": 96
+        },
+        {
+          "name": "RejectsUnknownCancelOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_gateway_test.cpp",
+          "line": 146
+        },
+        {
+          "name": "RejectsMissingRequiredFields",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_gateway_test.cpp",
+          "line": 171
+        },
+        {
+          "name": "SupportsMarketOrders",
+          "file": "\/Users\/namtran\/minimatch\/tests\/fix_gateway_test.cpp",
+          "line": 192
+        }
+      ]
+    },
+    {
+      "name": "ExecutionRisk",
+      "tests": 12,
+      "testsuite": [
+        {
+          "name": "AcceptsValidOrder",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 24
+        },
+        {
+          "name": "KillSwitchRejectsOrders",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 45
+        },
+        {
+          "name": "RejectsParentQuantityLimit",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 66
+        },
+        {
+          "name": "RejectsChildQuantityLimit",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 82
+        },
+        {
+          "name": "RejectsNotionalLimit",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 98
+        },
+        {
+          "name": "RejectsParticipationLimit",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 114
+        },
+        {
+          "name": "RejectsBuyAbovePriceCollar",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 130
+        },
+        {
+          "name": "RejectsSellBelowPriceCollar",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 149
+        },
+        {
+          "name": "AllowsFavorablePriceMovement",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 169
+        },
+        {
+          "name": "RejectsInvalidConfiguration",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 192
+        },
+        {
+          "name": "RejectsInvalidOrderValues",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 212
+        },
+        {
+          "name": "ZeroParticipationLimitDisablesCheck",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_risk_test.cpp",
+          "line": 228
+        }
+      ]
+    },
+    {
+      "name": "ExecutionStore",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "CreatesSchema",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_store_test.cpp",
+          "line": 71
+        },
+        {
+          "name": "PersistsRouteAndChildren",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_store_test.cpp",
+          "line": 86
+        },
+        {
+          "name": "PersistsMultipleExecutions",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_store_test.cpp",
+          "line": 117
+        },
+        {
+          "name": "LoadsExecutionById",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_store_test.cpp",
+          "line": 149
+        },
+        {
+          "name": "ReturnsRecentExecutionsNewestFirst",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_store_test.cpp",
+          "line": 178
+        },
+        {
+          "name": "MissingExecutionReturnsEmpty",
+          "file": "\/Users\/namtran\/minimatch\/tests\/execution_store_test.cpp",
+          "line": 211
+        }
+      ]
+    }
+  ]
+}

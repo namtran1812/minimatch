@@ -75,6 +75,12 @@ void ReplayController::apply(
       );
       return;
 
+    case ReplayCommandType::SeekTimestamp:
+      seek_timestamp(
+          command.timestamp_ns
+      );
+      return;
+
     case ReplayCommandType::Stop:
       stop();
       return;
@@ -173,9 +179,33 @@ void ReplayController::seek_record(
     }
 
     seek_record_ = record_index;
+    seek_timestamp_ns_.reset();
     restart_requested_ = false;
 
     current_record_ = record_index;
+
+    ++generation_;
+  }
+
+  condition_.notify_all();
+}
+
+void ReplayController::seek_timestamp(
+    std::uint64_t timestamp_ns
+) {
+  {
+    std::lock_guard<std::mutex> lock(
+        mutex_
+    );
+
+    if (status_ ==
+        ReplayStatus::Stopped) {
+      return;
+    }
+
+    seek_timestamp_ns_ = timestamp_ns;
+    seek_record_.reset();
+    restart_requested_ = false;
 
     ++generation_;
   }
@@ -272,7 +302,9 @@ ReplayController::snapshot() const {
       .generation = generation_,
       .restart_requested =
           restart_requested_,
-      .seek_record = seek_record_
+      .seek_record = seek_record_,
+      .seek_timestamp_ns =
+          seek_timestamp_ns_
   };
 }
 
@@ -300,6 +332,21 @@ ReplayController::consume_seek_request() {
       seek_record_;
 
   seek_record_.reset();
+
+  return requested;
+}
+
+std::optional<std::uint64_t>
+ReplayController::
+consume_timestamp_seek_request() {
+  std::lock_guard<std::mutex> lock(
+      mutex_
+  );
+
+  auto requested =
+      seek_timestamp_ns_;
+
+  seek_timestamp_ns_.reset();
 
   return requested;
 }

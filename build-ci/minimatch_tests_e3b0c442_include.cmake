@@ -1,0 +1,5 @@
+if(EXISTS "/Users/namtran/minimatch/build-ci/minimatch_tests_e3b0c442_tests.cmake")
+  include("/Users/namtran/minimatch/build-ci/minimatch_tests_e3b0c442_tests.cmake")
+else()
+  add_test(minimatch_tests_NOT_BUILT minimatch_tests_NOT_BUILT)
+endif()

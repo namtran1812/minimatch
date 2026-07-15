@@ -279,4 +279,66 @@ TEST(ReplayControl, AppliesCommands) {
   EXPECT_TRUE(controller.stopped());
 }
 
+
+TEST(ReplayControl, RequestsTimestampSeek) {
+  ReplayController controller;
+
+  controller.seek_timestamp(
+      1'784'099'700'000'000'000ULL
+  );
+
+  const auto state =
+      controller.snapshot();
+
+  ASSERT_TRUE(
+      state.seek_timestamp_ns.has_value()
+  );
+
+  EXPECT_EQ(
+      *state.seek_timestamp_ns,
+      1'784'099'700'000'000'000ULL
+  );
+
+  const auto request =
+      controller
+          .consume_timestamp_seek_request();
+
+  ASSERT_TRUE(request.has_value());
+
+  EXPECT_EQ(
+      *request,
+      1'784'099'700'000'000'000ULL
+  );
+
+  EXPECT_FALSE(
+      controller
+          .consume_timestamp_seek_request()
+          .has_value()
+  );
+}
+
+TEST(ReplayControl, TimestampSeekClearsRecordSeek) {
+  ReplayController controller;
+
+  controller.seek_record(200);
+  controller.seek_timestamp(5000);
+
+  const auto state =
+      controller.snapshot();
+
+  EXPECT_FALSE(
+      state.seek_record.has_value()
+  );
+
+  ASSERT_TRUE(
+      state.seek_timestamp_ns.has_value()
+  );
+
+  EXPECT_EQ(
+      *state.seek_timestamp_ns,
+      5000U
+  );
+}
+
+
 }  // namespace

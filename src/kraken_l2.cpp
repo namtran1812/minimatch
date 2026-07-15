@@ -1,4 +1,5 @@
 #include "minimatch/kraken_l2.hpp"
+#include <iterator>
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -430,6 +431,14 @@ KrakenBookNormalizer::normalize_update(
     );
   }
 
+  /*
+   * Preserve the previously published top-N book. Kraken's
+   * depth-limited feed may evict a worst level without sending
+   * an explicit zero-quantity deletion for that level.
+   */
+  const auto previous_bids = bids_;
+  const auto previous_asks = asks_;
+
   apply_levels(
       message.checksum_bids,
       MarketDataSide::Bid
@@ -447,8 +456,7 @@ KrakenBookNormalizer::normalize_update(
 
   if (
       message.checksum != 0 &&
-      actual_checksum !=
-          message.checksum
+      actual_checksum != message.checksum
   ) {
     synchronized_ = false;
 
@@ -465,27 +473,120 @@ KrakenBookNormalizer::normalize_update(
   std::vector<MarketDataUpdate> updates;
 
   updates.reserve(
-      message.bids.size() +
-      message.asks.size()
+      previous_bids.size() +
+      previous_asks.size() +
+      bids_.size() +
+      asks_.size()
   );
 
-  append_normalized_updates(
-      updates,
-      message.bids,
-      normalized_symbol_,
-      sequence_,
-      message.received_timestamp_ns,
-      MarketDataSide::Bid
-  );
+  const auto append_delete =
+      [this, &updates, &message](
+          MarketDataSide side,
+          double price
+      ) {
+        updates.push_back(
+            MarketDataUpdate{
+                .venue = "KRAKEN",
+                .symbol = normalized_symbol_,
+                .sequence = sequence_,
+                .timestamp_ns =
+                    message.received_timestamp_ns,
+                .side = side,
+                .type =
+                    MarketDataUpdateType::Delete,
+                .price = price,
+                .quantity = 0.0
+            }
+        );
+      };
 
-  append_normalized_updates(
-      updates,
-      message.asks,
-      normalized_symbol_,
-      sequence_,
-      message.received_timestamp_ns,
-      MarketDataSide::Ask
-  );
+  const auto append_upsert =
+      [this, &updates, &message](
+          MarketDataSide side,
+          double price,
+          double quantity
+      ) {
+        updates.push_back(
+            MarketDataUpdate{
+                .venue = "KRAKEN",
+                .symbol = normalized_symbol_,
+                .sequence = sequence_,
+                .timestamp_ns =
+                    message.received_timestamp_ns,
+                .side = side,
+                .type =
+                    MarketDataUpdateType::Upsert,
+                .price = price,
+                .quantity = quantity
+            }
+        );
+      };
+
+  /*
+   * Delete levels that disappeared, including levels evicted
+   * when the top-N book was trimmed.
+   */
+  for (const auto& [price, level] :
+       previous_bids) {
+    static_cast<void>(level);
+
+    if (!bids_.contains(price)) {
+      append_delete(
+          MarketDataSide::Bid,
+          price
+      );
+    }
+  }
+
+  for (const auto& [price, level] :
+       previous_asks) {
+    static_cast<void>(level);
+
+    if (!asks_.contains(price)) {
+      append_delete(
+          MarketDataSide::Ask,
+          price
+      );
+    }
+  }
+
+  /*
+   * Publish new levels and quantity changes. Unchanged levels
+   * do not need to be resent.
+   */
+  for (const auto& [price, level] : bids_) {
+    const auto previous =
+        previous_bids.find(price);
+
+    if (
+        previous == previous_bids.end() ||
+        previous->second.quantity !=
+            level.quantity
+    ) {
+      append_upsert(
+          MarketDataSide::Bid,
+          price,
+          level.quantity
+      );
+    }
+  }
+
+  for (const auto& [price, level] : asks_) {
+    const auto previous =
+        previous_asks.find(price);
+
+    if (
+        previous == previous_asks.end() ||
+        previous->second.quantity !=
+            level.quantity
+    ) {
+      append_upsert(
+          MarketDataSide::Ask,
+          price,
+          level.quantity
+      );
+    }
+  }
 
   return updates;
 }
@@ -503,10 +604,8 @@ void KrakenBookNormalizer::apply_levels(
       } else {
         bids_[level.price] =
             StoredLevel{
-                .quantity =
-                    level.quantity,
-                .price_text =
-                    level.price_text,
+                .quantity = level.quantity,
+                .price_text = level.price_text,
                 .quantity_text =
                     level.quantity_text
             };
@@ -517,10 +616,8 @@ void KrakenBookNormalizer::apply_levels(
       } else {
         asks_[level.price] =
             StoredLevel{
-                .quantity =
-                    level.quantity,
-                .price_text =
-                    level.price_text,
+                .quantity = level.quantity,
+                .price_text = level.price_text,
                 .quantity_text =
                     level.quantity_text
             };
@@ -531,17 +628,15 @@ void KrakenBookNormalizer::apply_levels(
 
 void KrakenBookNormalizer::trim_to_depth() {
   while (bids_.size() > depth_) {
-    auto iterator =
-        std::prev(bids_.end());
-
-    bids_.erase(iterator);
+    bids_.erase(
+        std::prev(bids_.end())
+    );
   }
 
   while (asks_.size() > depth_) {
-    auto iterator =
-        std::prev(asks_.end());
-
-    asks_.erase(iterator);
+    asks_.erase(
+        std::prev(asks_.end())
+    );
   }
 }
 
@@ -565,8 +660,10 @@ KrakenBookNormalizer::calculate_checksum() const {
         const auto first_nonzero =
             value.find_first_not_of('0');
 
-        if (first_nonzero ==
-            std::string::npos) {
+        if (
+            first_nonzero ==
+            std::string::npos
+        ) {
           checksum_input += '0';
           return;
         }
@@ -577,6 +674,7 @@ KrakenBookNormalizer::calculate_checksum() const {
 
   std::size_t count = 0;
 
+  // Kraken checksum order is asks first, then bids.
   for (const auto& [price, level] :
        asks_) {
     static_cast<void>(price);
@@ -606,9 +704,9 @@ KrakenBookNormalizer::calculate_checksum() const {
   return static_cast<std::uint64_t>(
       crc32(
           0L,
-          reinterpret_cast<
-              const Bytef*
-          >(checksum_input.data()),
+          reinterpret_cast<const Bytef*>(
+              checksum_input.data()
+          ),
           static_cast<uInt>(
               checksum_input.size()
           )

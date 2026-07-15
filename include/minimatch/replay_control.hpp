@@ -23,6 +23,7 @@ enum class ReplayCommandType {
   SetSpeed,
   Restart,
   SeekRecord,
+  SeekTimestamp,
   Stop
 };
 
@@ -33,6 +34,7 @@ struct ReplayCommand {
 
   double speed{1.0};
   std::size_t record_index{0};
+  std::uint64_t timestamp_ns{0};
 };
 
 struct ReplayControlSnapshot {
@@ -51,6 +53,9 @@ struct ReplayControlSnapshot {
 
   std::optional<std::size_t>
       seek_record;
+
+  std::optional<std::uint64_t>
+      seek_timestamp_ns;
 };
 
 class ReplayController {
@@ -72,6 +77,10 @@ class ReplayController {
 
   void seek_record(
       std::size_t record_index
+  );
+
+  void seek_timestamp(
+      std::uint64_t timestamp_ns
   );
 
   void stop();
@@ -98,6 +107,10 @@ class ReplayController {
   consume_seek_request();
 
   [[nodiscard]]
+  std::optional<std::uint64_t>
+  consume_timestamp_seek_request();
+
+  [[nodiscard]]
   bool stopped() const;
 
  private:
@@ -119,6 +132,9 @@ class ReplayController {
 
   std::optional<std::size_t>
       seek_record_;
+
+  std::optional<std::uint64_t>
+      seek_timestamp_ns_;
 };
 
 [[nodiscard]]

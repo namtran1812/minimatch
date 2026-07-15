@@ -166,6 +166,33 @@ LoadedRecording load_recording(
   return loaded;
 }
 
+std::size_t find_record_for_timestamp(
+    const LoadedRecording& recording,
+    std::uint64_t timestamp_ns
+) {
+  const auto iterator =
+      std::lower_bound(
+          recording.records.begin(),
+          recording.records.end(),
+          timestamp_ns,
+          [](
+              const minimatch::MarketRecord& record,
+              std::uint64_t value
+          ) {
+            return
+                record.recorded_timestamp_ns <
+                value;
+          }
+      );
+
+  return static_cast<std::size_t>(
+      std::distance(
+          recording.records.begin(),
+          iterator
+      )
+  );
+}
+
 bool apply_record(
     const minimatch::MarketRecord& record,
     minimatch::ConsolidatedMarketData& market
@@ -253,6 +280,7 @@ void sleep_interruptibly(
             minimatch::ReplayStatus::Paused ||
         current.restart_requested ||
         current.seek_record.has_value() ||
+        current.seek_timestamp_ns.has_value() ||
         controller.stopped()
     ) {
       return;
@@ -360,6 +388,14 @@ std::string market_json(
          )
       << ",\"checksum\":"
       << checksum
+      << ",\"firstTimestampNs\":"
+      << (
+             control.total_records > 0
+                 ? timestamp_ns
+                 : 0
+         )
+      << ",\"currentTimestampNs\":"
+      << timestamp_ns
       << "},\"bbo\":{"
       << "\"valid\":"
       << (bbo.valid ? "true" : "false")
@@ -493,6 +529,18 @@ minimatch::ReplayCommand parse_command(
         .record_index =
             root.get<std::size_t>(
                 "recordIndex"
+            )
+    };
+  }
+
+  if (command == "seekTimestamp") {
+    return minimatch::ReplayCommand{
+        .type =
+            minimatch::ReplayCommandType::
+                SeekTimestamp,
+        .timestamp_ns =
+            root.get<std::uint64_t>(
+                "timestampNs"
             )
     };
   }
@@ -636,6 +684,42 @@ void handle_client(
         );
       }
 
+      const auto timestamp_seek =
+          controller
+              ->consume_timestamp_seek_request();
+
+      if (timestamp_seek.has_value()) {
+        current_record =
+            find_record_for_timestamp(
+                recording,
+                *timestamp_seek
+            );
+
+        rebuild_to_record(
+            recording,
+            current_record,
+            market,
+            rejected_records
+        );
+
+        previous_timestamp =
+            current_record > 0
+                ? recording
+                      .records[
+                          current_record - 1
+                      ]
+                      .recorded_timestamp_ns
+                : 0;
+
+        latest_timestamp =
+            previous_timestamp;
+
+        controller->update_progress(
+            current_record,
+            recording.records.size()
+        );
+      }
+
       if (
           current_record >=
           recording.records.size()
@@ -699,6 +783,8 @@ void handle_client(
                   Paused ||
           before_apply.restart_requested ||
           before_apply.seek_record
+              .has_value() ||
+          before_apply.seek_timestamp_ns
               .has_value()
       ) {
         continue;

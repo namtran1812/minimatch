@@ -90,10 +90,18 @@
       color: #94a3b8;
     }
 
+    #venues .panel {
+      min-height: 360px;
+      max-height: 360px;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
+      table-layout: fixed;
     }
 
     th,
@@ -106,6 +114,14 @@
     th:first-child,
     td:first-child {
       text-align: left;
+    }
+
+    #buy-route,
+    #sell-route {
+      height: 420px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-gutter: stable;
     }
 
     .route-leg {
@@ -291,7 +307,21 @@
     </label>
 
     <button id="replay-seek-button">
-      Seek
+      Seek record
+    </button>
+
+    <label>
+      Seek timestamp (nanoseconds)
+      <input
+        id="replay-timestamp-seek"
+        type="text"
+        inputmode="numeric"
+        placeholder="1784099700000000000"
+      />
+    </label>
+
+    <button id="replay-timestamp-button">
+      Seek timestamp
     </button>
   </section>
 
@@ -598,6 +628,24 @@
         ),
       });
 
+    document.getElementById(
+      "replay-timestamp-button"
+    ).onclick = () => {
+      const value =
+        document.getElementById(
+          "replay-timestamp-seek"
+        ).value.trim();
+
+      if (!value) {
+        return;
+      }
+
+      sendReplayCommand({
+        command: "seekTimestamp",
+        timestampNs: value,
+      });
+    };
+
     function connect() {
       const socket =
         new WebSocket(socketUrl);
@@ -615,13 +663,27 @@
         }
       );
 
+      let latestMarketPayload = null;
+      let renderScheduled = false;
+
       socket.addEventListener(
         "message",
         (event) => {
           try {
-            render(
-              JSON.parse(event.data)
-            );
+            latestMarketPayload =
+              JSON.parse(event.data);
+
+            if (!renderScheduled) {
+              renderScheduled = true;
+
+              requestAnimationFrame(() => {
+                if (latestMarketPayload) {
+                  render(latestMarketPayload);
+                }
+
+                renderScheduled = false;
+              });
+            }
           } catch (error) {
             console.error(
               "Invalid market payload",
