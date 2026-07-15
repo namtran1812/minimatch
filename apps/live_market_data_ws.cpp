@@ -3,6 +3,7 @@
 #include "minimatch/binance_feed.hpp"
 #include "minimatch/kraken_feed.hpp"
 #include "minimatch/market_data.hpp"
+#include "minimatch/venue_health.hpp"
 #include "minimatch/market_recorder.hpp"
 #include "minimatch/router_market_data.hpp"
 
@@ -238,6 +239,16 @@ class LiveMarketState {
 
     coinbase_ready_ = true;
     ++coinbase_snapshot_count_;
+
+    health_.record_snapshot(
+        "COINBASE",
+        now_ns()
+    );
+
+    health_.set_synchronized(
+        "COINBASE",
+        true
+    );
   }
 
   void apply_coinbase_updates(
@@ -281,6 +292,16 @@ class LiveMarketState {
     }
 
     ++coinbase_update_count_;
+
+    health_.record_update(
+        "COINBASE",
+        now_ns()
+    );
+
+    health_.set_synchronized(
+        "COINBASE",
+        true
+    );
 
     if (
         recorder_ &&
@@ -374,6 +395,16 @@ class LiveMarketState {
 
     binance_ready_ = true;
     ++binance_snapshot_count_;
+
+    health_.record_snapshot(
+        "BINANCE",
+        now_ns()
+    );
+
+    health_.set_synchronized(
+        "BINANCE",
+        true
+    );
   }
 
   void apply_binance_updates(
@@ -411,6 +442,16 @@ class LiveMarketState {
 
     ++binance_update_count_;
 
+    health_.record_update(
+        "BINANCE",
+        now_ns()
+    );
+
+    health_.set_synchronized(
+        "BINANCE",
+        true
+    );
+
     if (
         recorder_ &&
         binance_update_count_ % 100 == 0
@@ -446,6 +487,16 @@ class LiveMarketState {
 
     kraken_ready_ = true;
     ++kraken_snapshot_count_;
+
+    health_.record_snapshot(
+        "KRAKEN",
+        now_ns()
+    );
+
+    health_.set_synchronized(
+        "KRAKEN",
+        true
+    );
   }
 
   void apply_kraken_updates(
@@ -482,6 +533,16 @@ class LiveMarketState {
     }
 
     ++kraken_update_count_;
+
+    health_.record_update(
+        "KRAKEN",
+        now_ns()
+    );
+
+    health_.set_synchronized(
+        "KRAKEN",
+        true
+    );
 
     if (
         recorder_ &&
@@ -657,7 +718,62 @@ class LiveMarketState {
     }
 
     output
-        << "],\"routing\":{"
+        << "],\"venueHealth\":[";
+
+  {
+    const auto health_states =
+        health_.snapshots(now_ns());
+
+    for (std::size_t index = 0;
+         index < health_states.size();
+         ++index) {
+      if (index > 0) {
+        output << ',';
+      }
+
+      const auto& health =
+          health_states[index];
+
+      output
+          << '{'
+          << "\"venue\":\""
+          << escape_json(health.venue)
+          << "\",\"status\":\""
+          << minimatch::to_string(
+                 health.status
+             )
+          << "\",\"synchronized\":"
+          << (
+                 health.synchronized
+                     ? "true"
+                     : "false"
+             )
+          << ",\"lastMessageNs\":"
+          << health.last_message_ns
+          << ",\"quoteAgeNs\":"
+          << health.quote_age_ns
+          << ",\"messagesPerSecond\":"
+          << health.messages_per_second
+          << ",\"messageCount\":"
+          << health.message_count
+          << ",\"snapshotCount\":"
+          << health.snapshot_count
+          << ",\"updateCount\":"
+          << health.update_count
+          << ",\"reconnectCount\":"
+          << health.reconnect_count
+          << ",\"rejectedCount\":"
+          << health.rejected_count
+          << ",\"sequenceGapCount\":"
+          << health.sequence_gap_count
+          << ",\"checksumErrorCount\":"
+          << health.checksum_error_count
+          << '}';
+    }
+  }
+
+  output
+      << "],\"routing\":{"
         << "\"buy\":"
         << route_json(buy_plan)
         << ",\"sell\":"
@@ -673,6 +789,9 @@ class LiveMarketState {
   mutable std::mutex mutex_;
 
   minimatch::ConsolidatedMarketData market_;
+
+  minimatch::VenueHealthMonitor
+      health_;
 
   std::shared_ptr<
       minimatch::MarketRecorder
