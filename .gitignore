@@ -19,3 +19,7 @@ data/executions/
 
 # Runtime FIX session database
 minimatch_fix.sqlite
+
+# Runtime market-data recordings
+data/recordings/*.bin
+*.market.bin

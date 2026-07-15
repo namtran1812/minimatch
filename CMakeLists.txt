@@ -195,6 +195,30 @@ target_link_libraries(
     OpenSSL::Crypto
 )
 
+
+add_executable(
+  minimatch_market_record
+  apps/market_record.cpp
+)
+
+target_link_libraries(
+  minimatch_market_record
+  PRIVATE
+    minimatch
+)
+
+add_executable(
+  minimatch_market_time_replay
+  apps/market_replay.cpp
+)
+
+target_link_libraries(
+  minimatch_market_time_replay
+  PRIVATE
+    minimatch
+    Threads::Threads
+)
+
 if(MINIMATCH_BUILD_TESTS)
   include(FetchContent)
   cmake_policy(SET CMP0135 NEW)
