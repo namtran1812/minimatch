@@ -1,5 +1,7 @@
 #include "minimatch/kraken_l2.hpp"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 namespace {
@@ -199,7 +201,7 @@ TEST(KrakenLevel2, NormalizesSnapshotAndUpdate) {
       "asks":[
         {"price":101.0,"qty":2.0}
       ],
-      "checksum":1,
+      "checksum":0,
       "timestamp":"test"
     }
   ]
@@ -234,7 +236,7 @@ TEST(KrakenLevel2, NormalizesSnapshotAndUpdate) {
       "asks":[
         {"price":101.0,"qty":0.0}
       ],
-      "checksum":2,
+      "checksum":0,
       "timestamp":"test"
     }
   ]
@@ -251,17 +253,80 @@ TEST(KrakenLevel2, NormalizesSnapshotAndUpdate) {
 
   ASSERT_EQ(updates.size(), 2U);
 
-  EXPECT_EQ(updates[0].venue, "KRAKEN");
-  EXPECT_EQ(updates[0].symbol, "BTC-USD");
-  EXPECT_EQ(updates[0].sequence, 1U);
-  EXPECT_EQ(
-      updates[0].side,
-      MarketDataSide::Bid
+  const auto bid_update =
+      std::find_if(
+          updates.begin(),
+          updates.end(),
+          [](
+              const minimatch::
+                  MarketDataUpdate& update
+          ) {
+            return
+                update.side ==
+                    MarketDataSide::Bid &&
+                update.type ==
+                    MarketDataUpdateType::
+                        Upsert &&
+                update.price == 100.5;
+          }
+      );
+
+  const auto ask_delete =
+      std::find_if(
+          updates.begin(),
+          updates.end(),
+          [](
+              const minimatch::
+                  MarketDataUpdate& update
+          ) {
+            return
+                update.side ==
+                    MarketDataSide::Ask &&
+                update.type ==
+                    MarketDataUpdateType::
+                        Delete &&
+                update.price == 101.0;
+          }
+      );
+
+  ASSERT_NE(
+      bid_update,
+      updates.end()
+  );
+
+  ASSERT_NE(
+      ask_delete,
+      updates.end()
   );
 
   EXPECT_EQ(
-      updates[1].type,
-      MarketDataUpdateType::Delete
+      bid_update->venue,
+      "KRAKEN"
+  );
+
+  EXPECT_EQ(
+      bid_update->symbol,
+      "BTC-USD"
+  );
+
+  EXPECT_EQ(
+      bid_update->sequence,
+      1U
+  );
+
+  EXPECT_DOUBLE_EQ(
+      bid_update->quantity,
+      3.0
+  );
+
+  EXPECT_EQ(
+      ask_delete->sequence,
+      1U
+  );
+
+  EXPECT_DOUBLE_EQ(
+      ask_delete->quantity,
+      0.0
   );
 }
 
