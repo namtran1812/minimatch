@@ -92,6 +92,7 @@ add_library(minimatch
     src/replay_control.cpp
     src/coinbase_l2.cpp
     src/binance_l2.cpp
+    src/binance_feed.cpp
     src/backtest_engine.cpp
     src/execution_engine.cpp
     src/oms.cpp
@@ -116,6 +117,9 @@ target_link_libraries(
   minimatch
   PUBLIC
     ${MINIMATCH_SQLITE_TARGET}
+    Threads::Threads
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 target_compile_options(minimatch PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
 

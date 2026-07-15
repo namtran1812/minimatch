@@ -1,4 +1,6 @@
 #include "minimatch/coinbase_l2.hpp"
+#include "minimatch/binance_l2.hpp"
+#include "minimatch/binance_feed.hpp"
 #include "minimatch/market_data.hpp"
 #include "minimatch/market_recorder.hpp"
 #include "minimatch/router_market_data.hpp"
@@ -43,6 +45,33 @@ constexpr const char* coinbase_host =
 
 constexpr const char* coinbase_port = "443";
 constexpr const char* coinbase_target = "/";
+
+template <typename Stream>
+void configure_tls_hostname(
+    Stream& stream,
+    const std::string& host
+) {
+  if (!SSL_set_tlsext_host_name(
+          stream.native_handle(),
+          host.c_str()
+      )) {
+    const auto error_code =
+        static_cast<int>(
+            ::ERR_get_error()
+        );
+
+    throw beast::system_error(
+        beast::error_code(
+            error_code,
+            asio::error::get_ssl_category()
+        )
+    );
+  }
+
+  stream.set_verify_callback(
+      ssl::host_name_verification(host)
+  );
+}
 
 std::uint64_t now_ns() {
   return static_cast<std::uint64_t>(
@@ -318,6 +347,77 @@ class LiveMarketState {
     ) / 2.0;
   }
 
+  void apply_binance_snapshot(
+      minimatch::MarketDataSnapshot snapshot
+  ) {
+    std::lock_guard<std::mutex> lock(
+        mutex_
+    );
+
+    const auto decision =
+        market_.apply_snapshot(snapshot);
+
+    if (!decision.accepted) {
+      throw std::runtime_error(
+          "Binance snapshot rejected: " +
+          decision.message
+      );
+    }
+
+    if (recorder_) {
+      recorder_->write_snapshot(
+          snapshot,
+          now_ns()
+      );
+    }
+
+    binance_ready_ = true;
+    ++binance_snapshot_count_;
+  }
+
+  void apply_binance_updates(
+      const std::vector<
+          minimatch::MarketDataUpdate
+      >& updates
+  ) {
+    std::lock_guard<std::mutex> lock(
+        mutex_
+    );
+
+    if (!binance_ready_ ||
+        updates.empty()) {
+      return;
+    }
+
+    const auto decision =
+        market_.apply_batch(updates);
+
+    if (!decision.accepted) {
+      binance_ready_ = false;
+
+      throw std::runtime_error(
+          "Binance update rejected: " +
+          decision.message
+      );
+    }
+
+    if (recorder_) {
+      recorder_->write_update_batch(
+          updates,
+          now_ns()
+      );
+    }
+
+    ++binance_update_count_;
+
+    if (
+        recorder_ &&
+        binance_update_count_ % 100 == 0
+    ) {
+      recorder_->flush();
+    }
+  }
+
   void apply_simulated_snapshot(
       const std::string& venue,
       std::uint64_t sequence,
@@ -426,6 +526,16 @@ class LiveMarketState {
         << coinbase_snapshot_count_
         << ",\"coinbaseUpdates\":"
         << coinbase_update_count_
+        << ",\"binanceReady\":"
+        << (
+               binance_ready_
+                   ? "true"
+                   : "false"
+           )
+        << ",\"binanceSnapshots\":"
+        << binance_snapshot_count_
+        << ",\"binanceUpdates\":"
+        << binance_update_count_
         << ",\"recordingEnabled\":"
         << (
                recorder_
@@ -540,6 +650,14 @@ class LiveMarketState {
 
   std::uint64_t
       coinbase_update_count_{0};
+
+  bool binance_ready_{false};
+
+  std::uint64_t
+      binance_snapshot_count_{0};
+
+  std::uint64_t
+      binance_update_count_{0};
 };
 
 void run_simulated_venues(
@@ -554,7 +672,6 @@ void run_simulated_venues(
       movement(0.0, 0.03);
 
   std::uint64_t kraken_sequence = 1;
-  std::uint64_t binance_sequence = 1;
 
   double fallback_midpoint = 64610.0;
 
@@ -571,9 +688,6 @@ void run_simulated_venues(
         fallback_midpoint +
         movement(random);
 
-    const double binance_mid =
-        fallback_midpoint +
-        movement(random);
 
     state->apply_simulated_snapshot(
         "KRAKEN",
@@ -584,18 +698,80 @@ void run_simulated_venues(
         1.8
     );
 
-    state->apply_simulated_snapshot(
-        "BINANCE",
-        binance_sequence++,
-        binance_mid - 0.05,
-        binance_mid + 0.05,
-        2.2,
-        2.0
-    );
 
     std::this_thread::sleep_for(
         std::chrono::milliseconds(200)
     );
+  }
+}
+
+void run_binance_feed(
+    const std::shared_ptr<
+        LiveMarketState
+    >& state,
+    const std::string& product_id,
+    std::atomic<bool>& running
+) {
+  try {
+    minimatch::BinanceFeed feed(
+        minimatch::BinanceFeedConfig{
+            .exchange_symbol = "BTCUSDT",
+            .normalized_symbol = "BTC-USDT"
+        }
+    );
+
+    feed.run(
+        running,
+        [state](
+            const minimatch::
+                MarketDataSnapshot& snapshot
+        ) {
+          state->apply_binance_snapshot(
+              snapshot
+          );
+        },
+        [state](
+            const std::vector<
+                minimatch::MarketDataUpdate
+            >& updates
+        ) {
+          state->apply_binance_updates(
+              updates
+          );
+        },
+        [](
+            const minimatch::
+                BinanceFeedStats& stats
+        ) {
+          if (
+              stats.accepted_updates > 0 &&
+              stats.accepted_updates % 1000 ==
+                  0
+          ) {
+            std::cout
+                << "Binance feed accepted="
+                << stats.accepted_updates
+                << " ignored="
+                << stats.ignored_updates
+                << " reconnects="
+                << stats.reconnects
+                << " synchronized="
+                << (
+                       stats.synchronized
+                           ? "true"
+                           : "false"
+                   )
+                << '\n';
+          }
+        }
+    );
+  } catch (const std::exception& error) {
+    std::cerr
+        << "Binance feed stopped: "
+        << error.what()
+        << '\n';
+
+    running.store(false);
   }
 }
 
@@ -905,6 +1081,13 @@ int main(int argc, char** argv) {
         std::ref(running)
     );
 
+    std::thread binance_thread(
+        run_binance_feed,
+        state,
+        product_id,
+        std::ref(running)
+    );
+
     std::thread simulated_thread(
         run_simulated_venues,
         state,
@@ -934,6 +1117,7 @@ int main(int argc, char** argv) {
     running.store(false);
 
     coinbase_thread.join();
+    binance_thread.join();
     simulated_thread.join();
 
     return EXIT_SUCCESS;
