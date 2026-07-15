@@ -1,5 +1,6 @@
 #include "minimatch/coinbase_l2.hpp"
 #include "minimatch/market_data.hpp"
+#include "minimatch/market_recorder.hpp"
 #include "minimatch/router_market_data.hpp"
 
 #include <boost/asio.hpp>
@@ -167,10 +168,14 @@ std::string route_json(
 
 class LiveMarketState {
  public:
-  explicit LiveMarketState(
-      std::string product_id
+  LiveMarketState(
+      std::string product_id,
+      std::shared_ptr<
+          minimatch::MarketRecorder
+      > recorder
   )
-      : product_id_(std::move(product_id)) {}
+      : product_id_(std::move(product_id)),
+        recorder_(std::move(recorder)) {}
 
   void apply_coinbase_snapshot(
       minimatch::MarketDataSnapshot snapshot
@@ -191,6 +196,13 @@ class LiveMarketState {
       throw std::runtime_error(
           "Coinbase snapshot rejected: " +
           decision.message
+      );
+    }
+
+    if (recorder_) {
+      recorder_->write_snapshot(
+          snapshot,
+          now_ns()
       );
     }
 
@@ -231,7 +243,43 @@ class LiveMarketState {
       );
     }
 
+    if (recorder_) {
+      recorder_->write_update_batch(
+          updates,
+          now_ns()
+      );
+    }
+
     ++coinbase_update_count_;
+
+    if (
+        recorder_ &&
+        coinbase_update_count_ % 100 == 0
+    ) {
+      recorder_->flush();
+    }
+}
+
+  [[nodiscard]] std::size_t
+  recorded_records() const {
+    std::lock_guard<std::mutex> lock(
+        mutex_
+    );
+
+    return recorder_
+        ? recorder_->records_written()
+        : 0;
+  }
+
+  [[nodiscard]] std::uint64_t
+  recorded_bytes() const {
+    std::lock_guard<std::mutex> lock(
+        mutex_
+    );
+
+    return recorder_
+        ? recorder_->bytes_written()
+        : 0;
   }
 
   [[nodiscard]] std::optional<double>
@@ -378,6 +426,24 @@ class LiveMarketState {
         << coinbase_snapshot_count_
         << ",\"coinbaseUpdates\":"
         << coinbase_update_count_
+        << ",\"recordingEnabled\":"
+        << (
+               recorder_
+                   ? "true"
+                   : "false"
+           )
+        << ",\"recordedRecords\":"
+        << (
+               recorder_
+                   ? recorder_->records_written()
+                   : 0
+           )
+        << ",\"recordedBytes\":"
+        << (
+               recorder_
+                   ? recorder_->bytes_written()
+                   : 0
+           )
         << ",\"bbo\":{"
         << "\"valid\":"
         << (bbo.valid ? "true" : "false")
@@ -459,6 +525,10 @@ class LiveMarketState {
   mutable std::mutex mutex_;
 
   minimatch::ConsolidatedMarketData market_;
+
+  std::shared_ptr<
+      minimatch::MarketRecorder
+  > recorder_;
 
   std::uint64_t
       normalized_coinbase_sequence_{0};
@@ -767,6 +837,47 @@ int main(int argc, char** argv) {
             ? argv[2]
             : "BTC-USD";
 
+    std::string recording_path;
+
+    for (int index = 3;
+         index < argc;
+         ++index) {
+      const std::string argument =
+          argv[index];
+
+      if (argument == "--record") {
+        if (index + 1 >= argc) {
+          throw std::invalid_argument(
+              "--record requires a file path"
+          );
+        }
+
+        recording_path =
+            argv[++index];
+      } else {
+        throw std::invalid_argument(
+            "unknown argument: " +
+            argument
+        );
+      }
+    }
+
+    std::shared_ptr<
+        minimatch::MarketRecorder
+    > recorder;
+
+    if (!recording_path.empty()) {
+      recorder =
+          std::make_shared<
+              minimatch::MarketRecorder
+          >(recording_path);
+
+      std::cout
+          << "Recording normalized market data to "
+          << recording_path
+          << '\n';
+    }
+
     asio::io_context io_context;
 
     tcp::acceptor acceptor(
@@ -780,7 +891,10 @@ int main(int argc, char** argv) {
     auto state =
         std::make_shared<
             LiveMarketState
-        >(product_id);
+        >(
+            product_id,
+            recorder
+        );
 
     std::atomic<bool> running{true};
 

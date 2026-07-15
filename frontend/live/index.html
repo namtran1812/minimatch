@@ -201,6 +201,26 @@
             —
           </div>
         </div>
+
+        <div class="metric">
+          <div class="muted">Recorded events</div>
+          <div
+            id="recorded-records"
+            class="metric-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="muted">Recorded bytes</div>
+          <div
+            id="recorded-bytes"
+            class="metric-value"
+          >
+            —
+          </div>
+        </div>
       </div>
     </section>
 
@@ -389,6 +409,22 @@
         new Date(
           Number(data.timestampNs) / 1_000_000
         ).toLocaleTimeString();
+
+      document.getElementById(
+        "recorded-records"
+      ).textContent =
+        data.recordingEnabled
+          ? data.recordedRecords
+          : "disabled";
+
+      document.getElementById(
+        "recorded-bytes"
+      ).textContent =
+        data.recordingEnabled
+          ? Number(
+              data.recordedBytes
+            ).toLocaleString()
+          : "disabled";
 
       renderRoute(
         "buy-route",
