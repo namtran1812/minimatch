@@ -219,6 +219,19 @@ target_link_libraries(
     Threads::Threads
 )
 
+
+add_executable(
+  minimatch_market_replay_ws
+  apps/market_replay_ws.cpp
+)
+
+target_link_libraries(
+  minimatch_market_replay_ws
+  PRIVATE
+    minimatch
+    Threads::Threads
+)
+
 if(MINIMATCH_BUILD_TESTS)
   include(FetchContent)
   cmake_policy(SET CMP0135 NEW)

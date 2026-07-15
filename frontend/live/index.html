@@ -221,6 +221,26 @@
             —
           </div>
         </div>
+
+        <div class="metric">
+          <div class="muted">Mode</div>
+          <div
+            id="market-mode"
+            class="metric-value"
+          >
+            live
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="muted">Replay progress</div>
+          <div
+            id="replay-progress"
+            class="metric-value"
+          >
+            —
+          </div>
+        </div>
       </div>
     </section>
 
@@ -246,8 +266,17 @@
   <div id="venues" class="grid"></div>
 
   <script>
+    const parameters =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const socketPort =
+      parameters.get("wsPort") ||
+      "8089";
+
     const socketUrl =
-      "ws://127.0.0.1:8089";
+      `ws://127.0.0.1:${socketPort}`;
 
     const statusElement =
       document.getElementById("status");
@@ -425,6 +454,24 @@
               data.recordedBytes
             ).toLocaleString()
           : "disabled";
+
+      document.getElementById(
+        "market-mode"
+      ).textContent =
+        data.mode === "replay"
+          ? `replay ${data.replay.speed}×`
+          : "live";
+
+      document.getElementById(
+        "replay-progress"
+      ).textContent =
+        data.mode === "replay"
+          ? `${data.replay.recordIndex} records${
+              data.replay.complete
+                ? " — complete"
+                : ""
+            }`
+          : "—";
 
       renderRoute(
         "buy-route",
