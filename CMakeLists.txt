@@ -92,7 +92,9 @@ add_library(minimatch
     src/replay_control.cpp
     src/coinbase_l2.cpp
     src/binance_l2.cpp
+    src/kraken_l2.cpp
     src/binance_feed.cpp
+    src/kraken_feed.cpp
     src/backtest_engine.cpp
     src/execution_engine.cpp
     src/oms.cpp
@@ -253,6 +255,21 @@ target_link_libraries(
     OpenSSL::Crypto
 )
 
+
+add_executable(
+  minimatch_kraken_l2
+  apps/kraken_l2_client.cpp
+)
+
+target_link_libraries(
+  minimatch_kraken_l2
+  PRIVATE
+    minimatch
+    Threads::Threads
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
 if(MINIMATCH_BUILD_TESTS)
   include(FetchContent)
   cmake_policy(SET CMP0135 NEW)
@@ -265,7 +282,7 @@ if(MINIMATCH_BUILD_TESTS)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
   add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/router_market_data_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/market_data_test.cpp
-    tests/market_recorder_test.cpp tests/replay_control_test.cpp tests/coinbase_l2_test.cpp tests/binance_l2_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/fix_test.cpp tests/fix_session_test.cpp tests/fix_store_test.cpp tests/fix_gateway_test.cpp tests/execution_risk_test.cpp tests/execution_store_test.cpp)
+    tests/market_recorder_test.cpp tests/replay_control_test.cpp tests/coinbase_l2_test.cpp tests/binance_l2_test.cpp tests/kraken_l2_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/fix_test.cpp tests/fix_session_test.cpp tests/fix_store_test.cpp tests/fix_gateway_test.cpp tests/execution_risk_test.cpp tests/execution_store_test.cpp)
   
 
 target_link_libraries(
