@@ -234,6 +234,21 @@ target_link_libraries(
     Threads::Threads
 )
 
+
+add_executable(
+  minimatch_binance_l2
+  apps/binance_l2_client.cpp
+)
+
+target_link_libraries(
+  minimatch_binance_l2
+  PRIVATE
+    minimatch
+    Threads::Threads
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
 if(MINIMATCH_BUILD_TESTS)
   include(FetchContent)
   cmake_policy(SET CMP0135 NEW)
