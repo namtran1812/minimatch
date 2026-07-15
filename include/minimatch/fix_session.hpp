@@ -47,6 +47,9 @@ struct FixSessionResult {
   std::string message;
 
   std::optional<FixMessage> response;
+
+  std::optional<int> resend_begin_sequence;
+  std::optional<int> resend_end_sequence;
 };
 
 class FixSession {
@@ -149,6 +152,16 @@ class FixSession {
   );
 
   FixSessionResult process_test_request(
+      const FixMessage& message,
+      std::uint64_t timestamp_ns
+  );
+
+  FixSessionResult process_resend_request(
+      const FixMessage& message,
+      std::uint64_t timestamp_ns
+  );
+
+  FixSessionResult process_sequence_reset(
       const FixMessage& message,
       std::uint64_t timestamp_ns
   );
