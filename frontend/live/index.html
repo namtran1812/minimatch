@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+  <title>MiniMatch Live Market</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #080b10;
+      color: #d9e2ef;
+    }
+
+    h1,
+    h2,
+    p {
+      margin-top: 0;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .status {
+      padding: 8px 12px;
+      border: 1px solid #334155;
+      border-radius: 6px;
+    }
+
+    .connected {
+      color: #86efac;
+    }
+
+    .disconnected {
+      color: #fca5a5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      border: 1px solid #263244;
+      border-radius: 8px;
+      padding: 16px;
+      background: #0d121a;
+    }
+
+    .bbo {
+      font-size: 28px;
+      line-height: 1.4;
+    }
+
+    .bid {
+      color: #86efac;
+    }
+
+    .ask {
+      color: #fca5a5;
+    }
+
+    .muted {
+      color: #94a3b8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 6px 8px;
+      text-align: right;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+
+    .route-leg {
+      border-bottom: 1px solid #1e293b;
+      padding: 8px 0;
+    }
+
+    .route-leg:last-child {
+      border-bottom: 0;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .metric {
+      padding: 10px;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+    }
+
+    .metric-value {
+      font-size: 18px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div>
+      <h1>MiniMatch Live Market</h1>
+      <p class="muted">
+        Live Coinbase depth, consolidated market,
+        and smart-order routing
+      </p>
+    </div>
+
+    <div
+      id="status"
+      class="status disconnected"
+    >
+      disconnected
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Consolidated BBO</h2>
+      <div id="bbo" class="bbo">
+        Waiting for market data...
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="muted">Midpoint</div>
+          <div
+            id="midpoint"
+            class="metric-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="muted">Spread</div>
+          <div
+            id="spread"
+            class="metric-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="muted">Coinbase updates</div>
+          <div
+            id="updates"
+            class="metric-value"
+          >
+            —
+          </div>
+        </div>
+
+        <div class="metric">
+          <div class="muted">Timestamp</div>
+          <div
+            id="timestamp"
+            class="metric-value"
+          >
+            —
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Buy route</h2>
+      <div id="buy-route">
+        Waiting...
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Sell route</h2>
+      <div id="sell-route">
+        Waiting...
+      </div>
+    </section>
+  </div>
+
+  <h2 style="margin-top: 24px">
+    Venue Level-2 Books
+  </h2>
+
+  <div id="venues" class="grid"></div>
+
+  <script>
+    const socketUrl =
+      "ws://127.0.0.1:8089";
+
+    const statusElement =
+      document.getElementById("status");
+
+    const number = (
+      value,
+      digits = 2
+    ) =>
+      Number(value).toLocaleString(
+        undefined,
+        {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        }
+      );
+
+    function renderRoute(
+      elementId,
+      route
+    ) {
+      const element =
+        document.getElementById(elementId);
+
+      if (!route?.legs?.length) {
+        element.textContent =
+          "No route available";
+        return;
+      }
+
+      element.innerHTML = route.legs
+        .map(
+          (leg, index) => `
+            <div class="route-leg">
+              <strong>
+                ${index + 1}. ${leg.venue}
+              </strong>
+              <div>
+                ${number(leg.quantity, 8)}
+                @ ${number(leg.price)}
+              </div>
+              <div class="muted">
+                effective:
+                ${number(leg.effectivePrice)}
+              </div>
+              <div class="muted">
+                estimated fee:
+                ${number(leg.estimatedFee, 8)}
+              </div>
+            </div>
+          `
+        )
+        .join("");
+    }
+
+    function renderBook(venue) {
+      const rowCount = Math.max(
+        venue.bids.length,
+        venue.asks.length
+      );
+
+      const rows = [];
+
+      for (
+        let index = 0;
+        index < rowCount;
+        index += 1
+      ) {
+        const bid = venue.bids[index];
+        const ask = venue.asks[index];
+
+        rows.push(`
+          <tr>
+            <td class="bid">
+              ${bid ? number(bid.price) : ""}
+            </td>
+            <td class="bid">
+              ${bid
+                ? number(bid.quantity, 8)
+                : ""}
+            </td>
+            <td class="ask">
+              ${ask ? number(ask.price) : ""}
+            </td>
+            <td class="ask">
+              ${ask
+                ? number(ask.quantity, 8)
+                : ""}
+            </td>
+          </tr>
+        `);
+      }
+
+      return `
+        <section class="panel">
+          <h2>${venue.venue}</h2>
+
+          <p class="muted">
+            sequence=${venue.sequence}
+            synchronized=${venue.synchronized}
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Bid price</th>
+                <th>Bid qty</th>
+                <th>Ask price</th>
+                <th>Ask qty</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${rows.join("")}
+            </tbody>
+          </table>
+        </section>
+      `;
+    }
+
+    function render(data) {
+      const bbo = data.bbo;
+
+      document.getElementById(
+        "bbo"
+      ).innerHTML = `
+        <span class="bid">
+          ${bbo.bidVenue}
+          ${number(bbo.bidPrice)}
+          × ${number(bbo.bidQuantity, 8)}
+        </span>
+
+        <br />
+
+        <span class="ask">
+          ${bbo.askVenue}
+          ${number(bbo.askPrice)}
+          × ${number(bbo.askQuantity, 8)}
+        </span>
+      `;
+
+      document.getElementById(
+        "midpoint"
+      ).textContent =
+        number(bbo.midpoint, 4);
+
+      document.getElementById(
+        "spread"
+      ).textContent =
+        number(bbo.spread, 4);
+
+      document.getElementById(
+        "updates"
+      ).textContent =
+        data.coinbaseUpdates;
+
+      document.getElementById(
+        "timestamp"
+      ).textContent =
+        new Date(
+          Number(data.timestampNs) / 1_000_000
+        ).toLocaleTimeString();
+
+      renderRoute(
+        "buy-route",
+        data.routing.buy
+      );
+
+      renderRoute(
+        "sell-route",
+        data.routing.sell
+      );
+
+      document.getElementById(
+        "venues"
+      ).innerHTML =
+        data.venues
+          .map(renderBook)
+          .join("");
+    }
+
+    function connect() {
+      const socket =
+        new WebSocket(socketUrl);
+
+      socket.addEventListener(
+        "open",
+        () => {
+          statusElement.textContent =
+            "connected";
+
+          statusElement.className =
+            "status connected";
+        }
+      );
+
+      socket.addEventListener(
+        "message",
+        (event) => {
+          try {
+            render(
+              JSON.parse(event.data)
+            );
+          } catch (error) {
+            console.error(
+              "Invalid market payload",
+              error
+            );
+          }
+        }
+      );
+
+      socket.addEventListener(
+        "close",
+        () => {
+          statusElement.textContent =
+            "reconnecting";
+
+          statusElement.className =
+            "status disconnected";
+
+          setTimeout(connect, 1500);
+        }
+      );
+
+      socket.addEventListener(
+        "error",
+        () => socket.close()
+      );
+    }
+
+    connect();
+  </script>
+</body>
+</html>
