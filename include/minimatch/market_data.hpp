@@ -88,6 +88,10 @@ class Level2Book {
       const MarketDataUpdate& update
   );
 
+  MarketDataDecision apply_batch(
+      const std::vector<MarketDataUpdate>& updates
+  );
+
   [[nodiscard]] std::optional<MarketDataLevel>
   best_bid() const;
 
@@ -130,6 +134,10 @@ class ConsolidatedMarketData {
 
   MarketDataDecision apply(
       const MarketDataUpdate& update
+  );
+
+  MarketDataDecision apply_batch(
+      const std::vector<MarketDataUpdate>& updates
   );
 
   [[nodiscard]] std::optional<Level2Book>
