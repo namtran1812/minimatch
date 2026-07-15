@@ -65,6 +65,10 @@ BacktestResult run_historical_backtest(
   OrderManagementSystem& order_manager =
       oms == nullptr ? local_oms : *oms;
 
+  ExecutionRiskManager risk_manager(
+      request.risk_limits
+  );
+
   const ParentOrderId parent_order_id =
       order_manager.create_parent(
           ParentOrderRequest{
@@ -175,6 +179,59 @@ BacktestResult run_historical_backtest(
             }
         );
 
+    const ExecutionRiskDecision risk_decision =
+        risk_manager.check(
+            ExecutionRiskCheck{
+                .side = request.side,
+                .parent_quantity =
+                    request.quantity,
+                .child_quantity =
+                    requested_child,
+                .order_price = price,
+                .reference_price =
+                    result.arrival_price,
+                .observed_market_volume =
+                    available
+            }
+        );
+
+    if (!risk_decision.accepted) {
+      order_manager.reject_child(
+          child_order_id,
+          selected->timestamp_ns
+      );
+
+      ++result.rejected_child_count;
+
+      result.fills.push_back(
+          BacktestFill{
+              .slice_index = slice_index,
+              .parent_order_id =
+                  parent_order_id,
+              .child_order_id =
+                  child_order_id,
+              .execution_report_id = 0,
+              .timestamp_ns =
+                  selected->timestamp_ns,
+              .requested_quantity =
+                  requested_child,
+              .filled_quantity = 0.0,
+              .remaining_quantity =
+                  requested_child,
+              .price = price,
+              .notional = 0.0,
+              .fee = 0.0,
+              .risk_accepted = false,
+              .risk_reject_reason =
+                  risk_decision.reason
+          }
+      );
+
+      continue;
+    }
+
+    ++result.accepted_child_count;
+
     order_manager.mark_child_working(
         child_order_id,
         selected->timestamp_ns
@@ -219,7 +276,10 @@ BacktestResult run_historical_backtest(
                 requested_child - filled,
             .price = price,
             .notional = notional,
-            .fee = fee
+            .fee = fee,
+            .risk_accepted = true,
+            .risk_reject_reason =
+                ExecutionRiskRejectReason::None
         }
     );
 

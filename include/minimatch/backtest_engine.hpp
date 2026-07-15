@@ -1,6 +1,7 @@
 #pragma once
 
 #include "minimatch/execution_algo.hpp"
+#include "minimatch/execution_risk.hpp"
 #include "minimatch/market_replay.hpp"
 #include "minimatch/oms.hpp"
 #include "minimatch/router.hpp"
@@ -22,6 +23,8 @@ struct BacktestRequest {
   double taker_fee_bps{0.0};
   double latency_ms{0.0};
   double latency_cost_bps_per_ms{0.0};
+
+  ExecutionRiskLimits risk_limits{};
 };
 
 struct BacktestFill {
@@ -40,6 +43,12 @@ struct BacktestFill {
   double price{0.0};
   double notional{0.0};
   double fee{0.0};
+
+  bool risk_accepted{true};
+
+  ExecutionRiskRejectReason risk_reject_reason{
+      ExecutionRiskRejectReason::None
+  };
 };
 
 struct BacktestResult {
@@ -61,6 +70,9 @@ struct BacktestResult {
 
   double total_notional{0.0};
   double total_fees{0.0};
+
+  std::size_t accepted_child_count{0};
+  std::size_t rejected_child_count{0};
 
   std::vector<BacktestFill> fills;
 };

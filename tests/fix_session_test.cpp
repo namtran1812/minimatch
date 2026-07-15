@@ -418,4 +418,128 @@ TEST(FixSession, RestoresPersistentSequenceState) {
 }
 
 
+
+TEST(FixSession, RequestsResendForSequenceGap) {
+  FixSession session;
+
+  FixMessage logon =
+      inbound_message(
+          FixMessageType::Logon,
+          1
+      );
+
+  logon.set(98, "0");
+  logon.set(108, "30");
+
+  ASSERT_TRUE(
+      session.receive(logon, 100).accepted
+  );
+
+  FixMessage order =
+      inbound_message(
+          FixMessageType::NewOrderSingle,
+          4
+      );
+
+  const auto result =
+      session.receive(order, 200);
+
+  EXPECT_FALSE(result.accepted);
+
+  ASSERT_TRUE(result.response.has_value());
+
+  EXPECT_EQ(
+      result.response->message_type,
+      FixMessageType::ResendRequest
+  );
+
+  EXPECT_EQ(
+      result.response->get(7),
+      std::optional<std::string>("2")
+  );
+
+  EXPECT_EQ(
+      result.response->get(16),
+      std::optional<std::string>("3")
+  );
+}
+
+TEST(FixSession, AcceptsValidResendRequest) {
+  FixSession session;
+
+  FixMessage logon =
+      inbound_message(
+          FixMessageType::Logon,
+          1
+      );
+
+  logon.set(98, "0");
+  logon.set(108, "30");
+
+  ASSERT_TRUE(
+      session.receive(logon, 100).accepted
+  );
+
+  FixMessage request =
+      inbound_message(
+          FixMessageType::ResendRequest,
+          2
+      );
+
+  request.set(7, "1");
+  request.set(16, "4");
+
+  const auto result =
+      session.receive(request, 200);
+
+  EXPECT_TRUE(result.accepted);
+
+  EXPECT_EQ(
+      result.resend_begin_sequence,
+      std::optional<int>(1)
+  );
+
+  EXPECT_EQ(
+      result.resend_end_sequence,
+      std::optional<int>(4)
+  );
+}
+
+TEST(FixSession, AppliesSequenceReset) {
+  FixSession session;
+
+  FixMessage logon =
+      inbound_message(
+          FixMessageType::Logon,
+          1
+      );
+
+  logon.set(98, "0");
+  logon.set(108, "30");
+
+  ASSERT_TRUE(
+      session.receive(logon, 100).accepted
+  );
+
+  FixMessage reset =
+      inbound_message(
+          FixMessageType::SequenceReset,
+          2
+      );
+
+  reset.set(36, "8");
+  reset.set(123, "Y");
+
+  const auto result =
+      session.receive(reset, 200);
+
+  EXPECT_TRUE(result.accepted);
+
+  EXPECT_EQ(
+      session.expected_incoming_sequence(),
+      8
+  );
+}
+
+
 }  // namespace

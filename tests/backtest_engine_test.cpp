@@ -7,6 +7,8 @@ namespace {
 using minimatch::BacktestRequest;
 using minimatch::ExecutionAlgorithm;
 using minimatch::ExecutionScheduleRequest;
+using minimatch::ExecutionRiskLimits;
+using minimatch::ExecutionRiskRejectReason;
 using minimatch::MarketEventType;
 using minimatch::MarketReplay;
 using minimatch::MarketReplayEvent;
@@ -302,6 +304,122 @@ TEST(BacktestEngine, FillsReferenceOmsRecords) {
           result.fills[0].child_order_id
       ).has_value()
   );
+}
+
+
+
+TEST(BacktestEngine, RejectsChildWhenKillSwitchIsActive) {
+  OrderManagementSystem oms;
+
+  const BacktestRequest request{
+      .symbol = "btcusd",
+      .side = RouteSide::Buy,
+      .quantity = 1.0,
+      .schedule = ExecutionScheduleRequest{
+          .algorithm = ExecutionAlgorithm::Market,
+          .quantity = 1.0,
+          .slices = 1
+      },
+      .risk_limits = ExecutionRiskLimits{
+          .kill_switch_active = true
+      }
+  };
+
+  const auto result =
+      run_historical_backtest(
+          request,
+          sample_replay(),
+          &oms
+      );
+
+  EXPECT_FALSE(result.complete);
+  EXPECT_DOUBLE_EQ(result.filled_quantity, 0.0);
+  EXPECT_EQ(result.accepted_child_count, 0U);
+  EXPECT_EQ(result.rejected_child_count, 1U);
+
+  ASSERT_EQ(result.fills.size(), 1U);
+  EXPECT_FALSE(result.fills[0].risk_accepted);
+
+  EXPECT_EQ(
+      result.fills[0].risk_reject_reason,
+      ExecutionRiskRejectReason::KillSwitchActive
+  );
+
+  const auto child =
+      oms.find_child(
+          result.fills[0].child_order_id
+      );
+
+  ASSERT_TRUE(child.has_value());
+  EXPECT_EQ(child->status, OrderStatus::Rejected);
+}
+
+TEST(BacktestEngine, RejectsChildAboveQuantityLimit) {
+  OrderManagementSystem oms;
+
+  const BacktestRequest request{
+      .symbol = "btcusd",
+      .side = RouteSide::Buy,
+      .quantity = 2.0,
+      .schedule = ExecutionScheduleRequest{
+          .algorithm = ExecutionAlgorithm::Market,
+          .quantity = 2.0,
+          .slices = 1
+      },
+      .risk_limits = ExecutionRiskLimits{
+          .max_child_quantity = 0.5
+      }
+  };
+
+  const auto result =
+      run_historical_backtest(
+          request,
+          sample_replay(),
+          &oms
+      );
+
+  EXPECT_EQ(result.rejected_child_count, 1U);
+  EXPECT_DOUBLE_EQ(result.filled_quantity, 0.0);
+
+  ASSERT_EQ(result.fills.size(), 1U);
+
+  EXPECT_EQ(
+      result.fills[0].risk_reject_reason,
+      ExecutionRiskRejectReason::ChildQuantityExceeded
+  );
+}
+
+TEST(BacktestEngine, AcceptsChildWithinRiskLimits) {
+  OrderManagementSystem oms;
+
+  const BacktestRequest request{
+      .symbol = "btcusd",
+      .side = RouteSide::Buy,
+      .quantity = 1.0,
+      .schedule = ExecutionScheduleRequest{
+          .algorithm = ExecutionAlgorithm::Market,
+          .quantity = 1.0,
+          .slices = 1
+      },
+      .risk_limits = ExecutionRiskLimits{
+          .max_parent_quantity = 10.0,
+          .max_child_quantity = 2.0,
+          .max_order_notional = 1000.0,
+          .max_participation_rate = 1.0,
+          .price_collar_bps = 100.0
+      }
+  };
+
+  const auto result =
+      run_historical_backtest(
+          request,
+          sample_replay(),
+          &oms
+      );
+
+  EXPECT_EQ(result.accepted_child_count, 1U);
+  EXPECT_EQ(result.rejected_child_count, 0U);
+  EXPECT_TRUE(result.fills[0].risk_accepted);
 }
 
 

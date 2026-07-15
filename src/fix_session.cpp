@@ -170,10 +170,45 @@ FixSessionResult FixSession::receive(
     );
   }
 
-  if (*sequence != expected_incoming_sequence_) {
+  if (*sequence > expected_incoming_sequence_) {
+    FixMessage response =
+        create_admin_message(
+            FixMessageType::ResendRequest,
+            timestamp_ns
+        );
+
+    response.set(
+        7,
+        std::to_string(
+            expected_incoming_sequence_
+        )
+    );
+
+    response.set(
+        16,
+        std::to_string(
+            *sequence - 1
+        )
+    );
+
+    return FixSessionResult{
+        .accepted = false,
+        .reject_reason =
+            FixSessionRejectReason::InvalidSequenceNumber,
+        .message =
+            "incoming sequence gap detected",
+        .response = std::move(response),
+        .resend_begin_sequence =
+            expected_incoming_sequence_,
+        .resend_end_sequence =
+            *sequence - 1
+    };
+  }
+
+  if (*sequence < expected_incoming_sequence_) {
     return reject(
         FixSessionRejectReason::InvalidSequenceNumber,
-        "unexpected incoming sequence number",
+        "incoming sequence number is too low",
         timestamp_ns
     );
   }
@@ -202,6 +237,18 @@ FixSessionResult FixSession::receive(
 
     case FixMessageType::TestRequest:
       return process_test_request(
+          message,
+          timestamp_ns
+      );
+
+    case FixMessageType::ResendRequest:
+      return process_resend_request(
+          message,
+          timestamp_ns
+      );
+
+    case FixMessageType::SequenceReset:
+      return process_sequence_reset(
           message,
           timestamp_ns
       );
@@ -646,6 +693,123 @@ FixSessionResult FixSession::process_test_request(
           timestamp_ns,
           *test_request_id
       )
+  };
+}
+
+
+FixSessionResult FixSession::process_resend_request(
+    const FixMessage& message,
+    std::uint64_t
+) {
+  if (state_ != FixSessionState::Active) {
+    return FixSessionResult{
+        .accepted = false,
+        .reject_reason =
+            FixSessionRejectReason::InvalidState,
+        .message =
+            "resend request received while session inactive",
+        .response = std::nullopt,
+        .resend_begin_sequence = std::nullopt,
+        .resend_end_sequence = std::nullopt
+    };
+  }
+
+  const auto begin_value = message.get(7);
+  const auto end_value = message.get(16);
+
+  if (!begin_value.has_value() ||
+      !end_value.has_value()) {
+    return FixSessionResult{
+        .accepted = false,
+        .reject_reason =
+            FixSessionRejectReason::MissingRequiredField,
+        .message =
+            "missing BeginSeqNo or EndSeqNo",
+        .response = std::nullopt,
+        .resend_begin_sequence = std::nullopt,
+        .resend_end_sequence = std::nullopt
+    };
+  }
+
+  const auto begin_sequence =
+      parse_positive_integer(begin_value);
+
+  const auto end_sequence =
+      parse_positive_integer(end_value);
+
+  if (!begin_sequence.has_value() ||
+      !end_sequence.has_value() ||
+      *end_sequence < *begin_sequence) {
+    return FixSessionResult{
+        .accepted = false,
+        .reject_reason =
+            FixSessionRejectReason::InvalidSequenceNumber,
+        .message =
+            "invalid resend sequence range",
+        .response = std::nullopt,
+        .resend_begin_sequence = std::nullopt,
+        .resend_end_sequence = std::nullopt
+    };
+  }
+
+  return FixSessionResult{
+      .accepted = true,
+      .reject_reason =
+          FixSessionRejectReason::None,
+      .message = "resend request accepted",
+      .response = std::nullopt,
+      .resend_begin_sequence = *begin_sequence,
+      .resend_end_sequence = *end_sequence
+  };
+}
+
+FixSessionResult FixSession::process_sequence_reset(
+    const FixMessage& message,
+    std::uint64_t
+) {
+  const auto new_sequence =
+      parse_positive_integer(
+          message.get(36)
+      );
+
+  if (!new_sequence.has_value()) {
+    return FixSessionResult{
+        .accepted = false,
+        .reject_reason =
+            FixSessionRejectReason::MissingRequiredField,
+        .message =
+            "missing or invalid NewSeqNo",
+        .response = std::nullopt,
+        .resend_begin_sequence = std::nullopt,
+        .resend_end_sequence = std::nullopt
+    };
+  }
+
+  if (*new_sequence <
+      expected_incoming_sequence_) {
+    return FixSessionResult{
+        .accepted = false,
+        .reject_reason =
+            FixSessionRejectReason::InvalidSequenceNumber,
+        .message =
+            "sequence reset moves session backwards",
+        .response = std::nullopt,
+        .resend_begin_sequence = std::nullopt,
+        .resend_end_sequence = std::nullopt
+    };
+  }
+
+  expected_incoming_sequence_ =
+      *new_sequence;
+
+  return FixSessionResult{
+      .accepted = true,
+      .reject_reason =
+          FixSessionRejectReason::None,
+      .message = "sequence reset accepted",
+      .response = std::nullopt,
+      .resend_begin_sequence = std::nullopt,
+      .resend_end_sequence = std::nullopt
   };
 }
 
