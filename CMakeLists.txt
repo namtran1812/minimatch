@@ -3,6 +3,7 @@ project(MiniMatch VERSION 1.0.0 LANGUAGES CXX)
 
 find_package(SQLite3 REQUIRED)
 find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 if(TARGET SQLite3::SQLite3)
   set(MINIMATCH_SQLITE_TARGET SQLite3::SQLite3)
@@ -161,6 +162,36 @@ target_link_libraries(
   PRIVATE
     minimatch
     Threads::Threads
+)
+
+
+add_executable(
+  minimatch_coinbase_l2
+  apps/coinbase_l2_client.cpp
+)
+
+target_link_libraries(
+  minimatch_coinbase_l2
+  PRIVATE
+    minimatch
+    Threads::Threads
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
+
+add_executable(
+  minimatch_live_market_ws
+  apps/live_market_data_ws.cpp
+)
+
+target_link_libraries(
+  minimatch_live_market_ws
+  PRIVATE
+    minimatch
+    Threads::Threads
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 
 if(MINIMATCH_BUILD_TESTS)
