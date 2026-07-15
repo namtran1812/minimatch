@@ -16,6 +16,7 @@ RUN rm -rf /var/lib/apt/lists/* \
         libboost-system-dev \
         libboost-thread-dev \
         libsqlite3-dev \
+    libssl-dev \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
@@ -56,6 +57,7 @@ RUN rm -rf /var/lib/apt/lists/* \
         libboost-system-dev \
         libboost-thread-dev \
         libsqlite3-0 \
+    libssl3 \
         python3 \
         python3-pip \
         ca-certificates \
