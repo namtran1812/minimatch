@@ -1285,28 +1285,48 @@ Kraken WebSocket ───┘
               DETERMINISTIC ANALYSIS / 04
             </div>
 
+            <div class="terminal-section-command">
+              <span class="prompt">$</span>
+              inspect record_replay
+            </div>
+
             <h1>
-              Record + Replay
+              Deterministic Record + Replay
             </h1>
 
             <p class="lead">
-              Capture live market transitions into binary recordings and
-              reconstruct them deterministically for debugging,
-              visualization, research, and performance analysis.
+              MiniMatch captures live multi-venue market events into a
+              binary log and reconstructs the same market state later
+              with deterministic sequencing, interactive controls, and
+              replay-aware routing.
             </p>
 
-            <div class="replay-console">
+            <div class="replay-console replay-preview">
+              <div class="replay-preview-header">
+                <div>
+                  <span>session</span>
+                  <strong>three_venue_live.bin</strong>
+                </div>
+
+                <div>
+                  <span>state</span>
+                  <strong class="replay-ready">
+                    ready
+                  </strong>
+                </div>
+              </div>
+
               <div class="replay-controls">
                 <button data-replay-command="restart">
-                  ↺
+                  restart
                 </button>
 
                 <button data-replay-command="play">
-                  ▶
+                  play
                 </button>
 
                 <button data-replay-command="pause">
-                  ‖
+                  pause
                 </button>
 
                 <button data-speed="1">
@@ -1327,10 +1347,114 @@ Kraken WebSocket ───┘
               </div>
 
               <div class="replay-meta">
-                <span>record 14820 / 41892</span>
-                <span>status: ready</span>
+                <span>
+                  record 14,820 / 41,892
+                </span>
+
+                <span>
+                  deterministic checksum verified
+                </span>
+              </div>
+
+              <div class="replay-capability-list">
+                <div>
+                  <span>01</span>
+                  play and pause without losing state
+                </div>
+
+                <div>
+                  <span>02</span>
+                  change playback speed during a session
+                </div>
+
+                <div>
+                  <span>03</span>
+                  seek by record index or timestamp
+                </div>
+
+                <div>
+                  <span>04</span>
+                  restart from the original recording state
+                </div>
               </div>
             </div>
+
+            <section class="replay-pipeline">
+              <div class="terminal-section-command">
+                <span class="prompt">$</span>
+                replay --pipeline
+              </div>
+
+              <div class="architecture-terminal">
+                <div class="architecture-stage">
+                  Live Venue Events
+                </div>
+
+                <div class="architecture-connector">│</div>
+                <div class="architecture-connector">▼</div>
+
+                <div class="architecture-stage">
+                  Normalize + Validate
+                </div>
+
+                <div class="architecture-connector">│</div>
+                <div class="architecture-connector">▼</div>
+
+                <div class="architecture-stage">
+                  Binary Recorder
+                </div>
+
+                <div class="architecture-branches">
+                  <div>
+                    <span>├──</span>
+                    nanosecond timestamps
+                  </div>
+
+                  <div>
+                    <span>├──</span>
+                    snapshots and updates
+                  </div>
+
+                  <div>
+                    <span>├──</span>
+                    venue and sequence metadata
+                  </div>
+
+                  <div>
+                    <span>└──</span>
+                    integrity checks
+                  </div>
+                </div>
+
+                <div class="architecture-connector">│</div>
+                <div class="architecture-connector">▼</div>
+
+                <div class="architecture-stage">
+                  Replay Controller
+                </div>
+
+                <div class="architecture-connector">│</div>
+                <div class="architecture-connector">▼</div>
+
+                <div class="architecture-output-grid">
+                  <div>
+                    Rebuilt Venue Books
+                  </div>
+
+                  <div>
+                    Consolidated BBO
+                  </div>
+
+                  <div>
+                    Reconstructed Routes
+                  </div>
+
+                  <div>
+                    Replay Dashboard
+                  </div>
+                </div>
+              </div>
+            </section>
 
             <div class="detail-grid">
               <section class="detail-card">
@@ -1362,6 +1486,50 @@ Kraken WebSocket ───┘
             >
               ./open-replay-console
             </a>
+            <div class="action-row replay-actions">
+              <a
+                class="terminal-action primary"
+                href="./replay/"
+              >
+                ./open-replay-terminal
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/src/market_recorder.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                recorder source
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/src/replay_control.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                replay controller
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/apps/market_replay_ws.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                websocket server
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/tests/replay_control_test.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                replay tests
+              </a>
+            </div>
           </article>
 
           <article
