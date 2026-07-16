@@ -1113,3 +1113,197 @@ blockquote {
   border-color: var(--border-strong);
   background: rgba(255, 255, 255, 0.55);
 }
+
+/* Landing page typography and spacing refinement */
+
+:root {
+  --font-xs: 10px;
+  --font-sm: 12px;
+  --font-md: 15px;
+  --font-lg: 20px;
+  --font-xl: clamp(42px, 6vw, 76px);
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 18px;
+  --space-4: 24px;
+  --space-5: 36px;
+  --space-6: 52px;
+}
+
+.tab-panel {
+  max-width: 1040px;
+  padding:
+    clamp(36px, 5vw, 64px)
+    clamp(28px, 5vw, 64px)
+    90px;
+}
+
+.eyebrow {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-xs);
+  line-height: 1;
+  letter-spacing: 0.16em;
+}
+
+h1 {
+  max-width: 900px;
+  font-size: var(--font-xl);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+h2 {
+  font-size: var(--font-lg);
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.hero-copy,
+.lead {
+  max-width: 760px;
+  margin-top: var(--space-4);
+  font-size: var(--font-md);
+  line-height: 1.75;
+}
+
+.developer-project {
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-5);
+  padding: var(--space-4) 0;
+}
+
+.developer-project-label {
+  padding-top: 3px;
+  font-size: var(--font-xs);
+}
+
+.developer-project strong {
+  font-size: var(--font-lg);
+  line-height: 1.2;
+}
+
+.developer-project p {
+  max-width: 680px;
+  font-size: var(--font-sm);
+  line-height: 1.7;
+}
+
+.developer-links {
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.developer-links a {
+  padding: 6px 9px;
+  font-size: var(--font-xs);
+}
+
+.mission-block {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+}
+
+.mission-block h2 {
+  margin-bottom: var(--space-2);
+}
+
+.mission-block p {
+  max-width: 760px;
+  font-size: var(--font-sm);
+  line-height: 1.8;
+}
+
+.metric-grid {
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.metric-card {
+  min-height: 130px;
+  padding: var(--space-3);
+}
+
+.metric-card strong {
+  font-size: 22px;
+}
+
+.metric-card > span:last-child {
+  font-size: var(--font-xs);
+  line-height: 1.55;
+}
+
+.section-block {
+  margin-top: var(--space-6);
+}
+
+.section-heading {
+  padding-bottom: var(--space-2);
+  font-size: var(--font-xs);
+}
+
+.feature-index {
+  margin-top: var(--space-3);
+}
+
+.feature-index > div {
+  padding: 14px 16px;
+  font-size: var(--font-sm);
+}
+
+.detail-grid,
+.venue-grid {
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.detail-card,
+.venue-card {
+  padding: var(--space-4);
+}
+
+.detail-card li,
+.venue-card p,
+.pipeline-list > div {
+  font-size: var(--font-sm);
+}
+
+.action-row {
+  margin-top: var(--space-5);
+}
+
+.terminal-action {
+  min-height: 40px;
+  padding: 0 15px;
+  font-size: var(--font-xs);
+}
+
+@media (max-width: 760px) {
+  .tab-panel {
+    padding: 30px 20px 70px;
+  }
+
+  h1 {
+    font-size: 44px;
+  }
+
+  .developer-project {
+    grid-template-columns: 1fr;
+  }
+
+  .developer-project-label {
+    grid-row: auto;
+  }
+
+  .mission-block {
+    grid-template-columns: 1fr;
+  }
+}
