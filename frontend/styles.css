@@ -295,7 +295,10 @@ kbd {
 }
 
 .content-scroll {
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color:
     var(--matcha-soft)
@@ -1024,4 +1027,89 @@ blockquote {
   .terminal-footer {
     justify-content: flex-end;
   }
+}
+
+.developer-project {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 8px 24px;
+  margin-top: 34px;
+  padding: 22px 24px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.developer-project-label {
+  grid-row: span 2;
+  color: var(--sage);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.developer-project strong {
+  color: var(--matcha-dark);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.developer-project p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+/* Ensure the center panel owns vertical scrolling. */
+.terminal-body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.content-pane {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.content-scroll {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+}
+
+.developer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.developer-links a {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--matcha-dark);
+  background: rgba(255, 255, 255, 0.28);
+  font-size: 10px;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.developer-links a::before {
+  content: "↗ ";
+  color: var(--matcha);
+}
+
+.developer-links a[href^="mailto:"]::before {
+  content: "@ ";
+}
+
+.developer-links a:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.55);
 }
