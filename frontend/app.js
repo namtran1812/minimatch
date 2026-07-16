@@ -175,3 +175,36 @@ replayButtons.forEach((button) => {
     }
   });
 });
+
+// Introduction module navigation
+document
+  .querySelectorAll("[data-open-tab]")
+  .forEach((moduleButton) => {
+    moduleButton.addEventListener("click", () => {
+      const target = moduleButton.dataset.openTab;
+
+      const tabIndex = tabs.findIndex(
+        (tab) => tab.dataset.tab === target
+      );
+
+      if (tabIndex >= 0) {
+        activateTab(tabIndex);
+      }
+    });
+  });
+
+document
+  .querySelectorAll("[data-open-tab]")
+  .forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = button.dataset.openTab;
+
+      const index = tabs.findIndex(
+        (tab) => tab.dataset.tab === target
+      );
+
+      if (index >= 0) {
+        activateTab(index);
+      }
+    });
+  });
