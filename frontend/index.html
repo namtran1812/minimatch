@@ -1,341 +1,1316 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8effb">
-  <title>MiniMatch Market Microstructure Lab</title>
-  <link rel="stylesheet" href="/styles.css?v=clean-y2k-2">
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <meta
+    name="description"
+    content="MiniMatch — a deterministic, low-latency electronic trading systems laboratory."
+  >
+
+  <title>MiniMatch / Trading Systems Laboratory</title>
+
+  <link
+    rel="stylesheet"
+    href="./styles.css"
+  >
 </head>
+
 <body>
-  <div class="sticker-field" aria-hidden="true">
-    <img class="sticker sticker-star sticker-star-a" src="/assets/star.svg" alt="">
-    <img class="sticker sticker-star sticker-star-b" src="/assets/star.svg" alt="">
-    <img class="sticker sticker-heart" src="/assets/heart.svg" alt="">
-    <img class="sticker sticker-bow" src="/assets/bow.svg" alt="">
-    <span class="sparkle sparkle-a">✦</span><span class="sparkle sparkle-b">✧</span><span class="sparkle sparkle-c">★</span>
-  </div>
-  <main class="shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <div class="mascot-badge"><img src="/assets/bunny.svg" alt="MiniMatch bunny mascot"></div>
-        <div class="brand-copy">
-          <div class="eyebrow">LOW-LATENCY EXCHANGE · MARKET MICROSTRUCTURE LAB</div>
-          <div class="brand-line"><h1>MiniMatch</h1><span class="brand-script">research workspace</span></div>
-          <p class="subtitle">Deterministic matching, replay, live depth, risk controls, and market-microstructure research in one integrated workspace.</p>
-        </div>
+  <div class="noise" aria-hidden="true"></div>
+
+  <main class="terminal-shell">
+    <header class="terminal-header">
+      <div class="window-controls" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
       </div>
-      <div class="header-actions">
-        <label class="symbol-picker">Symbol<select id="viewSymbol"><option value="1">1</option></select></label>
-        <div class="status"><span class="dot"></span><span id="connection">Connecting</span></div>
+
+      <div class="terminal-title">
+        namtran@minimatch:~/systems
+      </div>
+
+      <div class="terminal-status">
+        <span class="status-light"></span>
+        operational
       </div>
     </header>
 
-    <section class="metrics" id="metrics"></section>
-
-    <nav class="tabs" aria-label="Dashboard views">
-      <button class="tab active" data-tab="exchange" type="button">Exchange</button>
-      <button class="tab" data-tab="microstructure" type="button">Research</button>
-      <button class="tab" data-tab="testing" type="button">Scenario Lab</button>
-      <button class="tab" data-tab="timemachine" type="button">Replay</button>
-      <button class="tab" data-tab="live" type="button">Live Market</button>
-    </nav>
-
-    <section class="tab-page active" id="tab-exchange">
-      <section class="workspace">
-        <aside class="panel controls command-deck">
-          <div class="command-zone order-zone">
-            <div class="zone-kicker">ORDER ENTRY</div>
-            <div class="section-title">Submit command</div>
-            <div class="order-fields">
-              <label>Order ID<input id="orderId" type="number" value="100"></label>
-              <label>Client ID<input id="clientId" type="number" value="42"></label>
-              <label>Symbol<input id="symbol" type="number" value="1"></label>
-              <label>Side<select id="side"><option>buy</option><option>sell</option></select></label>
-              <label>Type<select id="type"><option>limit</option><option>market</option><option>ioc</option><option>fok</option><option>post</option></select></label>
-              <label>Price<input id="price" type="number" value="10000"></label>
-              <label>Quantity<input id="quantity" type="number" value="25"></label>
-              <button id="submitOrder" class="primary command-submit" type="button">Submit order</button>
-            </div>
+    <section class="terminal-body">
+      <aside class="sidebar">
+        <div class="project-mark">
+          <div class="prompt-line">
+            <span class="prompt">$</span>
+            ./minimatch
           </div>
 
-          <div class="command-zone manage-zone">
-            <div class="zone-kicker">ORDER MANAGEMENT</div>
-            <div class="section-title">Manage active order</div>
-            <div class="button-stack">
-              <button id="cancelOrder" type="button">Cancel order</button>
-              <button id="replaceOrder" type="button">Replace order</button>
-            </div>
-          </div>
+          <p>
+            deterministic trading infrastructure
+          </p>
+        </div>
 
-          <div class="command-zone scenario-zone">
-            <div class="zone-kicker">SCENARIOS</div>
-            <div class="section-title">Scenario launcher</div>
-            <div class="scenario-grid">
-              <button data-scenario="basic" type="button">Seed book</button>
-              <button data-scenario="fifo" type="button">FIFO match</button>
-              <button data-scenario="advanced" type="button">FOK / post-only</button>
-              <button data-scenario="multisymbol" type="button">Multi-symbol</button>
-            </div>
-            <button id="reset" class="danger" type="button">Reset exchange</button>
-          </div>
-          <div id="feedback" class="feedback command-feedback" aria-live="polite"></div>
-        </aside>
+        <nav
+          class="tab-list"
+          aria-label="Project navigation"
+        >
+          <button
+            class="tab-button active"
+            data-tab="introduction"
+          >
+            <span>00</span>
+            introduction
+          </button>
 
-        <section class="market-column">
-          <div class="panel book-panel">
-            <div class="panel-header">
+          <button
+            class="tab-button"
+            data-tab="engine"
+          >
+            <span>01</span>
+            matching_engine
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="market-data"
+          >
+            <span>02</span>
+            market_data
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="routing"
+          >
+            <span>03</span>
+            smart_router
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="record-replay"
+          >
+            <span>04</span>
+            record_replay
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="execution"
+          >
+            <span>05</span>
+            execution_risk
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="protocols"
+          >
+            <span>06</span>
+            fix_gateway
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="observability"
+          >
+            <span>07</span>
+            observability
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="benchmarks"
+          >
+            <span>08</span>
+            performance
+          </button>
+
+          <button
+            class="tab-button"
+            data-tab="building"
+          >
+            <span>09</span>
+            build_log
+          </button>
+        </nav>
+
+        <div class="sidebar-links">
+          <a href="./live/">
+            <span>↗</span>
+            live dashboard
+          </a>
+
+          <a href="./replay/">
+            <span>↗</span>
+            replay console
+          </a>
+
+          <a
+            href="https://github.com/namtran1812/minimatch"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span>↗</span>
+            source
+          </a>
+        </div>
+
+        <div class="keyboard-help">
+          <span>keys</span>
+          <kbd>j</kbd>/<kbd>k</kbd> navigate
+          <kbd>enter</kbd> select
+        </div>
+      </aside>
+
+      <section class="content-pane">
+        <div class="command-bar">
+          <span class="prompt">namtran@minimatch $</span>
+
+          <span id="active-command">
+            cat README.md
+          </span>
+
+          <span class="cursor" aria-hidden="true"></span>
+        </div>
+
+        <div class="content-scroll">
+          <article
+            class="tab-panel active"
+            id="introduction"
+          >
+            <div class="eyebrow">
+              SYSTEM PROFILE / 00
+            </div>
+
+            <h1>
+              MiniMatch
+            </h1>
+
+            <p class="hero-copy">
+              A deterministic electronic trading systems laboratory
+              built to study matching, market data, routing, execution,
+              replay, latency, and operational reliability as one
+              integrated system.
+            </p>
+
+            <div class="mission-block">
+              <span class="line-number">01</span>
+
               <div>
-                <div class="section-title">Order book</div>
-                <div class="muted">Price-time priority · top 12 levels</div>
+                <h2>Mission</h2>
+
+                <p>
+                  Build a transparent trading infrastructure stack in
+                  which every order, quote, routing decision, execution,
+                  and state transition can be measured, recorded,
+                  reproduced, and explained.
+                </p>
               </div>
-              <div class="book-badges">
-                <span class="badge" id="imbalanceBadge">Imbalance —</span>
-                <span class="badge" id="micropriceBadge">Microprice —</span>
+            </div>
+
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="metric-label">
+                  language
+                </span>
+
+                <strong>C++20</strong>
+
+                <span>
+                  deterministic systems core
+                </span>
+              </div>
+
+              <div class="metric-card">
+                <span class="metric-label">
+                  venues
+                </span>
+
+                <strong>03</strong>
+
+                <span>
+                  Coinbase / Binance / Kraken
+                </span>
+              </div>
+
+              <div class="metric-card">
+                <span class="metric-label">
+                  validation
+                </span>
+
+                <strong>200+</strong>
+
+                <span>
+                  unit and integration tests
+                </span>
+              </div>
+
+              <div class="metric-card">
+                <span class="metric-label">
+                  replay
+                </span>
+
+                <strong>deterministic</strong>
+
+                <span>
+                  binary recording and reconstruction
+                </span>
               </div>
             </div>
-            <div class="spread" id="spread"></div>
-            <div class="book-head"><span>Price</span><span>Size</span><span>Orders</span><span>Depth</span></div>
-            <div class="book asks" id="asks"></div>
-            <div class="midline">MID / SPREAD</div>
-            <div class="book bids" id="bids"></div>
-          </div>
-        </section>
 
-        <aside class="panel feeds">
-          <div class="section-title">Trades</div>
-          <div class="feed" id="trades"></div>
-          <div class="section-title separated">Execution reports</div>
-          <div class="feed reports" id="reports"></div>
-        </aside>
-      </section>
-    </section>
+            <section class="section-block">
+              <div class="section-heading">
+                <span>system_map</span>
+                <span>01</span>
+              </div>
 
-    <section class="tab-page" id="tab-microstructure">
-      <section class="analytics-grid">
-        <article class="chart-panel wide">
-          <div class="chart-header"><div><div class="section-title">Price discovery</div><div class="muted">Midprice and queue-weighted microprice</div></div><button class="small" id="clearHistory" type="button">Clear history</button></div>
-          <svg id="priceChart" class="chart-svg" data-height="230" viewBox="0 0 800 230" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
-          <div class="legend"><span><i class="legend-mid"></i>Midprice</span><span><i class="legend-micro"></i>Microprice</span></div>
-        </article>
-        <article class="chart-panel">
-          <div class="section-title">Spread</div>
-          <div class="muted">Quoted spread through time</div>
-          <svg id="spreadChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
-        </article>
-        <article class="chart-panel">
-          <div class="section-title">Order-flow imbalance</div>
-          <div class="muted">Top-five-level bid share, centered at 50%</div>
-          <svg id="imbalanceChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
-        </article>
-        <article class="chart-panel wide">
-          <div class="section-title">Depth profile</div>
-          <div class="muted">Displayed liquidity by distance from the midpoint</div>
-          <svg id="depthChart" class="chart-svg" data-height="230" viewBox="0 0 800 230" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
-          <div class="legend"><span><i class="legend-bid"></i>Bid depth</span><span><i class="legend-ask"></i>Ask depth</span></div>
-        </article>
-        <article class="chart-panel">
-          <div class="section-title">Trade size</div>
-          <div class="muted">Most recent executions</div>
-          <svg id="tradeChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
-        </article>
-        <article class="chart-panel">
-          <div class="section-title">API round-trip latency</div>
-          <div class="muted">Browser-to-C++ dashboard request time; not matching latency</div>
-          <svg id="latencyChart" class="chart-svg" data-height="210" viewBox="0 0 800 210" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg>
-        </article>
-      </section>
-    </section>
+              <div class="architecture">
+                <div class="architecture-node">
+                  <span>01</span>
+                  Exchange feeds
+                </div>
 
-    <section class="tab-page" id="tab-testing">
-      <section class="testing-layout">
-        <article class="panel simulator-panel">
-          <div class="section-title">Automated market simulation</div>
-          <p class="muted">Generate deterministic-looking two-sided flow through the same HTTP order API used by the manual form.</p>
-          <div class="grid two">
-            <label>Orders / second<input id="simRate" type="number" min="1" max="50" value="8"></label>
-            <label>Base price<input id="simBase" type="number" value="10000"></label>
-            <label>Price range<input id="simRange" type="number" min="1" value="8"></label>
-            <label>Max quantity<input id="simQty" type="number" min="1" value="100"></label>
-          </div>
-          <div class="button-row">
-            <button id="startSimulation" class="primary" type="button">Start flow</button>
-            <button id="stopSimulation" type="button">Stop</button>
-          </div>
-          <div class="simulation-status" id="simulationStatus">Stopped</div>
-        </article>
+                <div class="architecture-arrow">↓</div>
 
-        <article class="panel test-panel">
-          <div class="section-title">Invariant monitor</div>
-          <div class="invariant-list" id="invariants"></div>
-          <p class="muted">These checks run against every refreshed state returned by the C++ server.</p>
-        </article>
+                <div class="architecture-node">
+                  <span>02</span>
+                  Normalize + validate
+                </div>
 
-        <article class="panel test-panel">
-          <div class="section-title">Live distribution</div>
-          <div class="distribution" id="distribution"></div>
-        </article>
+                <div class="architecture-arrow">↓</div>
 
-        <article class="panel test-panel full">
-          <div class="section-title">How to demonstrate the system</div>
-          <ol class="demo-steps">
-            <li>Load <strong>FIFO match</strong> and show that older orders execute first at the same price.</li>
-            <li>Load <strong>FOK / post-only</strong> and inspect rejected versus filled execution reports.</li>
-            <li>Start automated flow, then open <strong>Microstructure</strong> to watch spread, imbalance, microprice, and depth evolve.</li>
-            <li>Switch symbols after loading <strong>Multi-symbol</strong> to prove independent books and deterministic routing.</li>
-          </ol>
-        </article>
-      </section>
-    </section>
+                <div class="architecture-node">
+                  <span>03</span>
+                  Consolidated L2 books
+                </div>
 
+                <div class="architecture-arrow">↓</div>
 
-    <section class="tab-page" id="tab-live">
-      <section class="live-layout">
-        <article class="panel live-controls">
-          <div class="section-title">Live venue connection</div>
-          <p class="muted">View normalized external market data. External events are visualized and recorded; they are not matched by the MiniMatch venue.</p>
-          <div class="grid two">
-            <label>Venue<select id="liveVenue">
-              <option value="coinbase">Coinbase Advanced Trade — Recommended</option>
-              <option value="kraken">Kraken Spot — Working</option>
-              <option value="binance">Binance.US Spot — Working</option>
-              <option value="demo">Recorded Demo — Working</option>
-              <option value="alpaca">Alpaca IEX Equities — Coming Soon</option>
-              <option value="massive">Massive / Polygon Flat Files — Coming Soon</option>
-              <option value="polygon">Massive / Polygon Live Stocks — Coming Soon</option>
-            </select></label>
-            <label>Symbol<input id="liveSymbol" value="btcusd"></label>
-            <label>Refresh (ms)<input id="liveRefreshMs" type="number" min="100" value="500"></label>
-          </div>
-          <div class="button-row"><button id="connectLive" class="primary" type="button">View live feed</button><button id="stopLive" type="button">Stop view</button></div>
-          <div id="liveStatus" class="simulation-status">Adapter not selected</div>
-          <div class="live-help">
-            <strong>Start the adapter in another terminal</strong>
-            <code id="liveCommand">./scripts/run_live_binance.sh btcusdt</code>
-          </div>
-          <div id="massivePlaceholder" class="provider-placeholder" hidden>
-            <div class="provider-placeholder__eyebrow">HISTORICAL DATA PROVIDER</div>
-            <h3>Massive Flat Files</h3>
-            <p>Download compressed historical market datasets from Massive's S3-compatible Flat Files service, import them into MiniMatch SQLite, and use them for backtesting and replay.</p>
-            <div class="provider-placeholder__grid">
-              <div><span>Provider type</span><strong>Historical</strong></div>
-              <div><span>Current dataset</span><strong>US stock minute bars</strong></div>
-              <div><span>Storage</span><strong>SQLite + JSON</strong></div>
-              <div><span>Authentication</span><strong>S3 access keys</strong></div>
+                <div class="architecture-node">
+                  <span>04</span>
+                  Smart order router
+                </div>
+
+                <div class="architecture-arrow">↓</div>
+
+                <div class="architecture-node">
+                  <span>05</span>
+                  Execution + risk + FIX
+                </div>
+
+                <div class="architecture-arrow">↓</div>
+
+                <div class="architecture-node">
+                  <span>06</span>
+                  Record + replay + observe
+                </div>
+              </div>
+            </section>
+
+            <section class="section-block">
+              <div class="section-heading">
+                <span>implemented_modules</span>
+                <span>02</span>
+              </div>
+
+              <div class="feature-index">
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  price-time matching
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  binary TCP gateway
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  three-venue L2 ingestion
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  consolidated market data
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  smart order routing
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  execution algorithms
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  FIX session and gateway
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  pre-trade risk
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  binary recorder
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  deterministic replay
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  venue health monitoring
+                </div>
+
+                <div>
+                  <span class="feature-state">[ready]</span>
+                  percentile latency metrics
+                </div>
+              </div>
+            </section>
+
+            <div class="action-row">
+              <a
+                class="terminal-action primary"
+                href="./live/"
+              >
+                ./launch-live
+              </a>
+
+              <a
+                class="terminal-action"
+                href="./replay/"
+              >
+                ./launch-replay
+              </a>
             </div>
-            <div class="provider-placeholder__steps">
-              <strong>Workflow</strong>
-              <ol>
-                <li>Rotate the previously exposed credential and place the new key pair in <code>.env</code>.</li>
-                <li>Run <code>source scripts/setup_massive.sh</code>.</li>
-                <li>List or download an entitled Flat File.</li>
-                <li>Import a ticker into <code>data/historical/market_history.db</code>.</li>
-              </ol>
-            </div>
-          </div>
-          <div id="genericProviderPlaceholder" class="provider-placeholder" hidden>
-            <div class="provider-placeholder__eyebrow" id="genericProviderEyebrow">PROVIDER ROADMAP</div>
-            <h3 id="genericProviderTitle">Provider integration</h3>
-            <p id="genericProviderDescription"></p>
-            <div class="provider-placeholder__grid" id="genericProviderGrid"></div>
-            <div class="provider-placeholder__steps"><strong>Current status</strong><p id="genericProviderStatus"></p></div>
-          </div>
-          <div id="alpacaPlaceholder" class="provider-placeholder" hidden>
-            <div class="provider-placeholder__eyebrow">PLANNED VENUE ADAPTER</div>
-            <h3>Alpaca US Equities</h3>
-            <p>MiniMatch is architected for Alpaca trade and quote streams, but this distribution keeps the adapter disabled until credentials and market-data entitlements are configured.</p>
-            <div class="provider-placeholder__grid">
-              <div><span>Current status</span><strong>Coming soon</strong></div>
-              <div><span>Planned coverage</span><strong>US equities</strong></div>
-              <div><span>Data model</span><strong>Quotes + trades</strong></div>
-              <div><span>Default feed</span><strong>IEX</strong></div>
-            </div>
-            <div class="provider-placeholder__steps">
-              <strong>Integration roadmap</strong>
-              <ol>
-                <li>Configure Alpaca API credentials.</li>
-                <li>Validate account market-data entitlements.</li>
-                <li>Start the authenticated WebSocket adapter.</li>
-                <li>Normalize quotes and trades into the shared venue schema.</li>
-              </ol>
-            </div>
-          </div>
-        </article>
-        <article class="panel live-metrics-panel">
-          <div class="section-title">Feed health</div>
-          <div id="liveMetrics" class="live-metrics"></div>
-        </article>
-        <article class="panel live-book-panel">
-          <div class="panel-header"><div><div class="section-title">External order book</div><div class="muted" id="liveBookSubtitle">No data</div></div><span class="badge" id="liveConnectionBadge">OFFLINE</span></div>
-          <div class="live-quote-grid" id="liveSpread"></div>
-          <div class="live-ops-strip">
-            <div><small>Feed age</small><strong id="liveAge">—</strong></div>
-            <div><small>API RTT</small><strong id="liveRtt">—</strong></div>
-            <div><small>Reconnects</small><strong id="liveReconnects">0</strong></div>
-            <div><small>Dropped</small><strong id="liveDropped">0</strong></div>
-          </div>
-          <div class="book-head"><span>Price</span><span>Size</span><span>Orders</span><span>Depth</span></div>
-          <div class="book asks" id="liveAsks"></div><div class="midline">LIVE EXTERNAL MARKET</div><div class="book bids" id="liveBids"></div>
-        </article>
-        <article class="chart-panel live-chart live-chart-price"><div class="section-title">Live midprice / microprice</div><div class="muted">Normalized from the external venue feed</div><svg id="livePriceChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
-        <article class="chart-panel live-chart live-chart-spread"><div class="section-title">Live spread</div><div class="muted">Quoted spread and basis-point cost</div><svg id="liveSpreadChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
-        <article class="chart-panel live-chart live-chart-rate"><div class="section-title">Message throughput</div><div class="muted">Normalized market events per second</div><svg id="liveRateChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
-        <article class="chart-panel live-chart live-chart-latency"><div class="section-title">API latency distribution</div><div class="muted">Browser-to-C++ dashboard round-trip latency</div><svg id="liveLatencyChart" class="chart-svg" data-height="220" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Interactive market chart"></svg></article>
-        <article class="panel live-heatmap-panel"><div class="section-title">Liquidity heatmap</div><div class="muted">Top levels; intensity is normalized within the visible book</div><div id="liveHeatmap" class="liquidity-heatmap"></div></article>
-        <article class="panel live-queue-panel"><div class="section-title">Queue proxy</div><div class="muted">Displayed size ahead at the selected best level; this is not true Level-3 queue rank.</div><div id="liveQueueProxy" class="queue-proxy"></div></article>
-        <article class="panel live-paper-panel"><div class="section-title">Paper execution</div><div class="muted">Cross the external best bid/ask without sending an order to the venue.</div><div class="paper-metrics"><div><small>Inventory</small><strong id="paperInventory">0</strong></div><div><small>Cash</small><strong id="paperCash">0</strong></div><div><small>Unrealized P&amp;L</small><strong id="paperPnl">0</strong></div></div><div class="button-row"><button id="paperBuy" type="button">Buy 0.001</button><button id="paperSell" type="button">Sell 0.001</button><button id="paperReset" type="button">Reset</button></div></article>
-        <article class="panel live-events-panel full"><div class="section-title">Normalized event timeline</div><div id="liveEventTimeline" class="event-timeline"></div></article>
-        <article class="panel live-trades-panel"><div class="section-title">External trade tape</div><div class="feed" id="liveTrades"></div></article>
-        <article class="panel live-storage-panel full"><div class="section-title">Recorded demo database</div><p class="muted">Every normalized event is stored in <code>data/live/market_events.db</code> and in a session JSONL file. Query it with:</p><code>python3 scripts/query_live_db.py --limit 20</code></article>
-      </section>
-    </section>
+          </article>
 
-    <section class="tab-page" id="tab-timemachine">
-      <section class="testing-layout">
-        <article class="panel simulator-panel full">
-          <div class="section-title">Autonomous strategy arena</div>
-          <p class="muted">Five deterministic agents trade through the real matching engine: market maker, momentum, mean reversion, institutional TWAP, and noise flow.</p>
-          <div class="grid two">
-            <label>Commands<input id="arenaSteps" type="number" min="10" max="5000" value="500"></label>
-            <label>Drop every N messages (0 = off)<input id="dropEvery" type="number" min="0" value="0"></label>
-            <label>Duplicate every N messages (0 = off)<input id="duplicateEvery" type="number" min="0" value="0"></label>
-          </div>
-          <div class="button-row">
-            <button id="runArena" class="primary" type="button">Run arena</button>
-            <button data-scenario="flashcrash" type="button">Flash crash</button>
-            <button data-scenario="liquidityvacuum" type="button">Liquidity vacuum</button>
-          </div>
-          <div id="arenaStatus" class="simulation-status">Ready</div>
-        </article>
+          <article
+            class="tab-panel"
+            id="engine"
+          >
+            <div class="eyebrow">
+              CORE SYSTEM / 01
+            </div>
 
-        <article class="panel test-panel full">
-          <div class="section-title">Exchange time machine</div>
-          <p class="muted">Reconstruct the complete book after any command. Playback is deterministic and never mutates the live exchange.</p>
-          <div class="timeline-controls">
-            <button id="timelineStart" type="button">|◀</button>
-            <button id="timelineBack" type="button">◀</button>
-            <button id="timelinePlay" class="primary" type="button">▶ Play</button>
-            <button id="timelineForward" type="button">▶</button>
-            <button id="timelineEnd" type="button">▶|</button>
-            <label>Speed<select id="timelineSpeed"><option value="800">1×</option><option value="250">5×</option><option value="50">20×</option></select></label>
-          </div>
-          <input id="timelineSlider" type="range" min="0" max="0" value="0">
-          <div class="timeline-meta"><span id="timelineFrame">Frame 0 / 0</span><span id="timelineHash">Hash —</span></div>
-          <div class="timeline-grid">
-            <div><div class="section-title">Historical book</div><div id="historicalBook" class="historical-book"></div></div>
-            <div><div class="section-title">Recent commands</div><div id="timelineActions" class="feed"></div></div>
-          </div>
-        </article>
+            <h1>
+              Matching Engine
+            </h1>
 
-        <article class="panel test-panel full">
-          <div class="section-title">Explainable matching</div>
-          <p class="muted">Click any live trade in the Exchange tab, or enter a sequence number below.</p>
-          <div class="explain-row"><label>Trade sequence<input id="explainSequence" type="number" min="1" value="1"></label><button id="explainTrade" type="button">Explain trade</button></div>
-          <div id="tradeExplanation" class="explanation">No trade selected.</div>
-        </article>
+            <p class="lead">
+              A deterministic, price-time-priority exchange core with
+              explicit order lifecycle semantics and reproducible
+              execution.
+            </p>
+
+            <div class="code-window">
+              <div class="code-window-title">
+                engine/order_flow.txt
+              </div>
+
+              <pre><code>NewOrder
+  │
+  ├── validate
+  ├── assign sequence
+  ├── cross opposing liquidity
+  ├── generate fills
+  └── rest remaining quantity
+
+CancelOrder
+  │
+  ├── locate order
+  ├── unlink from price level
+  └── emit cancellation result</code></pre>
+            </div>
+
+            <div class="detail-grid">
+              <section class="detail-card">
+                <h3>Order types</h3>
+
+                <ul>
+                  <li>Limit</li>
+                  <li>Market</li>
+                  <li>Immediate-or-cancel</li>
+                  <li>Cancel</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Matching guarantees</h3>
+
+                <ul>
+                  <li>FIFO within each price level</li>
+                  <li>Best-price selection</li>
+                  <li>Partial-fill support</li>
+                  <li>Deterministic execution order</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Engineering focus</h3>
+
+                <ul>
+                  <li>Cache-conscious data structures</li>
+                  <li>Stable order references</li>
+                  <li>Explicit sequence numbers</li>
+                  <li>Minimal hot-path allocation</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Validation</h3>
+
+                <ul>
+                  <li>FIFO correctness</li>
+                  <li>IOC remainder cancellation</li>
+                  <li>Market orders never rest</li>
+                  <li>Cancel and partial-fill tests</li>
+                </ul>
+              </section>
+            </div>
+
+            <div class="terminal-note">
+              <span>$ benchmark</span>
+              synthetic workloads exercise 1M+ orders and report
+              throughput plus tail latency.
+            </div>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="market-data"
+          >
+            <div class="eyebrow">
+              MARKET INFRASTRUCTURE / 02
+            </div>
+
+            <h1>
+              Multi-Venue Market Data
+            </h1>
+
+            <p class="lead">
+              Independent exchange protocols are normalized into one
+              deterministic market model while preserving venue-level
+              sequencing and health.
+            </p>
+
+            <div class="venue-grid">
+              <section class="venue-card">
+                <div class="venue-header">
+                  <h3>Coinbase</h3>
+                  <span>healthy</span>
+                </div>
+
+                <p>
+                  Snapshot and incremental L2 processing with normalized
+                  local sequence assignment.
+                </p>
+
+                <div class="tag-row">
+                  <span>WebSocket</span>
+                  <span>L2</span>
+                  <span>TLS</span>
+                </div>
+              </section>
+
+              <section class="venue-card">
+                <div class="venue-header">
+                  <h3>Binance</h3>
+                  <span>healthy</span>
+                </div>
+
+                <p>
+                  REST snapshot alignment, diff stream processing, and
+                  sequence-gap validation.
+                </p>
+
+                <div class="tag-row">
+                  <span>REST</span>
+                  <span>Diff stream</span>
+                  <span>Sequence</span>
+                </div>
+              </section>
+
+              <section class="venue-card">
+                <div class="venue-header">
+                  <h3>Kraken</h3>
+                  <span>healthy</span>
+                </div>
+
+                <p>
+                  Snapshot and update handling with local L2 state and
+                  checksum verification.
+                </p>
+
+                <div class="tag-row">
+                  <span>WebSocket</span>
+                  <span>Checksum</span>
+                  <span>L2</span>
+                </div>
+              </section>
+            </div>
+
+            <section class="section-block">
+              <div class="section-heading">
+                <span>normalization_pipeline</span>
+                <span>01</span>
+              </div>
+
+              <div class="pipeline-list">
+                <div>
+                  <span>receive</span>
+                  Exchange-specific frame arrives.
+                </div>
+
+                <div>
+                  <span>parse</span>
+                  JSON payload becomes typed market events.
+                </div>
+
+                <div>
+                  <span>validate</span>
+                  Sequence, checksum, symbol, and state are verified.
+                </div>
+
+                <div>
+                  <span>normalize</span>
+                  Venue events become common snapshot/update structures.
+                </div>
+
+                <div>
+                  <span>apply</span>
+                  Consolidated L2 state is updated atomically.
+                </div>
+
+                <div>
+                  <span>observe</span>
+                  Counters, health, latency, and recording are updated.
+                </div>
+              </div>
+            </section>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="routing"
+          >
+            <div class="eyebrow">
+              EXECUTION INTELLIGENCE / 03
+            </div>
+
+            <h1>
+              Smart Order Router
+            </h1>
+
+            <p class="lead">
+              Route simulated parent orders across venues using
+              executable liquidity, fees, price, and deterministic
+              multi-leg planning.
+            </p>
+
+            <div class="route-example">
+              <div class="route-request">
+                <span>request</span>
+                BUY 0.40 BTC
+              </div>
+
+              <div class="route-lines">
+                <div>
+                  <span>COINBASE</span>
+                  <strong>0.15 BTC</strong>
+                  <em>@ best ask</em>
+                </div>
+
+                <div>
+                  <span>KRAKEN</span>
+                  <strong>0.20 BTC</strong>
+                  <em>@ second level</em>
+                </div>
+
+                <div>
+                  <span>BINANCE</span>
+                  <strong>0.05 BTC</strong>
+                  <em>@ residual liquidity</em>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-grid">
+              <section class="detail-card">
+                <h3>Inputs</h3>
+
+                <ul>
+                  <li>Consolidated venue books</li>
+                  <li>Side and parent quantity</li>
+                  <li>Venue fee parameters</li>
+                  <li>Price and liquidity levels</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Outputs</h3>
+
+                <ul>
+                  <li>Ordered execution legs</li>
+                  <li>Expected average price</li>
+                  <li>Estimated fees</li>
+                  <li>Filled and remaining quantity</li>
+                </ul>
+              </section>
+            </div>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="record-replay"
+          >
+            <div class="eyebrow">
+              DETERMINISTIC ANALYSIS / 04
+            </div>
+
+            <h1>
+              Record + Replay
+            </h1>
+
+            <p class="lead">
+              Capture live market transitions into binary recordings and
+              reconstruct them deterministically for debugging,
+              visualization, research, and performance analysis.
+            </p>
+
+            <div class="replay-console">
+              <div class="replay-controls">
+                <button data-replay-command="restart">
+                  ↺
+                </button>
+
+                <button data-replay-command="play">
+                  ▶
+                </button>
+
+                <button data-replay-command="pause">
+                  ‖
+                </button>
+
+                <button data-speed="1">
+                  1×
+                </button>
+
+                <button data-speed="5">
+                  5×
+                </button>
+
+                <button data-speed="10">
+                  10×
+                </button>
+              </div>
+
+              <div class="replay-track">
+                <div class="replay-progress"></div>
+              </div>
+
+              <div class="replay-meta">
+                <span>record 14820 / 41892</span>
+                <span>status: ready</span>
+              </div>
+            </div>
+
+            <div class="detail-grid">
+              <section class="detail-card">
+                <h3>Recorder</h3>
+
+                <ul>
+                  <li>Binary snapshots and updates</li>
+                  <li>Nanosecond timestamps</li>
+                  <li>Multi-venue session capture</li>
+                  <li>Periodic flush support</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Replay controller</h3>
+
+                <ul>
+                  <li>Play and pause</li>
+                  <li>Variable speed</li>
+                  <li>Restart</li>
+                  <li>Seek by record or timestamp</li>
+                </ul>
+              </section>
+            </div>
+
+            <a
+              class="terminal-action primary"
+              href="./replay/"
+            >
+              ./open-replay-console
+            </a>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="execution"
+          >
+            <div class="eyebrow">
+              ORDER LIFECYCLE / 05
+            </div>
+
+            <h1>
+              Execution + Risk
+            </h1>
+
+            <p class="lead">
+              Model the lifecycle beyond routing: parent orders,
+              child-order generation, simulated fills, execution
+              reports, persistence, and pre-trade controls.
+            </p>
+
+            <div class="detail-grid">
+              <section class="detail-card">
+                <h3>Execution engine</h3>
+
+                <ul>
+                  <li>Parent and child order state</li>
+                  <li>Partial and complete fills</li>
+                  <li>Execution replay events</li>
+                  <li>Latency and fee accounting</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Algorithms</h3>
+
+                <ul>
+                  <li>Immediate routing</li>
+                  <li>Execution scheduling</li>
+                  <li>Quantity allocation</li>
+                  <li>Backtest integration</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Risk checks</h3>
+
+                <ul>
+                  <li>Maximum order quantity</li>
+                  <li>Maximum notional</li>
+                  <li>Price-band validation</li>
+                  <li>Execution kill switch</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Persistence</h3>
+
+                <ul>
+                  <li>Execution store</li>
+                  <li>SQLite schema</li>
+                  <li>Order and fill recovery</li>
+                  <li>Replayable lifecycle history</li>
+                </ul>
+              </section>
+            </div>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="protocols"
+          >
+            <div class="eyebrow">
+              TRADING PROTOCOLS / 06
+            </div>
+
+            <h1>
+              FIX Gateway
+            </h1>
+
+            <p class="lead">
+              A FIX-oriented gateway and session layer for translating
+              standard trading messages into the internal execution
+              system.
+            </p>
+
+            <div class="code-window">
+              <div class="code-window-title">
+                fix/session.log
+              </div>
+
+              <pre><code>8=FIX.4.4
+35=D
+11=ORDER-1001
+55=BTC-USD
+54=1
+38=0.25
+40=2
+44=65021.50
+
+→ validate session
+→ run pre-trade risk
+→ create internal order
+→ emit ExecutionReport</code></pre>
+            </div>
+
+            <div class="feature-index">
+              <div>
+                <span class="feature-state">[ready]</span>
+                session lifecycle
+              </div>
+
+              <div>
+                <span class="feature-state">[ready]</span>
+                message parsing
+              </div>
+
+              <div>
+                <span class="feature-state">[ready]</span>
+                persistent FIX store
+              </div>
+
+              <div>
+                <span class="feature-state">[ready]</span>
+                gateway translation
+              </div>
+
+              <div>
+                <span class="feature-state">[ready]</span>
+                execution reports
+              </div>
+
+              <div>
+                <span class="feature-state">[ready]</span>
+                gateway tests
+              </div>
+            </div>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="observability"
+          >
+            <div class="eyebrow">
+              OPERATIONS / 07
+            </div>
+
+            <h1>
+              Observability
+            </h1>
+
+            <p class="lead">
+              Make system state visible through venue health,
+              application counters, latency percentiles, structured
+              dashboard data, Prometheus, and Grafana.
+            </p>
+
+            <div class="health-table">
+              <div class="health-row header">
+                <span>venue</span>
+                <span>status</span>
+                <span>rate</span>
+                <span>quote age</span>
+              </div>
+
+              <div class="health-row">
+                <span>COINBASE</span>
+                <span class="healthy">healthy</span>
+                <span>19.4 msg/s</span>
+                <span>73 ms</span>
+              </div>
+
+              <div class="health-row">
+                <span>BINANCE</span>
+                <span class="healthy">healthy</span>
+                <span>11.1 msg/s</span>
+                <span>67 ms</span>
+              </div>
+
+              <div class="health-row">
+                <span>KRAKEN</span>
+                <span class="healthy">healthy</span>
+                <span>6.3 msg/s</span>
+                <span>313 ms</span>
+              </div>
+            </div>
+
+            <div class="detail-grid">
+              <section class="detail-card">
+                <h3>Venue health</h3>
+
+                <ul>
+                  <li>Synchronization state</li>
+                  <li>Message and update rates</li>
+                  <li>Quote age</li>
+                  <li>Sequence and checksum errors</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Latency</h3>
+
+                <ul>
+                  <li>p50 / p95 / p99</li>
+                  <li>Minimum and maximum</li>
+                  <li>Bounded sample windows</li>
+                  <li>Per-venue apply timing</li>
+                </ul>
+              </section>
+
+              <section class="detail-card">
+                <h3>Monitoring</h3>
+
+                <ul>
+                  <li>Prometheus metrics</li>
+                  <li>Grafana dashboard</li>
+                  <li>Execution counters</li>
+                  <li>Replay progress</li>
+                </ul>
+              </section>
+            </div>
+
+            <a
+              class="terminal-action primary"
+              href="./live/"
+            >
+              ./open-live-dashboard
+            </a>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="benchmarks"
+          >
+            <div class="eyebrow">
+              PERFORMANCE / 08
+            </div>
+
+            <h1>
+              Measurement, Not Claims
+            </h1>
+
+            <p class="lead">
+              Performance work is captured with repeatable benchmarks,
+              environment metadata, percentile instrumentation, and
+              saved result files.
+            </p>
+
+            <div class="benchmark-table">
+              <div class="benchmark-row header">
+                <span>metric</span>
+                <span>p50</span>
+                <span>p95</span>
+                <span>p99</span>
+              </div>
+
+              <div class="benchmark-row">
+                <span>route snapshot</span>
+                <span>13.56 ms</span>
+                <span>19.07 ms</span>
+                <span>22.33 ms</span>
+              </div>
+
+              <div class="benchmark-row">
+                <span>serialization</span>
+                <span>20.08 ms</span>
+                <span>27.27 ms</span>
+                <span>30.49 ms</span>
+              </div>
+
+              <div class="benchmark-row">
+                <span>Kraken apply</span>
+                <span>5.71 μs</span>
+                <span>6.04 ms</span>
+                <span>9.70 ms</span>
+              </div>
+
+              <div class="benchmark-row">
+                <span>Binance apply</span>
+                <span>3.45 ms</span>
+                <span>12.61 ms</span>
+                <span>15.25 ms</span>
+              </div>
+
+              <div class="benchmark-row">
+                <span>Coinbase apply</span>
+                <span>7.73 ms</span>
+                <span>12.71 ms</span>
+                <span>13.88 ms</span>
+              </div>
+            </div>
+
+            <div class="terminal-note">
+              <span>note</span>
+              Dashboard-path measurements include locking, routing,
+              recording, health tracking, and serialization. They are
+              intentionally reported as application-level latency rather
+              than matching-engine hot-path latency.
+            </div>
+
+            <section class="section-block">
+              <div class="section-heading">
+                <span>benchmark_artifacts</span>
+                <span>01</span>
+              </div>
+
+              <div class="feature-index">
+                <div>
+                  <span class="feature-state">[saved]</span>
+                  latency_default.txt
+                </div>
+
+                <div>
+                  <span class="feature-state">[saved]</span>
+                  latency_scaling.txt
+                </div>
+
+                <div>
+                  <span class="feature-state">[saved]</span>
+                  loadgen_default.txt
+                </div>
+
+                <div>
+                  <span class="feature-state">[saved]</span>
+                  environment.txt
+                </div>
+              </div>
+            </section>
+          </article>
+
+          <article
+            class="tab-panel"
+            id="building"
+          >
+            <div class="eyebrow">
+              ENGINEERING JOURNAL / 09
+            </div>
+
+            <h1>
+              Build Log
+            </h1>
+
+            <p class="lead">
+              MiniMatch was developed incrementally: correctness first,
+              then protocols, market connectivity, routing, replay,
+              execution, observability, and measurable performance.
+            </p>
+
+            <div class="timeline">
+              <section class="timeline-entry">
+                <div class="timeline-marker">01</div>
+
+                <div>
+                  <span class="timeline-label">
+                    foundation
+                  </span>
+
+                  <h3>
+                    Deterministic matching core
+                  </h3>
+
+                  <p>
+                    Implemented price-time priority, limit and market
+                    orders, IOC behavior, cancellation, partial fills,
+                    and execution reports.
+                  </p>
+                </div>
+              </section>
+
+              <section class="timeline-entry">
+                <div class="timeline-marker">02</div>
+
+                <div>
+                  <span class="timeline-label">
+                    systems boundary
+                  </span>
+
+                  <h3>
+                    Binary gateway and event log
+                  </h3>
+
+                  <p>
+                    Added protocol encoding, TCP transport, replayable
+                    events, snapshots, and deterministic recovery tools.
+                  </p>
+                </div>
+              </section>
+
+              <section class="timeline-entry">
+                <div class="timeline-marker">03</div>
+
+                <div>
+                  <span class="timeline-label">
+                    market connectivity
+                  </span>
+
+                  <h3>
+                    Live multi-venue L2
+                  </h3>
+
+                  <p>
+                    Built adapters for Coinbase, Binance, and Kraken,
+                    including snapshots, incremental updates, sequence
+                    checks, and checksum handling.
+                  </p>
+                </div>
+              </section>
+
+              <section class="timeline-entry">
+                <div class="timeline-marker">04</div>
+
+                <div>
+                  <span class="timeline-label">
+                    execution intelligence
+                  </span>
+
+                  <h3>
+                    Consolidation and routing
+                  </h3>
+
+                  <p>
+                    Combined independent venue books and implemented
+                    deterministic multi-leg routing with fees and
+                    liquidity-aware execution plans.
+                  </p>
+                </div>
+              </section>
+
+              <section class="timeline-entry">
+                <div class="timeline-marker">05</div>
+
+                <div>
+                  <span class="timeline-label">
+                    lifecycle
+                  </span>
+
+                  <h3>
+                    Execution, risk, persistence, and FIX
+                  </h3>
+
+                  <p>
+                    Added execution algorithms, parent-child order
+                    tracking, pre-trade controls, SQLite persistence, FIX
+                    sessions, and gateway translation.
+                  </p>
+                </div>
+              </section>
+
+              <section class="timeline-entry">
+                <div class="timeline-marker">06</div>
+
+                <div>
+                  <span class="timeline-label">
+                    reproducibility
+                  </span>
+
+                  <h3>
+                    Binary recording and interactive replay
+                  </h3>
+
+                  <p>
+                    Captured live sessions and built deterministic replay
+                    with play, pause, restart, speed, and seek controls.
+                  </p>
+                </div>
+              </section>
+
+              <section class="timeline-entry">
+                <div class="timeline-marker">07</div>
+
+                <div>
+                  <span class="timeline-label">
+                    operations
+                  </span>
+
+                  <h3>
+                    Health and latency instrumentation
+                  </h3>
+
+                  <p>
+                    Added venue health, counters, quote age, bounded
+                    percentile tracking, route timing, serialization
+                    timing, and per-feed apply metrics.
+                  </p>
+                </div>
+              </section>
+
+              <section class="timeline-entry">
+                <div class="timeline-marker">08</div>
+
+                <div>
+                  <span class="timeline-label">
+                    deployment
+                  </span>
+
+                  <h3>
+                    Docker, CI, and observability
+                  </h3>
+
+                  <p>
+                    Added container builds, automated tests, Prometheus
+                    integration, Grafana dashboards, benchmark artifacts,
+                    and reproducible startup scripts.
+                  </p>
+                </div>
+              </section>
+            </div>
+
+            <section class="section-block">
+              <div class="section-heading">
+                <span>engineering_principles</span>
+                <span>10</span>
+              </div>
+
+              <div class="principle-list">
+                <blockquote>
+                  Correctness before optimization.
+                </blockquote>
+
+                <blockquote>
+                  Every state transition should be reproducible.
+                </blockquote>
+
+                <blockquote>
+                  Performance claims require measurements.
+                </blockquote>
+
+                <blockquote>
+                  Failures should be observable, not silent.
+                </blockquote>
+
+                <blockquote>
+                  The demo and the underlying system should tell the
+                  same story.
+                </blockquote>
+              </div>
+            </section>
+          </article>
+        </div>
+
+        <footer class="terminal-footer">
+          <span>
+            MiniMatch / C++20 / Boost.Asio / WebSocket / FIX
+          </span>
+
+          <span id="footer-position">
+            tab 00 / 09
+          </span>
+        </footer>
       </section>
     </section>
   </main>
-  <script src="/app.js"></script>
+
+  <script src="./app.js"></script>
 </body>
 </html>
