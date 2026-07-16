@@ -1,0 +1,441 @@
+:root {
+  --mm-bg: #e8efdf;
+  --mm-bg-deep: #dfe8d4;
+  --mm-surface: rgba(247, 250, 243, 0.82);
+  --mm-surface-solid: #f4f8ef;
+  --mm-panel: rgba(255, 255, 255, 0.34);
+  --mm-panel-strong: rgba(255, 255, 255, 0.54);
+
+  --mm-matcha: #607a57;
+  --mm-matcha-dark: #344a34;
+  --mm-matcha-soft: #a9bda0;
+  --mm-sage: #7f9775;
+
+  --mm-text: #263226;
+  --mm-muted: #687566;
+  --mm-border: rgba(70, 91, 65, 0.22);
+  --mm-border-strong: rgba(70, 91, 65, 0.38);
+
+  --mm-bid: #4f765c;
+  --mm-ask: #a76565;
+  --mm-warning: #9b7847;
+  --mm-error: #a25757;
+
+  --mm-shadow: 0 24px 70px rgba(50, 70, 47, 0.15);
+
+  --mm-mono:
+    "SFMono-Regular",
+    "SF Mono",
+    "Cascadia Code",
+    "Roboto Mono",
+    Consolas,
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--mm-bg);
+}
+
+body.mm-dashboard {
+  min-height: 100vh;
+  margin: 0;
+  padding: 28px;
+  color: var(--mm-text);
+  font-family: var(--mm-mono);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(255, 255, 255, 0.82),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      var(--mm-bg),
+      var(--mm-bg-deep)
+    );
+}
+
+body.mm-dashboard::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  opacity: 0.14;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(56, 74, 52, 0.045) 4px
+    );
+}
+
+body.mm-dashboard,
+body.mm-dashboard button,
+body.mm-dashboard input,
+body.mm-dashboard select {
+  font-family: var(--mm-mono);
+}
+
+body.mm-dashboard a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mm-dashboard-shell {
+  width: min(1500px, 100%);
+  min-height: calc(100vh - 56px);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--mm-border-strong);
+  border-radius: 16px;
+  background: var(--mm-surface);
+  box-shadow: var(--mm-shadow);
+  backdrop-filter: blur(20px);
+}
+
+.mm-dashboard-titlebar {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 47px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--mm-border);
+  background: rgba(224, 234, 215, 0.86);
+  color: var(--mm-muted);
+  font-size: 11px;
+}
+
+.mm-window-dots {
+  display: flex;
+  gap: 7px;
+}
+
+.mm-window-dots span {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--mm-border-strong);
+  border-radius: 50%;
+  background: var(--mm-matcha-soft);
+}
+
+.mm-window-dots span:nth-child(2) {
+  opacity: 0.72;
+}
+
+.mm-window-dots span:nth-child(3) {
+  opacity: 0.46;
+}
+
+.mm-terminal-path {
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-dashboard-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mm-dashboard-nav a {
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--mm-muted);
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.mm-dashboard-nav a:hover,
+.mm-dashboard-nav a.active {
+  border-color: var(--mm-border);
+  color: var(--mm-matcha-dark);
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.mm-command-strip {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--mm-border);
+  color: var(--mm-muted);
+  background: rgba(245, 248, 241, 0.57);
+  font-size: 11px;
+}
+
+.mm-command-strip .prompt {
+  margin-right: 8px;
+  color: var(--mm-matcha);
+}
+
+.mm-command-strip .cursor {
+  width: 7px;
+  height: 14px;
+  margin-left: 8px;
+  background: var(--mm-matcha);
+  animation: mm-blink 1.05s steps(1) infinite;
+}
+
+.mm-dashboard-content {
+  padding: clamp(22px, 3vw, 42px);
+}
+
+body.mm-dashboard h1,
+body.mm-dashboard h2,
+body.mm-dashboard h3 {
+  color: var(--mm-matcha-dark);
+}
+
+body.mm-dashboard h1 {
+  margin-top: 0;
+  letter-spacing: -0.045em;
+}
+
+body.mm-dashboard p {
+  color: var(--mm-muted);
+}
+
+/* Broad compatibility with the existing dashboard markup. */
+body.mm-dashboard main,
+body.mm-dashboard .container,
+body.mm-dashboard .dashboard,
+body.mm-dashboard .page,
+body.mm-dashboard .app {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+body.mm-dashboard .header,
+body.mm-dashboard header:not(.mm-dashboard-titlebar) {
+  margin-bottom: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+body.mm-dashboard .card,
+body.mm-dashboard .panel,
+body.mm-dashboard .metric,
+body.mm-dashboard .stat,
+body.mm-dashboard .book,
+body.mm-dashboard .route,
+body.mm-dashboard .venue,
+body.mm-dashboard section {
+  border-color: var(--mm-border) !important;
+}
+
+body.mm-dashboard .card,
+body.mm-dashboard .panel,
+body.mm-dashboard .metric-card,
+body.mm-dashboard .stat-card,
+body.mm-dashboard .book-card,
+body.mm-dashboard .route-card,
+body.mm-dashboard .venue-card {
+  border: 1px solid var(--mm-border);
+  border-radius: 8px;
+  background: var(--mm-panel);
+  box-shadow: none;
+}
+
+body.mm-dashboard .card:hover,
+body.mm-dashboard .panel:hover,
+body.mm-dashboard .metric-card:hover,
+body.mm-dashboard .book-card:hover,
+body.mm-dashboard .route-card:hover {
+  border-color: var(--mm-border-strong);
+  background: var(--mm-panel-strong);
+}
+
+body.mm-dashboard button,
+body.mm-dashboard .button,
+body.mm-dashboard select,
+body.mm-dashboard input {
+  border: 1px solid var(--mm-border-strong);
+  border-radius: 5px;
+  color: var(--mm-matcha-dark);
+  background: rgba(250, 252, 247, 0.58);
+}
+
+body.mm-dashboard button {
+  cursor: pointer;
+}
+
+body.mm-dashboard button:hover,
+body.mm-dashboard .button:hover {
+  background: rgba(255, 255, 255, 0.74);
+}
+
+body.mm-dashboard button.active,
+body.mm-dashboard button.primary {
+  color: #f7faf4;
+  background: var(--mm-matcha);
+}
+
+body.mm-dashboard input[type="range"] {
+  accent-color: var(--mm-matcha);
+}
+
+body.mm-dashboard table {
+  border-collapse: collapse;
+}
+
+body.mm-dashboard th {
+  color: var(--mm-sage);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+body.mm-dashboard td,
+body.mm-dashboard th {
+  border-color: var(--mm-border);
+}
+
+body.mm-dashboard .bid,
+body.mm-dashboard .buy,
+body.mm-dashboard .positive {
+  color: var(--mm-bid) !important;
+}
+
+body.mm-dashboard .ask,
+body.mm-dashboard .sell,
+body.mm-dashboard .negative {
+  color: var(--mm-ask) !important;
+}
+
+body.mm-dashboard .connected,
+body.mm-dashboard .healthy,
+body.mm-dashboard .status-connected {
+  color: var(--mm-bid) !important;
+}
+
+body.mm-dashboard .reconnecting,
+body.mm-dashboard .warning,
+body.mm-dashboard .status-reconnecting {
+  color: var(--mm-warning) !important;
+}
+
+body.mm-dashboard .disconnected,
+body.mm-dashboard .error,
+body.mm-dashboard .status-disconnected {
+  color: var(--mm-error) !important;
+}
+
+body.mm-dashboard .status,
+body.mm-dashboard #status,
+body.mm-dashboard .connection-status {
+  border: 1px solid var(--mm-border-strong) !important;
+  border-radius: 5px !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: none !important;
+}
+
+body.mm-dashboard pre,
+body.mm-dashboard code {
+  font-family: var(--mm-mono);
+}
+
+.mm-dashboard-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 11px 20px;
+  border-top: 1px solid var(--mm-border);
+  color: var(--mm-muted);
+  background: rgba(224, 234, 215, 0.63);
+  font-size: 9px;
+}
+
+@keyframes mm-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  body.mm-dashboard {
+    padding: 0;
+  }
+
+  .mm-dashboard-shell {
+    min-height: 100vh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .mm-dashboard-titlebar {
+    grid-template-columns: 65px minmax(0, 1fr);
+  }
+
+  .mm-dashboard-nav {
+    display: none;
+  }
+
+  .mm-dashboard-content {
+    padding: 20px 14px 50px;
+  }
+}
+
+/* Live dashboard refinements */
+.mm-live-dashboard .dashboard-grid,
+.mm-live-dashboard .top-grid,
+.mm-live-dashboard .summary-grid {
+  gap: 12px;
+}
+
+.mm-live-dashboard .bbo-card,
+.mm-live-dashboard .buy-route,
+.mm-live-dashboard .sell-route {
+  min-height: 420px;
+}
+
+.mm-live-dashboard .venue-books {
+  margin-top: 28px;
+}
+
+.mm-live-dashboard .venue-book {
+  overflow: hidden;
+}
+
+/* Replay dashboard refinements */
+.mm-replay-dashboard .replay-controls,
+.mm-replay-dashboard .controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.mm-replay-dashboard .timeline,
+.mm-replay-dashboard .progress-track {
+  border-color: var(--mm-border);
+  background: rgba(96, 122, 87, 0.12);
+}
+
+.mm-replay-dashboard .progress,
+.mm-replay-dashboard .timeline-progress {
+  background: var(--mm-matcha);
+}
+
+.mm-replay-dashboard [data-speed].active,
+.mm-replay-dashboard .speed-button.active {
+  color: #f7faf4;
+  background: var(--mm-matcha);
+}
+
+.mm-replay-dashboard .complete {
+  color: var(--mm-matcha);
+}

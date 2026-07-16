@@ -150,9 +150,37 @@
       margin-top: 4px;
     }
   </style>
+  <link rel="stylesheet" href="../dashboard-theme.css">
 </head>
 
-<body>
+<body class="mm-dashboard mm-replay-dashboard">
+  <div class="mm-dashboard-shell">
+    <div class="mm-dashboard-titlebar">
+      <div class="mm-window-dots" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <div class="mm-terminal-path">
+        namtran@minimatch:~/replay
+      </div>
+
+      <nav class="mm-dashboard-nav">
+        <a href="../">overview</a>
+        <a class="" href="../live/">live</a>
+        <a class="active" href="../replay/">replay</a>
+      </nav>
+    </div>
+
+    <div class="mm-command-strip">
+      <span class="prompt">$</span>
+      <span>./minimatch_market_replay_ws --interactive</span>
+      <span class="cursor" aria-hidden="true"></span>
+    </div>
+
+    <div class="mm-dashboard-content">
+
   <div class="header">
     <div>
       <h1>MiniMatch Live Market</h1>
@@ -714,5 +742,13 @@
 
     connect();
   </script>
+
+    </div>
+
+    <footer class="mm-dashboard-footer">
+      <span>deterministic market recording / replay controller</span>
+      <span>MiniMatch / C++20</span>
+    </footer>
+  </div>
 </body>
 </html>
