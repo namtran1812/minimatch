@@ -1034,42 +1034,188 @@ Kraken WebSocket ───┘
               EXECUTION INTELLIGENCE / 03
             </div>
 
+            <div class="terminal-section-command">
+              <span class="prompt">$</span>
+              inspect smart_order_router
+            </div>
+
             <h1>
               Smart Order Router
             </h1>
 
             <p class="lead">
-              Route simulated parent orders across venues using
-              executable liquidity, fees, price, and deterministic
-              multi-leg planning.
+              MiniMatch converts a parent order into deterministic
+              venue-level execution legs using executable depth,
+              effective price, fees, venue health, and available
+              liquidity across Coinbase, Binance, and Kraken.
             </p>
 
-            <div class="route-example">
-              <div class="route-request">
-                <span>request</span>
-                BUY 0.40 BTC
+            <div class="router-terminal">
+              <div class="router-request">
+                <span>parent_order</span>
+                <strong>BUY 0.40 BTC</strong>
               </div>
 
-              <div class="route-lines">
+              <div class="router-flow">
+                <div class="router-leg">
+                  <span class="router-index">01</span>
+
+                  <div>
+                    <strong>Coinbase</strong>
+                    <small>best effective ask</small>
+                  </div>
+
+                  <em>0.15 BTC</em>
+                </div>
+
+                <div class="router-leg">
+                  <span class="router-index">02</span>
+
+                  <div>
+                    <strong>Kraken</strong>
+                    <small>next executable liquidity</small>
+                  </div>
+
+                  <em>0.20 BTC</em>
+                </div>
+
+                <div class="router-leg">
+                  <span class="router-index">03</span>
+
+                  <div>
+                    <strong>Binance</strong>
+                    <small>remaining parent quantity</small>
+                  </div>
+
+                  <em>0.05 BTC</em>
+                </div>
+              </div>
+
+              <div class="router-summary">
                 <div>
-                  <span>COINBASE</span>
-                  <strong>0.15 BTC</strong>
-                  <em>@ best ask</em>
+                  <span>filled</span>
+                  <strong>0.40 BTC</strong>
                 </div>
 
                 <div>
-                  <span>KRAKEN</span>
-                  <strong>0.20 BTC</strong>
-                  <em>@ second level</em>
+                  <span>remaining</span>
+                  <strong>0.00 BTC</strong>
                 </div>
 
                 <div>
-                  <span>BINANCE</span>
-                  <strong>0.05 BTC</strong>
-                  <em>@ residual liquidity</em>
+                  <span>legs</span>
+                  <strong>3 venues</strong>
                 </div>
               </div>
             </div>
+
+            <section class="router-capabilities">
+              <div class="terminal-section-command">
+                <span class="prompt">$</span>
+                router --capabilities
+              </div>
+
+              <div class="feature-capability-grid">
+                <section class="capability-card">
+                  <span>01</span>
+
+                  <h3>Effective-price ranking</h3>
+
+                  <p>
+                    Compares executable prices after venue fees instead
+                    of ranking liquidity by displayed price alone.
+                  </p>
+                </section>
+
+                <section class="capability-card">
+                  <span>02</span>
+
+                  <h3>Multi-level depth</h3>
+
+                  <p>
+                    Consumes available quantity across multiple price
+                    levels until the parent order is filled or liquidity
+                    is exhausted.
+                  </p>
+                </section>
+
+                <section class="capability-card">
+                  <span>03</span>
+
+                  <h3>Venue-health filtering</h3>
+
+                  <p>
+                    Excludes stale, unsynchronized, or unhealthy venues
+                    from new execution plans while preserving their
+                    operational telemetry.
+                  </p>
+                </section>
+
+                <section class="capability-card">
+                  <span>04</span>
+
+                  <h3>Deterministic planning</h3>
+
+                  <p>
+                    Produces stable, ordered execution legs from the
+                    same request, market state, fee model, and health
+                    snapshot.
+                  </p>
+                </section>
+              </div>
+            </section>
+
+            <section class="router-health-policy">
+              <div class="terminal-section-command">
+                <span class="prompt">$</span>
+                router --venue-health-policy
+              </div>
+
+              <div class="health-policy-terminal">
+                <div class="health-policy-row">
+                  <span class="policy-status healthy">
+                    HEALTHY
+                  </span>
+
+                  <div>
+                    <strong>Venue remains routable</strong>
+                    <p>
+                      Synchronized books with fresh quotes can
+                      contribute liquidity to new route plans.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="health-policy-row">
+                  <span class="policy-status stale">
+                    STALE
+                  </span>
+
+                  <div>
+                    <strong>Visible but not routable</strong>
+                    <p>
+                      The venue remains visible in health telemetry,
+                      but its quotes are excluded from new routing legs.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="health-policy-row">
+                  <span class="policy-status rejected">
+                    INVALID
+                  </span>
+
+                  <div>
+                    <strong>Update rejected</strong>
+                    <p>
+                      Sequence gaps, checksum failures, or invalid
+                      state prevent the update from reaching the
+                      consolidated routing market.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
 
             <div class="detail-grid">
               <section class="detail-card">
@@ -1093,6 +1239,41 @@ Kraken WebSocket ───┘
                   <li>Filled and remaining quantity</li>
                 </ul>
               </section>
+            </div>
+            <div class="action-row router-actions">
+              <a
+                class="terminal-action primary"
+                href="./live/"
+              >
+                ./open-routing-dashboard
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/src/router_market_data.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                router source
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/src/venue_health.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                health policy
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/tests/router_market_data_test.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                router tests
+              </a>
             </div>
           </article>
 
