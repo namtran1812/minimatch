@@ -564,86 +564,129 @@
               CORE SYSTEM / 01
             </div>
 
+            <div class="terminal-section-command">
+              <span class="prompt">$</span>
+              inspect matching_engine
+            </div>
+
             <h1>
               Matching Engine
             </h1>
 
             <p class="lead">
-              A deterministic, price-time-priority exchange core with
-              explicit order lifecycle semantics and reproducible
-              execution.
+              A deterministic price-time-priority exchange core that
+              accepts, matches, cancels, and reports orders with
+              reproducible execution ordering.
             </p>
+
+            <div class="feature-capability-grid">
+              <section class="capability-card">
+                <span>01</span>
+                <h3>Order types</h3>
+                <p>
+                  Limit, market, IOC, FOK, post-only, cancel, and amend.
+                </p>
+              </section>
+
+              <section class="capability-card">
+                <span>02</span>
+                <h3>Priority rules</h3>
+                <p>
+                  Best price first, then FIFO within each price level.
+                </p>
+              </section>
+
+              <section class="capability-card">
+                <span>03</span>
+                <h3>Lifecycle</h3>
+                <p>
+                  Partial fills, resting remainders, cancellation,
+                  execution reports, and deterministic sequencing.
+                </p>
+              </section>
+
+              <section class="capability-card">
+                <span>04</span>
+                <h3>Validation</h3>
+                <p>
+                  Duplicate detection, invalid quantity rejection,
+                  non-resting market orders, and order-state tests.
+                </p>
+              </section>
+            </div>
 
             <div class="code-window">
               <div class="code-window-title">
                 engine/order_flow.txt
               </div>
 
-              <pre><code>NewOrder
-  │
-  ├── validate
-  ├── assign sequence
-  ├── cross opposing liquidity
-  ├── generate fills
-  └── rest remaining quantity
-
-CancelOrder
-  │
-  ├── locate order
-  ├── unlink from price level
-  └── emit cancellation result</code></pre>
+              <pre><code>incoming order
+  -> validate
+  -> assign sequence
+  -> inspect opposing best price
+  -> match available liquidity
+  -> emit fills
+  -> rest eligible remainder
+  -> publish execution result</code></pre>
             </div>
 
-            <div class="detail-grid">
-              <section class="detail-card">
-                <h3>Order types</h3>
+            <section class="tab-detail-section">
+              <div class="section-heading">
+                <span>correctness_guarantees</span>
+                <span>01</span>
+              </div>
 
-                <ul>
-                  <li>Limit</li>
-                  <li>Market</li>
-                  <li>Immediate-or-cancel</li>
-                  <li>Cancel</li>
-                </ul>
-              </section>
+              <div class="feature-index">
+                <div>
+                  <span class="feature-state">[tested]</span>
+                  FIFO within equal-price queues
+                </div>
 
-              <section class="detail-card">
-                <h3>Matching guarantees</h3>
+                <div>
+                  <span class="feature-state">[tested]</span>
+                  best price before time priority
+                </div>
 
-                <ul>
-                  <li>FIFO within each price level</li>
-                  <li>Best-price selection</li>
-                  <li>Partial-fill support</li>
-                  <li>Deterministic execution order</li>
-                </ul>
-              </section>
+                <div>
+                  <span class="feature-state">[tested]</span>
+                  IOC and market remainders never rest
+                </div>
 
-              <section class="detail-card">
-                <h3>Engineering focus</h3>
+                <div>
+                  <span class="feature-state">[tested]</span>
+                  partial limit remainder rests correctly
+                </div>
 
-                <ul>
-                  <li>Cache-conscious data structures</li>
-                  <li>Stable order references</li>
-                  <li>Explicit sequence numbers</li>
-                  <li>Minimal hot-path allocation</li>
-                </ul>
-              </section>
+                <div>
+                  <span class="feature-state">[tested]</span>
+                  cancellation removes active orders
+                </div>
 
-              <section class="detail-card">
-                <h3>Validation</h3>
+                <div>
+                  <span class="feature-state">[tested]</span>
+                  replay produces deterministic state hashes
+                </div>
+              </div>
+            </section>
 
-                <ul>
-                  <li>FIFO correctness</li>
-                  <li>IOC remainder cancellation</li>
-                  <li>Market orders never rest</li>
-                  <li>Cancel and partial-fill tests</li>
-                </ul>
-              </section>
-            </div>
+            <div class="action-row">
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/src/order_book.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                view source
+              </a>
 
-            <div class="terminal-note">
-              <span>$ benchmark</span>
-              synthetic workloads exercise 1M+ orders and report
-              throughput plus tail latency.
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/tests/order_book_test.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                view tests
+              </a>
             </div>
           </article>
 
@@ -655,15 +698,49 @@ CancelOrder
               MARKET INFRASTRUCTURE / 02
             </div>
 
+            <div class="terminal-section-command">
+              <span class="prompt">$</span>
+              inspect market_data
+            </div>
+
             <h1>
-              Multi-Venue Market Data
+              Live Market Data Pipeline
             </h1>
 
             <p class="lead">
-              Independent exchange protocols are normalized into one
-              deterministic market model while preserving venue-level
-              sequencing and health.
+              MiniMatch maintains synchronized Level-2 order books from
+              Coinbase, Binance, and Kraken in real time. Each venue has
+              independent connection handling, sequence validation,
+              book reconstruction, and health monitoring before its
+              liquidity is normalized into one consolidated market.
             </p>
+
+            <div class="code-window">
+              <div class="code-window-title">
+                market_data/pipeline.txt
+              </div>
+
+              <pre><code>Coinbase WebSocket ─┐
+Binance WebSocket ──┼──> parse + normalize
+Kraken WebSocket ───┘
+
+                         |
+                         v
+
+                  validate sequence
+                  verify checksum
+                  rebuild venue books
+
+                         |
+                         v
+
+               consolidated Level-2 market
+
+                         |
+                         v
+
+                  smart order router</code></pre>
+            </div>
 
             <div class="venue-grid">
               <section class="venue-card">
@@ -673,14 +750,26 @@ CancelOrder
                 </div>
 
                 <p>
-                  Snapshot and incremental L2 processing with normalized
-                  local sequence assignment.
+                  WebSocket Level-2 snapshots and incremental updates
+                  are converted into a normalized local order book with
+                  independent sequencing and connection health.
                 </p>
 
-                <div class="tag-row">
-                  <span>WebSocket</span>
-                  <span>L2</span>
-                  <span>TLS</span>
+                <div class="venue-details">
+                  <div>
+                    <span>transport</span>
+                    <strong>WebSocket / TLS</strong>
+                  </div>
+
+                  <div>
+                    <span>book model</span>
+                    <strong>snapshot + updates</strong>
+                  </div>
+
+                  <div>
+                    <span>validation</span>
+                    <strong>local sequence state</strong>
+                  </div>
                 </div>
               </section>
 
@@ -691,14 +780,26 @@ CancelOrder
                 </div>
 
                 <p>
-                  REST snapshot alignment, diff stream processing, and
-                  sequence-gap validation.
+                  A REST depth snapshot is aligned with the live diff
+                  stream before incremental updates are applied with
+                  explicit sequence-gap detection and recovery.
                 </p>
 
-                <div class="tag-row">
-                  <span>REST</span>
-                  <span>Diff stream</span>
-                  <span>Sequence</span>
+                <div class="venue-details">
+                  <div>
+                    <span>transport</span>
+                    <strong>REST + WebSocket</strong>
+                  </div>
+
+                  <div>
+                    <span>book model</span>
+                    <strong>snapshot + diff stream</strong>
+                  </div>
+
+                  <div>
+                    <span>validation</span>
+                    <strong>sequence alignment</strong>
+                  </div>
                 </div>
               </section>
 
@@ -709,16 +810,180 @@ CancelOrder
                 </div>
 
                 <p>
-                  Snapshot and update handling with local L2 state and
-                  checksum verification.
+                  Snapshot and incremental book updates are reconstructed
+                  locally with checksum verification, synchronization
+                  tracking, and rejected-message accounting.
                 </p>
 
-                <div class="tag-row">
-                  <span>WebSocket</span>
-                  <span>Checksum</span>
-                  <span>L2</span>
+                <div class="venue-details">
+                  <div>
+                    <span>transport</span>
+                    <strong>WebSocket / TLS</strong>
+                  </div>
+
+                  <div>
+                    <span>book model</span>
+                    <strong>snapshot + updates</strong>
+                  </div>
+
+                  <div>
+                    <span>validation</span>
+                    <strong>checksum verification</strong>
+                  </div>
                 </div>
               </section>
+
+              <section class="venue-card consolidated-card">
+                <div class="venue-header">
+                  <h3>Consolidated Market</h3>
+                  <span>derived</span>
+                </div>
+
+                <p>
+                  Validated venue books are combined into one market
+                  model that exposes best bid and offer, venue
+                  attribution, executable depth, and router inputs.
+                </p>
+
+                <div class="venue-details">
+                  <div>
+                    <span>output</span>
+                    <strong>cross-venue BBO</strong>
+                  </div>
+
+                  <div>
+                    <span>liquidity</span>
+                    <strong>venue-attributed depth</strong>
+                  </div>
+
+                  <div>
+                    <span>consumer</span>
+                    <strong>smart order router</strong>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <section class="live-health">
+              <div class="terminal-section-command">
+                <span class="prompt">$</span>
+                venue_health
+              </div>
+
+              <div class="health-grid">
+
+                <div class="health-card">
+                  <h3>Coinbase</h3>
+
+                  <div class="health-row">
+                    <span>Status</span>
+                    <strong id="coinbase-health">
+                      Healthy
+                    </strong>
+                  </div>
+
+                  <div class="health-row">
+                    <span>Messages/sec</span>
+                    <strong id="coinbase-rate">
+                      --
+                    </strong>
+                  </div>
+
+                  <div class="health-row">
+                    <span>Quote Age</span>
+                    <strong id="coinbase-age">
+                      --
+                    </strong>
+                  </div>
+                </div>
+
+                <div class="health-card">
+                  <h3>Binance</h3>
+
+                  <div class="health-row">
+                    <span>Status</span>
+                    <strong id="binance-health">
+                      Healthy
+                    </strong>
+                  </div>
+
+                  <div class="health-row">
+                    <span>Messages/sec</span>
+                    <strong id="binance-rate">
+                      --
+                    </strong>
+                  </div>
+
+                  <div class="health-row">
+                    <span>Quote Age</span>
+                    <strong id="binance-age">
+                      --
+                    </strong>
+                  </div>
+                </div>
+
+                <div class="health-card">
+                  <h3>Kraken</h3>
+
+                  <div class="health-row">
+                    <span>Status</span>
+                    <strong id="kraken-health">
+                      Healthy
+                    </strong>
+                  </div>
+
+                  <div class="health-row">
+                    <span>Messages/sec</span>
+                    <strong id="kraken-rate">
+                      --
+                    </strong>
+                  </div>
+
+                  <div class="health-row">
+                    <span>Quote Age</span>
+                    <strong id="kraken-age">
+                      --
+                    </strong>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            <div class="action-row market-data-actions">
+              <a
+                class="terminal-action primary"
+                href="./live/"
+              >
+                ./open-live-dashboard
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/apps/live_market_data_ws.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                gateway source
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/blob/main/src/market_data.cpp"
+                target="_blank"
+                rel="noreferrer"
+              >
+                market model
+              </a>
+
+              <a
+                class="terminal-action"
+                href="https://github.com/namtran1812/minimatch/tree/main/tests"
+                target="_blank"
+                rel="noreferrer"
+              >
+                feed tests
+              </a>
             </div>
 
             <section class="section-block">
