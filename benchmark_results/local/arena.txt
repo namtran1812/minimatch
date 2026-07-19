@@ -1,0 +1,1 @@
+steps=200000 processed=200000 dropped=0 trades=156892 reports=456873 active=20037 max_queue_depth=55744 p50_ns=7247042 p99_ns=11427083 p999_ns=11496750 state_hash=5650757402432339241
