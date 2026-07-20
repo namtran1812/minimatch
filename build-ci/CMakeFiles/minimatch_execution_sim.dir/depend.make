@@ -1,2 +1,0 @@
-# Empty dependencies file for minimatch_execution_sim.
-# This may be replaced when dependencies are built.
