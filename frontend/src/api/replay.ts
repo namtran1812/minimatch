@@ -15,3 +15,11 @@ export async function restartReplay() {
 export async function seekReplay(progress: number) {
   return (await api.post("/replay/seek", { progress })).data;
 }
+
+export async function getReplayState() {
+  return (await api.get("/replay/state")).data;
+}
+
+export async function setReplaySpeed(speed: number) {
+  return (await api.post("/replay/speed", { speed })).data;
+}

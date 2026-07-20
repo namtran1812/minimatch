@@ -1,4 +1,26 @@
+import { useQuery } from "@tanstack/react-query";
+import {
+  getPortfolioAnalytics,
+  getPairsAnalytics,
+  getOptionsAnalytics,
+} from "../api/analytics";
+
 export default function Analytics() {
+  const { data: portfolio } = useQuery({
+    queryKey: ["portfolio-analytics"],
+    queryFn: getPortfolioAnalytics,
+  });
+
+  const { data: pairs } = useQuery({
+    queryKey: ["pairs-analytics"],
+    queryFn: getPairsAnalytics,
+  });
+
+  const { data: options } = useQuery({
+    queryKey: ["options-analytics"],
+    queryFn: getOptionsAnalytics,
+  });
+
   return (
     <section className="page">
       <div className="page-heading">
@@ -9,85 +31,72 @@ export default function Analytics() {
       <div className="metrics">
         <div className="metric-card">
           <span className="eyebrow">MAX DRAWDOWN</span>
-          <strong>—</strong>
+          <strong>{portfolio?.maxDrawdown ?? "—"}</strong>
         </div>
 
         <div className="metric-card">
           <span className="eyebrow">WIN RATE</span>
-          <strong>—</strong>
+          <strong>{portfolio?.winRate ?? "—"}</strong>
         </div>
 
         <div className="metric-card">
           <span className="eyebrow">VALUE AT RISK</span>
-          <strong>—</strong>
+          <strong>{portfolio?.var ?? "—"}</strong>
         </div>
 
         <div className="metric-card">
           <span className="eyebrow">EXPECTED SHORTFALL</span>
-          <strong>—</strong>
+          <strong>{portfolio?.expectedShortfall ?? "—"}</strong>
         </div>
       </div>
 
       <div className="terminal-grid">
         <div className="panel">
-          <div className="panel-title">
-            <h2>Pairs Trading</h2>
-          </div>
-
           <div className="risk-item">
             <span>HEDGE RATIO</span>
-            <strong>—</strong>
+            <strong>{pairs?.beta ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>SPREAD Z-SCORE</span>
-            <strong>—</strong>
+            <strong>{pairs?.zscore ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>ADF T-STAT</span>
-            <strong>—</strong>
-          </div>
-
-          <div className="risk-item">
-            <span>STATIONARY</span>
-            <strong>—</strong>
+            <strong>{pairs?.adfTStatistic ?? "—"}</strong>
           </div>
         </div>
 
         <div className="panel">
-          <div className="panel-title">
-            <h2>Options</h2>
-          </div>
-
           <div className="risk-item">
             <span>BLACK-SCHOLES</span>
-            <strong>—</strong>
+            <strong>{options?.price ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>IMPLIED VOL</span>
-            <strong>—</strong>
+            <strong>{options?.impliedVolatility ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>DELTA</span>
-            <strong>—</strong>
+            <strong>{options?.delta ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>GAMMA</span>
-            <strong>—</strong>
+            <strong>{options?.gamma ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>VEGA</span>
-            <strong>—</strong>
+            <strong>{options?.vega ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>MONTE CARLO</span>
-            <strong>—</strong>
+            <strong>{options?.monteCarloPrice ?? "—"}</strong>
           </div>
         </div>
       </div>

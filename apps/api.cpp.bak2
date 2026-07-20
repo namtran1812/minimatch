@@ -1,0 +1,655 @@
+#include "minimatch/exchange.hpp"
+#include "minimatch/latency_stats.hpp"
+#include "minimatch/risk.hpp"
+#include "minimatch/types.hpp"
+
+#include <boost/asio.hpp>
+#include <boost/beast.hpp>
+
+#include <algorithm>
+#include <chrono>
+#include <cctype>
+#include <cstdint>
+#include <iostream>
+#include <mutex>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+
+namespace asio = boost::asio;
+namespace beast = boost::beast;
+namespace http = beast::http;
+
+using tcp = asio::ip::tcp;
+
+using minimatch::CancelRequest;
+using minimatch::ClientId;
+using minimatch::Exchange;
+using minimatch::ExecutionReport;
+using minimatch::LatencyStats;
+using minimatch::OrderId;
+using minimatch::OrderRequest;
+using minimatch::OrderType;
+using minimatch::Price;
+using minimatch::Quantity;
+using minimatch::ReplaceRequest;
+using minimatch::RiskEngine;
+using minimatch::Side;
+using minimatch::SymbolId;
+using minimatch::Trade;
+
+namespace {
+
+struct ApiState {
+    Exchange exchange{100'000};
+    RiskEngine risk;
+    LatencyStats latency;
+
+    std::uint64_t submitted{0};
+    std::uint64_t accepted{0};
+    std::uint64_t rejected{0};
+    std::uint64_t trades{0};
+    std::uint64_t reports{0};
+
+    std::mutex mutex;
+
+    ApiState() {
+        exchange.on_trade([this](const Trade&) {
+            ++trades;
+        });
+
+        exchange.on_report([this](const ExecutionReport& report) {
+            ++reports;
+
+            if (report.status == ExecutionReport::Status::Accepted) {
+                ++accepted;
+            }
+
+            if (report.status == ExecutionReport::Status::Rejected) {
+                ++rejected;
+            }
+        });
+    }
+};
+
+ApiState state;
+
+http::response<http::string_body>
+json_response(
+    http::status status,
+    const std::string& body
+) {
+    http::response<http::string_body> res{status, 11};
+
+    res.set(
+        http::field::content_type,
+        "application/json"
+    );
+
+    res.set(
+        http::field::access_control_allow_origin,
+        "*"
+    );
+
+    res.set(
+        http::field::access_control_allow_headers,
+        "Content-Type"
+    );
+
+    res.set(
+        http::field::access_control_allow_methods,
+        "GET,POST,DELETE,OPTIONS"
+    );
+
+    res.body() = body;
+    res.prepare_payload();
+
+    return res;
+}
+
+std::unordered_map<std::string, std::string>
+parse_json_like_body(const std::string& body) {
+    std::unordered_map<std::string, std::string> result;
+
+    std::string s = body;
+
+    for (char& c : s) {
+        if (
+            c == '{' ||
+            c == '}' ||
+            c == '"' ||
+            c == ' '
+        ) {
+            c = ' ';
+        }
+    }
+
+    std::stringstream stream(s);
+    std::string token;
+
+    while (std::getline(stream, token, ',')) {
+        const auto pos = token.find(':');
+
+        if (pos == std::string::npos) {
+            continue;
+        }
+
+        std::string key = token.substr(0, pos);
+        std::string value = token.substr(pos + 1);
+
+        auto trim = [](std::string& value) {
+            value.erase(
+                value.begin(),
+                std::find_if(
+                    value.begin(),
+                    value.end(),
+                    [](unsigned char c) {
+                        return !std::isspace(c);
+                    }
+                )
+            );
+
+            value.erase(
+                std::find_if(
+                    value.rbegin(),
+                    value.rend(),
+                    [](unsigned char c) {
+                        return !std::isspace(c);
+                    }
+                ).base(),
+                value.end()
+            );
+        };
+
+        trim(key);
+        trim(value);
+
+        result[key] = value;
+    }
+
+    return result;
+}
+
+std::optional<Side>
+parse_side(std::string value) {
+    std::transform(
+        value.begin(),
+        value.end(),
+        value.begin(),
+        [](unsigned char c) {
+            return static_cast<char>(
+                std::tolower(c)
+            );
+        }
+    );
+
+    if (value == "buy") {
+        return Side::Buy;
+    }
+
+    if (value == "sell") {
+        return Side::Sell;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<OrderType>
+parse_type(std::string value) {
+    std::transform(
+        value.begin(),
+        value.end(),
+        value.begin(),
+        [](unsigned char c) {
+            return static_cast<char>(
+                std::tolower(c)
+            );
+        }
+    );
+
+    if (value == "limit") {
+        return OrderType::Limit;
+    }
+
+    if (value == "market") {
+        return OrderType::Market;
+    }
+
+    if (value == "ioc") {
+        return OrderType::IOC;
+    }
+
+    if (value == "fok") {
+        return OrderType::FOK;
+    }
+
+    if (
+        value == "post" ||
+        value == "postonly" ||
+        value == "post-only"
+    ) {
+        return OrderType::PostOnly;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<SymbolId>
+symbol_from_target(
+    const std::string& target
+) {
+    const std::string prefix =
+        "/api/market/book/";
+
+    if (target.rfind(prefix, 0) != 0) {
+        return std::nullopt;
+    }
+
+    std::string value =
+        target.substr(prefix.size());
+
+    if (
+        value == "BTC-USD" ||
+        value == "BTCUSD"
+    ) {
+        return 1;
+    }
+
+    try {
+        return static_cast<SymbolId>(
+            std::stoul(value)
+        );
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+std::string
+book_json(SymbolId symbol) {
+    const auto* book =
+        state.exchange.find_book(symbol);
+
+    std::ostringstream out;
+
+    out << "{"
+        << "\"symbol\":" << symbol << ","
+        << "\"sequence\":"
+        << (book ? book->sequence() : 0)
+        << ",\"bids\":[";
+
+    if (book) {
+        const auto bids =
+            book->depth(Side::Buy, 20);
+
+        for (
+            std::size_t i = 0;
+            i < bids.size();
+            ++i
+        ) {
+            if (i) {
+                out << ",";
+            }
+
+            out
+                << "{"
+                << "\"price\":"
+                << bids[i].price
+                << ",\"quantity\":"
+                << bids[i].quantity
+                << ",\"orderCount\":"
+                << bids[i].order_count
+                << "}";
+        }
+    }
+
+    out << "],\"asks\":[";
+
+    if (book) {
+        const auto asks =
+            book->depth(Side::Sell, 20);
+
+        for (
+            std::size_t i = 0;
+            i < asks.size();
+            ++i
+        ) {
+            if (i) {
+                out << ",";
+            }
+
+            out
+                << "{"
+                << "\"price\":"
+                << asks[i].price
+                << ",\"quantity\":"
+                << asks[i].quantity
+                << ",\"orderCount\":"
+                << asks[i].order_count
+                << "}";
+        }
+    }
+
+    out << "]}";
+
+    return out.str();
+}
+
+http::response<http::string_body>
+handle_request(
+    const http::request<
+        http::string_body
+    >& req
+) {
+    const std::string target =
+        std::string(req.target());
+
+    if (
+        req.method() ==
+        http::verb::options
+    ) {
+        return json_response(
+            http::status::ok,
+            "{}"
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/health"
+    ) {
+        return json_response(
+            http::status::ok,
+            R"({"status":"ok","engine":"online"})"
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/system"
+    ) {
+        std::lock_guard<std::mutex>
+            lock(state.mutex);
+
+        const auto latency =
+            state.latency.snapshot(
+                "order_submit"
+            );
+
+        std::ostringstream out;
+
+        out
+            << "{"
+            << "\"submitted\":"
+            << state.submitted
+            << ",\"accepted\":"
+            << state.accepted
+            << ",\"rejected\":"
+            << state.rejected
+            << ",\"trades\":"
+            << state.trades
+            << ",\"reports\":"
+            << state.reports
+            << ",\"activeOrders\":"
+            << state.exchange.active_orders()
+            << ",\"stateHash\":\""
+            << state.exchange.state_hash()
+            << "\""
+            << ",\"p50Ns\":"
+            << latency.p50_ns
+            << ",\"p95Ns\":"
+            << latency.p95_ns
+            << ",\"p99Ns\":"
+            << latency.p99_ns
+            << "}";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target.rfind(
+            "/api/market/book/",
+            0
+        ) == 0
+    ) {
+        const auto symbol =
+            symbol_from_target(target);
+
+        if (!symbol) {
+            return json_response(
+                http::status::bad_request,
+                R"({"error":"invalid symbol"})"
+            );
+        }
+
+        std::lock_guard<std::mutex>
+            lock(state.mutex);
+
+        return json_response(
+            http::status::ok,
+            book_json(*symbol)
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target ==
+            "/api/orders"
+    ) {
+        try {
+            const auto fields =
+                parse_json_like_body(
+                    req.body()
+                );
+
+            const auto side =
+                parse_side(
+                    fields.at("side")
+                );
+
+            const auto type =
+                parse_type(
+                    fields.at("type")
+                );
+
+            if (!side || !type) {
+                return json_response(
+                    http::status::
+                        bad_request,
+                    R"({"error":"invalid side or order type"})"
+                );
+            }
+
+            OrderRequest order{
+                std::stoull(
+                    fields.at("orderId")
+                ),
+                static_cast<ClientId>(
+                    std::stoul(
+                        fields.at("clientId")
+                    )
+                ),
+                *side,
+                *type,
+                std::stoll(
+                    fields.at("price")
+                ),
+                static_cast<Quantity>(
+                    std::stoul(
+                        fields.at(
+                            "quantity"
+                        )
+                    )
+                ),
+                static_cast<SymbolId>(
+                    std::stoul(
+                        fields.at(
+                            "symbol"
+                        )
+                    )
+                )
+            };
+
+            std::lock_guard<std::mutex>
+                lock(state.mutex);
+
+            ++state.submitted;
+
+            if (!state.risk.allow(order)) {
+                ++state.rejected;
+
+                return json_response(
+                    http::status::
+                        unprocessable_entity,
+                    R"({"ok":false,"status":"RISK_REJECTED"})"
+                );
+            }
+
+            const auto start =
+                minimatch::steady_now_ns();
+
+            const bool ok =
+                state.exchange.submit(
+                    order
+                );
+
+            const auto elapsed =
+                minimatch::steady_now_ns()
+                - start;
+
+            state.latency.record(
+                "order_submit",
+                elapsed
+            );
+
+            if (ok) {
+                state.risk
+                    .on_order_accepted(
+                        order
+                    );
+            }
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"ok\":"
+                << (
+                    ok
+                        ? "true"
+                        : "false"
+                )
+                << ",\"orderId\":"
+                << order.order_id
+                << ",\"activeOrders\":"
+                << state.exchange
+                       .active_orders()
+                << ",\"stateHash\":\""
+                << state.exchange
+                       .state_hash()
+                << "\""
+                << "}";
+
+            return json_response(
+                ok
+                    ? http::status::ok
+                    : http::status::
+                          unprocessable_entity,
+                out.str()
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+    return json_response(
+        http::status::not_found,
+        R"({"error":"not found"})"
+    );
+}
+
+} // namespace
+
+int main() {
+    try {
+        asio::io_context io;
+
+        tcp::acceptor acceptor(
+            io,
+            {
+                asio::ip::make_address(
+                    "127.0.0.1"
+                ),
+                8081
+            }
+        );
+
+        std::cout
+            << "MiniMatch API listening on "
+            << "http://127.0.0.1:8081\n";
+
+        while (true) {
+            tcp::socket socket(io);
+
+            acceptor.accept(socket);
+
+            beast::flat_buffer buffer;
+
+            http::request<
+                http::string_body
+            > req;
+
+            http::read(
+                socket,
+                buffer,
+                req
+            );
+
+            auto res =
+                handle_request(req);
+
+            http::write(
+                socket,
+                res
+            );
+
+            beast::error_code ec;
+
+            socket.shutdown(
+                tcp::socket::
+                    shutdown_send,
+                ec
+            );
+        }
+
+    } catch (
+        const std::exception& ex
+    ) {
+        std::cerr
+            << "API server error: "
+            << ex.what()
+            << '\n';
+
+        return 1;
+    }
+}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMarketData } from "./context/MarketDataContext";
 import Sidebar, { type Page } from "./components/layout/Sidebar";
 
 import Overview from "./pages/Overview";
@@ -12,9 +13,17 @@ import Replay from "./pages/Replay";
 import Backtest from "./pages/Backtest";
 import Analytics from "./pages/Analytics";
 import System from "./pages/System";
+import Operations from "./pages/Operations";
 
 function App() {
-  const [page, setPage] = useState<Page>("overview");
+  const [page, setPage] =
+    useState<Page>("overview");
+
+  const {
+    mode,
+    setMode,
+    status,
+  } = useMarketData();
 
   const content = {
     overview: <Overview />,
@@ -28,6 +37,7 @@ function App() {
     backtest: <Backtest />,
     analytics: <Analytics />,
     system: <System />,
+    operations: <Operations />,
   };
 
   return (
@@ -35,6 +45,30 @@ function App() {
       <Sidebar page={page} onChange={setPage} />
 
       <main className="main-content">
+        <div className="market-mode-bar">
+          <span>DATA SOURCE</span>
+
+          <button
+            onClick={() => setMode("live")}
+            disabled={mode === "live"}
+          >
+            LIVE
+          </button>
+
+          <button
+            onClick={() => setMode("replay")}
+            disabled={mode === "replay"}
+          >
+            REPLAY
+          </button>
+
+          <span>
+            {mode.toUpperCase()}
+            {" · "}
+            {status}
+          </span>
+        </div>
+
         {content[page]}
       </main>
     </div>

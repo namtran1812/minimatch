@@ -23,7 +23,8 @@ export type Page =
   | "replay"
   | "backtest"
   | "analytics"
-  | "system";
+  | "system"
+  | "operations";
 
 interface Props {
   page: Page;
@@ -46,6 +47,7 @@ const items: Array<{
   { id: "backtest", label: "Backtest", icon: <Landmark size={16} /> },
   { id: "analytics", label: "Analytics", icon: <LineChart size={16} /> },
   { id: "system", label: "System", icon: <Cpu size={16} /> },
+  { id: "operations", label: "Operations", icon: <Activity size={16} /> },
 ];
 
 export default function Sidebar({ page, onChange }: Props) {

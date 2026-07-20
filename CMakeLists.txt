@@ -84,6 +84,7 @@ add_library(minimatch
     src/queue_model.cpp
     src/pipeline.cpp
     src/router.cpp
+    src/live_router_quotes.cpp
     src/router_market_data.cpp
     src/execution_algo.cpp
     src/execution_replay.cpp
@@ -299,3 +300,28 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(minimatch_tests)
 endif()
+
+add_executable(minimatch_api
+    apps/api.cpp
+)
+
+target_link_libraries(minimatch_api
+    PRIVATE
+    minimatch
+)
+
+target_compile_definitions(minimatch_api
+    PRIVATE
+    BOOST_ERROR_CODE_HEADER_ONLY
+)
+
+add_executable(
+  minimatch_fix_client
+  apps/fix_client.cpp
+)
+
+target_link_libraries(
+  minimatch_fix_client
+  PRIVATE
+    minimatch
+)

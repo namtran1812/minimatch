@@ -1,0 +1,482 @@
+========================================
+ MiniMatch End-to-End Verification
+========================================
+
+[1] API health
+{"status":"ok","engine":"online"}
+
+[2] Matching engine order lifecycle
+{"ok":true,"orderId":178451667856832,"activeOrders":1,"stateHash":"1247760147879141009"}
+{"symbol":1,"sequence":15,"bids":[{"price":10000,"quantity":10,"orderCount":1}],"asks":[]}
+{"ok":true,"activeOrders":0,"stateHash":"1119721299750195831"}
+Matching lifecycle OK
+
+[3] Historical backtest + OMS
+{"ok":true,"complete":false,"parentOrderId":"8","requestedQuantity":2,"filledQuantity":0.4,"remainingQuantity":1.6,"arrivalPrice":62640.1,"averageFillPrice":62640.1,"marketVwap":62640.1,"implementationShortfallBps":0,"vwapSlippageBps":0,"totalNotional":25056,"totalFees":12.528,"acceptedChildren":1,"rejectedChildren":0,"fillCount":1}
+PASS: backtest created OMS parent
+Parent ID: 8
+[{"id":"8","parentId":"8","venue":"coinbase","status":"CANCELLED","price":62640.1,"quantity":1,"filledQuantity":0.4,"remainingQuantity":0.6}]
+[{"id":"8","childOrderId":"8","parentId":"8","venue":"coinbase","price":62640.1,"quantity":0.4,"notional":25056,"fee":12.528,"timestamp":1000000000}]
+Backtest + OMS OK
+
+[4] Smart order router preview
+{"symbol":"btcusd","side":"BUY","requestedQuantity":0.1,"routedQuantity":0.1,"complete":true,"averagePrice":63768.4,"estimatedNotional":6376.84,"estimatedFees":6.37684,"legs":[{"venue":"binance","price":63768.4,"quantity":0.1,"estimatedFee":6.37684,"effectivePrice":63832.2,"latencyMs":0,"takerFeeBps":10,"latencyCostBpsPerMs":0,"levelIndex":0}]}
+Router preview OK
+
+[5] Routed execution + SQLite persistence
+{"executionId":7,"symbol":"btcusd","side":"BUY","complete":false,"requestedQuantity":0.1,"filledQuantity":0.08,"remainingQuantity":0.02,"averageFillPrice":63768.4,"totalNotional":5101.47,"totalFees":5.10147,"totalLatencyMs":2.51031,"simulation":{"fillRatio":0.8,"rejectionProbability":0,"baseLatencyMs":1,"latencyJitterMs":2,"seed":42},"children":[{"venue":"binance","levelIndex":0,"requestedQuantity":0.1,"filledQuantity":0.08,"remainingQuantity":0.02,"price":63768.4,"notional":5101.47,"fee":5.10147,"latencyMs":2.51031,"status":"PARTIALLY_FILLED"}]}
+PASS: routed execution persisted
+Execution ID: 7
+{"executionId":7,"createdAt":"2026-07-20 03:04:38","symbol":"btcusd","side":"BUY","requestedQuantity":0.1,"filledQuantity":0.08,"remainingQuantity":0.02,"averageFillPrice":63768.4,"totalNotional":5101.47,"totalFees":5.10147,"totalLatencyMs":2.51031,"complete":false,"children":[{"venue":"binance","levelIndex":0,"requestedQuantity":0.1,"filledQuantity":0.08,"remainingQuantity":0.02,"price":63768.4,"notional":5101.47,"fee":5.10147,"latencyMs":2.51031,"status":"PARTIALLY_FILLED"}]}
+Execution persistence OK
+
+[6] FIX persistence
+{"sessionId":"MINIMATCH->CLIENT","nextIncomingSequence":7,"nextOutgoingSequence":7,"lastReceivedTimeNs":1784512944941128000,"lastSentTimeNs":1784512944941128000,"messageCount":12,"inboundCount":6,"outboundCount":6,"lastInboundSequence":6,"lastOutboundSequence":6,"resendRequestCount":0,"sequenceResetCount":0,"rejectCount":2,"executionReportCount":2}
+[{"id":1,"sessionId":"MINIMATCH->CLIENT","direction":"IN","sequenceNumber":1,"messageType":"A","wireMessage":"8=FIX.4.4|9=68|35=A|34=1|49=CLIENT|56=MINIMATCH|52=1784512747042289000|98=0|108=30|10=005|","timestampNs":1784512747042422000},{"id":2,"sessionId":"MINIMATCH->CLIENT","direction":"OUT","sequenceNumber":1,"messageType":"A","wireMessage":"8=FIX.4.4|9=68|35=A|34=1|49=MINIMATCH|56=CLIENT|52=1784512747042422000|98=0|108=30|10=250|","timestampNs":1784512747042422000},{"id":3,"sessionId":"MINIMATCH->CLIENT","direction":"IN","sequenceNumber":2,"messageType":"D","wireMessage":"8=FIX.4.4|9=116|35=D|34=2|49=CLIENT|56=MINIMATCH|52=1784512747043795000|11=FIX-ORDER-1|55=BTCUSD|54=1|38=0.50|40=2|44=62640.10|59=0|10=067|","timestampNs":1784512747044093000},{"id":4,"sessionId":"MINIMATCH->CLIENT","direction":"OUT","sequenceNumber":2,"messageType":"8","wireMessage":"8=FIX.4.4|9=144|35=8|11=FIX-ORDER-1|17=ACK-1|150=0|39=0|38=0.500000|14=0.000000|151=0.500000|44=62640.100000|34=2|49=MINIMATCH|56=CLIENT|52=1784512747044093000|10=229|","timestampNs":1784512747044093000},{"id":5,"sessionId":"MINIMATCH->CLIENT","direction":"IN","sequenceNumber":3,"messageType":"F","wireMessage":"8=FIX.4.4|9=102|35=F|34=3|49=CLIENT|56=MINIMATCH|52=1784512747045167000|11=FIX-CANCEL-1|41=FIX-ORDER-1|55=BTCUSD|54=1|10=164|","timestampNs":1784512747045382000},{"id":6,"sessionId":"MINIMATCH->CLIENT","direction":"OUT","sequenceNumber":3,"messageType":"8","wireMessage":"8=FIX.4.4|9=129|35=8|11=FIX-CANCEL-1|17=CXL-1|150=4|39=4|38=0.500000|14=0.000000|151=0.500000|34=3|49=MINIMATCH|56=CLIENT|52=1784512747045382000|10=062|","timestampNs":1784512747045382000},{"id":7,"sessionId":"MINIMATCH->CLIENT","direction":"IN","sequenceNumber":4,"messageType":"A","wireMessage":"8=FIX.4.4|9=68|35=A|34=4|49=CLIENT|56=MINIMATCH|52=1784512944938043000|98=0|108=30|10=009|","timestampNs":1784512944938122000},{"id":8,"sessionId":"MINIMATCH->CLIENT","direction":"OUT","sequenceNumber":4,"messageType":"A","wireMessage":"8=FIX.4.4|9=68|35=A|34=4|49=MINIMATCH|56=CLIENT|52=1784512944938122000|98=0|108=30|10=007|","timestampNs":1784512944938122000},{"id":9,"sessionId":"MINIMATCH->CLIENT","direction":"IN","sequenceNumber":5,"messageType":"D","wireMessage":"8=FIX.4.4|9=116|35=D|34=5|49=CLIENT|56=MINIMATCH|52=1784512944939284000|11=FIX-ORDER-1|55=BTCUSD|54=1|38=0.50|40=2|44=62640.10|59=0|10=076|","timestampNs":1784512944939566000},{"id":10,"sessionId":"MINIMATCH->CLIENT","direction":"OUT","sequenceNumber":5,"messageType":"3","wireMessage":"8=FIX.4.4|9=77|35=3|58=duplicate ClOrdID|34=5|49=MINIMATCH|56=CLIENT|52=1784512944939566000|10=213|","timestampNs":1784512944939566000},{"id":11,"sessionId":"MINIMATCH->CLIENT","direction":"IN","sequenceNumber":6,"messageType":"F","wireMessage":"8=FIX.4.4|9=102|35=F|34=6|49=CLIENT|56=MINIMATCH|52=1784512944940790000|11=FIX-CANCEL-1|41=FIX-ORDER-1|55=BTCUSD|54=1|10=172|","timestampNs":1784512944941128000},{"id":12,"sessionId":"MINIMATCH->CLIENT","direction":"OUT","sequenceNumber":6,"messageType":"3","wireMessage":"8=FIX.4.4|9=85|35=3|58=order cannot be cancelled|34=6|49=MINIMATCH|56=CLIENT|52=1784512944941128000|10=237|","timestampNs":1784512944941128000}]
+FIX observability OK
+
+[7] System metrics
+{"submitted":8,"accepted":8,"rejected":0,"trades":0,"reports":16,"activeOrders":0,"stateHash":"1119721299750195831","p50Ns":8667,"p95Ns":19375,"p99Ns":19375}
+
+[8] Binary replay determinism
+events=2 input_sequence=2 symbols=1 active=1 state_hash=7633056132652409449
+Deterministic replay OK
+
+[9] Core tests
+Test project /Users/namtran/minimatch/build
+        Start   1: OrderBook.FifoAtSamePrice
+  1/214 Test   #1: OrderBook.FifoAtSamePrice ......................................   Passed    0.01 sec
+        Start   2: OrderBook.BestPriceBeforeTime
+  2/214 Test   #2: OrderBook.BestPriceBeforeTime ..................................   Passed    0.01 sec
+        Start   3: OrderBook.IOCDoesNotRest
+  3/214 Test   #3: OrderBook.IOCDoesNotRest .......................................   Passed    0.01 sec
+        Start   4: OrderBook.MarketDoesNotRest
+  4/214 Test   #4: OrderBook.MarketDoesNotRest ....................................   Passed    0.01 sec
+        Start   5: OrderBook.CancelRemovesOrder
+  5/214 Test   #5: OrderBook.CancelRemovesOrder ...................................   Passed    0.01 sec
+        Start   6: OrderBook.PartialFillRestsLimitRemainder
+  6/214 Test   #6: OrderBook.PartialFillRestsLimitRemainder .......................   Passed    0.01 sec
+        Start   7: OrderBook.DeterministicStateHash
+  7/214 Test   #7: OrderBook.DeterministicStateHash ...............................   Passed    0.01 sec
+        Start   8: OrderBook.RejectDuplicate
+  8/214 Test   #8: OrderBook.RejectDuplicate ......................................   Passed    0.01 sec
+        Start   9: AdvancedOrderBook.FillOrKillRejectsWithoutMutation
+  9/214 Test   #9: AdvancedOrderBook.FillOrKillRejectsWithoutMutation .............   Passed    0.01 sec
+        Start  10: AdvancedOrderBook.FillOrKillExecutesCompletely
+ 10/214 Test  #10: AdvancedOrderBook.FillOrKillExecutesCompletely .................   Passed    0.01 sec
+        Start  11: AdvancedOrderBook.PostOnlyRejectsCrossingOrder
+ 11/214 Test  #11: AdvancedOrderBook.PostOnlyRejectsCrossingOrder .................   Passed    0.01 sec
+        Start  12: AdvancedOrderBook.QuantityReductionPreservesPriority
+ 12/214 Test  #12: AdvancedOrderBook.QuantityReductionPreservesPriority ...........   Passed    0.01 sec
+        Start  13: AdvancedOrderBook.PriceChangeLosesPriority
+ 13/214 Test  #13: AdvancedOrderBook.PriceChangeLosesPriority .....................   Passed    0.01 sec
+        Start  14: AdvancedOrderBook.DepthIncludesOrderCount
+ 14/214 Test  #14: AdvancedOrderBook.DepthIncludesOrderCount ......................   Passed    0.01 sec
+        Start  15: AdvancedExchange.MultiSymbolIsolation
+ 15/214 Test  #15: AdvancedExchange.MultiSymbolIsolation ..........................   Passed    0.01 sec
+        Start  16: AdvancedExchange.SnapshotRoundTrip
+ 16/214 Test  #16: AdvancedExchange.SnapshotRoundTrip .............................   Passed    0.01 sec
+        Start  17: RiskEngine.RejectsOversizedOrder
+ 17/214 Test  #17: RiskEngine.RejectsOversizedOrder ...............................   Passed    0.01 sec
+        Start  18: RiskEngine.EnforcesPositionLimit
+ 18/214 Test  #18: RiskEngine.EnforcesPositionLimit ...............................   Passed    0.01 sec
+        Start  19: RiskEngine.DailyLossTriggersKillSwitch
+ 19/214 Test  #19: RiskEngine.DailyLossTriggersKillSwitch .........................   Passed    0.01 sec
+        Start  20: Analytics.ComputesDrawdownAndWinRate
+ 20/214 Test  #20: Analytics.ComputesDrawdownAndWinRate ...........................   Passed    0.01 sec
+        Start  21: Options.PutCallParityAndImpliedVolatility
+ 21/214 Test  #21: Options.PutCallParityAndImpliedVolatility ......................   Passed    0.01 sec
+        Start  22: Options.MonteCarloConvergesNearBlackScholes
+ 22/214 Test  #22: Options.MonteCarloConvergesNearBlackScholes ....................   Passed    0.02 sec
+        Start  23: Execution.SchedulesConserveQuantity
+ 23/214 Test  #23: Execution.SchedulesConserveQuantity ............................   Passed    0.01 sec
+        Start  24: QueueModel.TradesConsumeAheadBeforeOwnOrder
+ 24/214 Test  #24: QueueModel.TradesConsumeAheadBeforeOwnOrder ....................   Passed    0.01 sec
+        Start  25: Pairs.RecoversSyntheticHedgeRatio
+ 25/214 Test  #25: Pairs.RecoversSyntheticHedgeRatio ..............................   Passed    0.01 sec
+        Start  26: SpscRing.PreservesFifoOrder
+ 26/214 Test  #26: SpscRing.PreservesFifoOrder ....................................   Passed    0.01 sec
+        Start  27: Pipeline.ProcessesCommandsDeterministically
+ 27/214 Test  #27: Pipeline.ProcessesCommandsDeterministically ....................   Passed    0.01 sec
+        Start  28: SmartOrderRouter.BuyUsesLowestEffectiveAskFirst
+ 28/214 Test  #28: SmartOrderRouter.BuyUsesLowestEffectiveAskFirst ................   Passed    0.01 sec
+        Start  29: SmartOrderRouter.ConsumesMultipleLevels
+ 29/214 Test  #29: SmartOrderRouter.ConsumesMultipleLevels ........................   Passed    0.01 sec
+        Start  30: SmartOrderRouter.SplitsAcrossVenuesAndLevels
+ 30/214 Test  #30: SmartOrderRouter.SplitsAcrossVenuesAndLevels ...................   Passed    0.01 sec
+        Start  31: SmartOrderRouter.SellUsesHighestBidLevelsFirst
+ 31/214 Test  #31: SmartOrderRouter.SellUsesHighestBidLevelsFirst .................   Passed    0.01 sec
+        Start  32: SmartOrderRouter.ReportsPartialDepthRoute
+ 32/214 Test  #32: SmartOrderRouter.ReportsPartialDepthRoute ......................   Passed    0.01 sec
+        Start  33: SmartOrderRouter.IgnoresInvalidLevels
+ 33/214 Test  #33: SmartOrderRouter.IgnoresInvalidLevels ..........................   Passed    0.01 sec
+        Start  34: SmartOrderRouter.LatencyPenaltyCanChangeVenue
+ 34/214 Test  #34: SmartOrderRouter.LatencyPenaltyCanChangeVenue ..................   Passed    0.01 sec
+        Start  35: RouterConstraints.BuyLimitPriceStopsExpensiveLevels
+ 35/214 Test  #35: RouterConstraints.BuyLimitPriceStopsExpensiveLevels ............   Passed    0.01 sec
+        Start  36: RouterConstraints.SellLimitPriceStopsCheapLevels
+ 36/214 Test  #36: RouterConstraints.SellLimitPriceStopsCheapLevels ...............   Passed    0.01 sec
+        Start  37: RouterConstraints.MaximumVenueCountIsEnforced
+ 37/214 Test  #37: RouterConstraints.MaximumVenueCountIsEnforced ..................   Passed    0.01 sec
+        Start  38: RouterConstraints.AllOrNoneClearsPartialRoute
+ 38/214 Test  #38: RouterConstraints.AllOrNoneClearsPartialRoute ..................   Passed    0.01 sec
+        Start  39: RouterConstraints.BuySlippageLimitStopsWorseLevels
+ 39/214 Test  #39: RouterConstraints.BuySlippageLimitStopsWorseLevels .............   Passed    0.01 sec
+        Start  40: RouterConstraints.SellSlippageLimitStopsWorseLevels
+ 40/214 Test  #40: RouterConstraints.SellSlippageLimitStopsWorseLevels ............   Passed    0.01 sec
+        Start  41: RouterConstraints.RejectsInvalidControls
+ 41/214 Test  #41: RouterConstraints.RejectsInvalidControls .......................   Passed    0.01 sec
+        Start  42: RouterMarketData.ConvertsBookToVenueQuotes
+ 42/214 Test  #42: RouterMarketData.ConvertsBookToVenueQuotes .....................   Passed    0.01 sec
+        Start  43: RouterMarketData.RoutesUsingMarketData
+ 43/214 Test  #43: RouterMarketData.RoutesUsingMarketData .........................   Passed    0.01 sec
+        Start  44: ExecutionAlgo.MarketUsesSingleImmediateSlice
+ 44/214 Test  #44: ExecutionAlgo.MarketUsesSingleImmediateSlice ...................   Passed    0.01 sec
+        Start  45: ExecutionAlgo.TWAPUsesEqualTimeSlices
+ 45/214 Test  #45: ExecutionAlgo.TWAPUsesEqualTimeSlices ..........................   Passed    0.01 sec
+        Start  46: ExecutionAlgo.VWAPFollowsVolumeProfile
+ 46/214 Test  #46: ExecutionAlgo.VWAPFollowsVolumeProfile .........................   Passed    0.01 sec
+        Start  47: ExecutionAlgo.POVRespectsParticipationRate
+ 47/214 Test  #47: ExecutionAlgo.POVRespectsParticipationRate .....................   Passed    0.01 sec
+        Start  48: ExecutionAlgo.POVStopsWhenParentQuantityIsFilled
+ 48/214 Test  #48: ExecutionAlgo.POVStopsWhenParentQuantityIsFilled ...............   Passed    0.01 sec
+        Start  49: ExecutionAlgo.IcebergUsesDisplayedQuantity
+ 49/214 Test  #49: ExecutionAlgo.IcebergUsesDisplayedQuantity .....................   Passed    0.01 sec
+        Start  50: ExecutionAlgo.BackwardCompatibleTWAPOverload
+ 50/214 Test  #50: ExecutionAlgo.BackwardCompatibleTWAPOverload ...................   Passed    0.01 sec
+        Start  51: ExecutionAlgo.RejectsInvalidCommonSettings
+ 51/214 Test  #51: ExecutionAlgo.RejectsInvalidCommonSettings .....................   Passed    0.01 sec
+        Start  52: ExecutionAlgo.RejectsInvalidAlgorithmSettings
+ 52/214 Test  #52: ExecutionAlgo.RejectsInvalidAlgorithmSettings ..................   Passed    0.01 sec
+        Start  53: ExecutionReplay.BuildsDeterministicTimeline
+ 53/214 Test  #53: ExecutionReplay.BuildsDeterministicTimeline ....................   Passed    0.01 sec
+        Start  54: ExecutionReplay.PreservesChildOrder
+ 54/214 Test  #54: ExecutionReplay.PreservesChildOrder ............................   Passed    0.01 sec
+        Start  55: ExecutionReplay.AccumulatesLatency
+ 55/214 Test  #55: ExecutionReplay.AccumulatesLatency .............................   Passed    0.01 sec
+        Start  56: ExecutionReplay.RepresentsRejectedChild
+ 56/214 Test  #56: ExecutionReplay.RepresentsRejectedChild ........................   Passed    0.01 sec
+        Start  57: ExecutionReplay.RepresentsPartialFill
+ 57/214 Test  #57: ExecutionReplay.RepresentsPartialFill ..........................   Passed    0.01 sec
+        Start  58: ExecutionReplay.EmptyChildrenStillProducesParentEvents
+ 58/214 Test  #58: ExecutionReplay.EmptyChildrenStillProducesParentEvents .........   Passed    0.01 sec
+        Start  59: MarketReplay.SortsEventsByTimestamp
+ 59/214 Test  #59: MarketReplay.SortsEventsByTimestamp ............................   Passed    0.01 sec
+        Start  60: MarketReplay.IteratesDeterministically
+ 60/214 Test  #60: MarketReplay.IteratesDeterministically .........................   Passed    0.01 sec
+        Start  61: MarketReplay.SeeksByIndex
+ 61/214 Test  #61: MarketReplay.SeeksByIndex ......................................   Passed    0.01 sec
+        Start  62: MarketReplay.SeeksByTimestamp
+ 62/214 Test  #62: MarketReplay.SeeksByTimestamp ..................................   Passed    0.01 sec
+        Start  63: MarketReplay.CalculatesStatistics
+ 63/214 Test  #63: MarketReplay.CalculatesStatistics ..............................   Passed    0.01 sec
+        Start  64: MarketReplay.LoadsCsvFile
+ 64/214 Test  #64: MarketReplay.LoadsCsvFile ......................................   Passed    0.01 sec
+        Start  65: MarketReplay.RejectsInvalidCsvHeader
+ 65/214 Test  #65: MarketReplay.RejectsInvalidCsvHeader ...........................   Passed    0.01 sec
+        Start  66: MarketReplay.RejectsCrossedQuote
+ 66/214 Test  #66: MarketReplay.RejectsCrossedQuote ...............................   Passed    0.01 sec
+        Start  67: MarketData.AppliesSnapshot
+ 67/214 Test  #67: MarketData.AppliesSnapshot .....................................   Passed    0.01 sec
+        Start  68: MarketData.AppliesIncrementalUpdate
+ 68/214 Test  #68: MarketData.AppliesIncrementalUpdate ............................   Passed    0.01 sec
+        Start  69: MarketData.DeletesPriceLevel
+ 69/214 Test  #69: MarketData.DeletesPriceLevel ...................................   Passed    0.01 sec
+        Start  70: MarketData.DetectsSequenceGap
+ 70/214 Test  #70: MarketData.DetectsSequenceGap ..................................   Passed    0.01 sec
+        Start  71: MarketData.RequiresSnapshotBeforeIncrementals
+ 71/214 Test  #71: MarketData.RequiresSnapshotBeforeIncrementals ..................   Passed    0.01 sec
+        Start  72: MarketData.ReturnsRequestedDepth
+ 72/214 Test  #72: MarketData.ReturnsRequestedDepth ...............................   Passed    0.01 sec
+        Start  73: MarketData.RejectsCrossedSnapshot
+ 73/214 Test  #73: MarketData.RejectsCrossedSnapshot ..............................   Passed    0.01 sec
+        Start  74: MarketData.BuildsConsolidatedBbo
+ 74/214 Test  #74: MarketData.BuildsConsolidatedBbo ...............................   Passed    0.01 sec
+        Start  75: MarketData.ExcludesUnsynchronizedVenue
+ 75/214 Test  #75: MarketData.ExcludesUnsynchronizedVenue .........................   Passed    0.01 sec
+        Start  76: MarketData.ListsVenuesForSymbol
+ 76/214 Test  #76: MarketData.ListsVenuesForSymbol ................................   Passed    0.01 sec
+        Start  77: MarketData.AcceptsSnapshotSequenceZero
+ 77/214 Test  #77: MarketData.AcceptsSnapshotSequenceZero .........................   Passed    0.01 sec
+        Start  78: MarketData.AppliesMultipleUpdatesWithOneSequence
+ 78/214 Test  #78: MarketData.AppliesMultipleUpdatesWithOneSequence ...............   Passed    0.01 sec
+        Start  79: MarketData.RejectsCrossedConsolidatedBbo
+ 79/214 Test  #79: MarketData.RejectsCrossedConsolidatedBbo .......................   Passed    0.01 sec
+        Start  80: VenueHealth.StartsUnknown
+ 80/214 Test  #80: VenueHealth.StartsUnknown ......................................   Passed    0.01 sec
+        Start  81: VenueHealth.TracksHealthyVenue
+ 81/214 Test  #81: VenueHealth.TracksHealthyVenue .................................   Passed    0.01 sec
+        Start  82: VenueHealth.MarksDelayedVenue
+ 82/214 Test  #82: VenueHealth.MarksDelayedVenue ..................................   Passed    0.01 sec
+        Start  83: VenueHealth.ExcludesStaleVenue
+ 83/214 Test  #83: VenueHealth.ExcludesStaleVenue .................................   Passed    0.01 sec
+        Start  84: VenueHealth.MarksDisconnectedVenue
+ 84/214 Test  #84: VenueHealth.MarksDisconnectedVenue .............................   Passed    0.01 sec
+        Start  85: VenueHealth.UnsynchronizedVenueIsDisconnected
+ 85/214 Test  #85: VenueHealth.UnsynchronizedVenueIsDisconnected ..................   Passed    0.01 sec
+        Start  86: VenueHealth.TracksOperationalCounters
+ 86/214 Test  #86: VenueHealth.TracksOperationalCounters ..........................   Passed    0.01 sec
+        Start  87: VenueHealth.TracksMessageRate
+ 87/214 Test  #87: VenueHealth.TracksMessageRate ..................................   Passed    0.01 sec
+        Start  88: VenueHealth.ReturnsSortedSnapshots
+ 88/214 Test  #88: VenueHealth.ReturnsSortedSnapshots .............................   Passed    0.01 sec
+        Start  89: LatencyStats.StartsEmpty
+ 89/214 Test  #89: LatencyStats.StartsEmpty .......................................   Passed    0.01 sec
+        Start  90: LatencyStats.TracksSummaryValues
+ 90/214 Test  #90: LatencyStats.TracksSummaryValues ...............................   Passed    0.01 sec
+        Start  91: LatencyStats.TracksPercentiles
+ 91/214 Test  #91: LatencyStats.TracksPercentiles .................................   Passed    0.01 sec
+        Start  92: LatencyStats.UsesBoundedSampleWindow
+ 92/214 Test  #92: LatencyStats.UsesBoundedSampleWindow ...........................   Passed    0.01 sec
+        Start  93: LatencyStats.ReturnsSortedSnapshots
+ 93/214 Test  #93: LatencyStats.ReturnsSortedSnapshots ............................   Passed    0.01 sec
+        Start  94: LatencyStats.ResetsSeries
+ 94/214 Test  #94: LatencyStats.ResetsSeries ......................................   Passed    0.01 sec
+        Start  95: LatencyStats.RejectsEmptyName
+ 95/214 Test  #95: LatencyStats.RejectsEmptyName ..................................   Passed    0.01 sec
+        Start  96: LatencyStats.RejectsZeroCapacity
+ 96/214 Test  #96: LatencyStats.RejectsZeroCapacity ...............................   Passed    0.01 sec
+        Start  97: MarketRecorder.WritesAndReadsSnapshot
+ 97/214 Test  #97: MarketRecorder.WritesAndReadsSnapshot ..........................   Passed    0.01 sec
+        Start  98: MarketRecorder.WritesAndReadsUpdateBatch
+ 98/214 Test  #98: MarketRecorder.WritesAndReadsUpdateBatch .......................   Passed    0.01 sec
+        Start  99: MarketRecorder.ReplaysDeterministically
+ 99/214 Test  #99: MarketRecorder.ReplaysDeterministically ........................   Passed    0.01 sec
+        Start 100: MarketRecorder.SupportsTimestampRange
+100/214 Test #100: MarketRecorder.SupportsTimestampRange ..........................   Passed    0.01 sec
+        Start 101: MarketRecorder.RewindsReader
+101/214 Test #101: MarketRecorder.RewindsReader ...................................   Passed    0.01 sec
+        Start 102: MarketRecorder.RejectsCorruptHeader
+102/214 Test #102: MarketRecorder.RejectsCorruptHeader ............................   Passed    0.01 sec
+        Start 103: ReplayControl.StartsReady
+103/214 Test #103: ReplayControl.StartsReady ......................................   Passed    0.01 sec
+        Start 104: ReplayControl.PlaysAndPauses
+104/214 Test #104: ReplayControl.PlaysAndPauses ...................................   Passed    0.01 sec
+        Start 105: ReplayControl.ChangesSpeed
+105/214 Test #105: ReplayControl.ChangesSpeed .....................................   Passed    0.01 sec
+        Start 106: ReplayControl.RejectsInvalidSpeed
+106/214 Test #106: ReplayControl.RejectsInvalidSpeed ..............................   Passed    0.01 sec
+        Start 107: ReplayControl.RequestsRestart
+107/214 Test #107: ReplayControl.RequestsRestart ..................................   Passed    0.01 sec
+        Start 108: ReplayControl.RequestsSeek
+108/214 Test #108: ReplayControl.RequestsSeek .....................................   Passed    0.01 sec
+        Start 109: ReplayControl.TracksProgress
+109/214 Test #109: ReplayControl.TracksProgress ...................................   Passed    0.01 sec
+        Start 110: ReplayControl.WaitsWhilePaused
+110/214 Test #110: ReplayControl.WaitsWhilePaused .................................   Passed    0.06 sec
+        Start 111: ReplayControl.StopReleasesWaiter
+111/214 Test #111: ReplayControl.StopReleasesWaiter ...............................   Passed    0.01 sec
+        Start 112: ReplayControl.AppliesCommands
+112/214 Test #112: ReplayControl.AppliesCommands ..................................   Passed    0.01 sec
+        Start 113: ReplayControl.RequestsTimestampSeek
+113/214 Test #113: ReplayControl.RequestsTimestampSeek ............................   Passed    0.01 sec
+        Start 114: ReplayControl.TimestampSeekClearsRecordSeek
+114/214 Test #114: ReplayControl.TimestampSeekClearsRecordSeek ....................   Passed    0.01 sec
+        Start 115: CoinbaseLevel2.ParsesSnapshot
+115/214 Test #115: CoinbaseLevel2.ParsesSnapshot ..................................   Passed    0.01 sec
+        Start 116: CoinbaseLevel2.ParsesIncrementalUpdates
+116/214 Test #116: CoinbaseLevel2.ParsesIncrementalUpdates ........................   Passed    0.01 sec
+        Start 117: CoinbaseLevel2.ParsesHeartbeat
+117/214 Test #117: CoinbaseLevel2.ParsesHeartbeat .................................   Passed    0.01 sec
+        Start 118: CoinbaseLevel2.IgnoresUnsupportedChannel
+118/214 Test #118: CoinbaseLevel2.IgnoresUnsupportedChannel .......................   Passed    0.01 sec
+        Start 119: CoinbaseLevel2.BuildsSubscriptions
+119/214 Test #119: CoinbaseLevel2.BuildsSubscriptions .............................   Passed    0.01 sec
+        Start 120: CoinbaseLevel2.EnvelopeSequenceGapsDoNotAffectNormalizedBook
+120/214 Test #120: CoinbaseLevel2.EnvelopeSequenceGapsDoNotAffectNormalizedBook ...   Passed    0.01 sec
+        Start 121: BinanceLevel2.ParsesSnapshot
+121/214 Test #121: BinanceLevel2.ParsesSnapshot ...................................   Passed    0.01 sec
+        Start 122: BinanceLevel2.ParsesDepthUpdate
+122/214 Test #122: BinanceLevel2.ParsesDepthUpdate ................................   Passed    0.01 sec
+        Start 123: BinanceLevel2.IgnoresOtherMessages
+123/214 Test #123: BinanceLevel2.IgnoresOtherMessages .............................   Passed    0.01 sec
+        Start 124: BinanceLevel2.BridgesSnapshot
+124/214 Test #124: BinanceLevel2.BridgesSnapshot ..................................   Passed    0.01 sec
+        Start 125: BinanceLevel2.IgnoresStaleUpdate
+125/214 Test #125: BinanceLevel2.IgnoresStaleUpdate ...............................   Passed    0.01 sec
+        Start 126: BinanceLevel2.DetectsSequenceGap
+126/214 Test #126: BinanceLevel2.DetectsSequenceGap ...............................   Passed    0.01 sec
+        Start 127: KrakenLevel2.BuildsSubscription
+127/214 Test #127: KrakenLevel2.BuildsSubscription ................................   Passed    0.01 sec
+        Start 128: KrakenLevel2.RejectsUnsupportedDepth
+128/214 Test #128: KrakenLevel2.RejectsUnsupportedDepth ...........................   Passed    0.01 sec
+        Start 129: KrakenLevel2.IgnoresStatusMessage
+129/214 Test #129: KrakenLevel2.IgnoresStatusMessage ..............................   Passed    0.01 sec
+        Start 130: KrakenLevel2.ParsesSnapshot
+130/214 Test #130: KrakenLevel2.ParsesSnapshot ....................................   Passed    0.01 sec
+        Start 131: KrakenLevel2.ParsesUpdate
+131/214 Test #131: KrakenLevel2.ParsesUpdate ......................................   Passed    0.01 sec
+        Start 132: KrakenLevel2.NormalizesSnapshotAndUpdate
+132/214 Test #132: KrakenLevel2.NormalizesSnapshotAndUpdate .......................   Passed    0.01 sec
+        Start 133: KrakenLevel2.RequiresSnapshotBeforeUpdate
+133/214 Test #133: KrakenLevel2.RequiresSnapshotBeforeUpdate ......................   Passed    0.01 sec
+        Start 134: KrakenLevel2.RejectsSymbolMismatch
+134/214 Test #134: KrakenLevel2.RejectsSymbolMismatch .............................   Passed    0.01 sec
+        Start 135: BacktestEngine.RunsTwapAgainstHistoricalQuotes
+135/214 Test #135: BacktestEngine.RunsTwapAgainstHistoricalQuotes .................   Passed    0.01 sec
+        Start 136: BacktestEngine.ReportsPartialFill
+136/214 Test #136: BacktestEngine.ReportsPartialFill ..............................   Passed    0.01 sec
+        Start 137: BacktestEngine.CalculatesMarketVwap
+137/214 Test #137: BacktestEngine.CalculatesMarketVwap ............................   Passed    0.01 sec
+        Start 138: BacktestEngine.RejectsMissingSymbol
+138/214 Test #138: BacktestEngine.RejectsMissingSymbol ............................   Passed    0.01 sec
+        Start 139: BacktestEngine.RejectsInvalidQuantity
+139/214 Test #139: BacktestEngine.RejectsInvalidQuantity ..........................   Passed    0.01 sec
+        Start 140: BacktestEngine.CreatesParentAndChildOrders
+140/214 Test #140: BacktestEngine.CreatesParentAndChildOrders .....................   Passed    0.01 sec
+        Start 141: BacktestEngine.CancelsIncompleteParent
+141/214 Test #141: BacktestEngine.CancelsIncompleteParent .........................   Passed    0.01 sec
+        Start 142: BacktestEngine.FillsReferenceOmsRecords
+142/214 Test #142: BacktestEngine.FillsReferenceOmsRecords ........................   Passed    0.01 sec
+        Start 143: BacktestEngine.RejectsChildWhenKillSwitchIsActive
+143/214 Test #143: BacktestEngine.RejectsChildWhenKillSwitchIsActive ..............   Passed    0.01 sec
+        Start 144: BacktestEngine.RejectsChildAboveQuantityLimit
+144/214 Test #144: BacktestEngine.RejectsChildAboveQuantityLimit ..................   Passed    0.01 sec
+        Start 145: BacktestEngine.AcceptsChildWithinRiskLimits
+145/214 Test #145: BacktestEngine.AcceptsChildWithinRiskLimits ....................   Passed    0.01 sec
+        Start 146: RoutedExecutionEngine.FullyExecutesRoute
+146/214 Test #146: RoutedExecutionEngine.FullyExecutesRoute .......................   Passed    0.01 sec
+        Start 147: RoutedExecutionEngine.SupportsPartialFills
+147/214 Test #147: RoutedExecutionEngine.SupportsPartialFills .....................   Passed    0.01 sec
+        Start 148: RoutedExecutionEngine.ComputesAverageFillPrice
+148/214 Test #148: RoutedExecutionEngine.ComputesAverageFillPrice .................   Passed    0.01 sec
+        Start 149: RoutedExecutionEngine.ComputesFees
+149/214 Test #149: RoutedExecutionEngine.ComputesFees .............................   Passed    0.01 sec
+        Start 150: RoutedExecutionEngine.RejectsInvalidFillRatio
+150/214 Test #150: RoutedExecutionEngine.RejectsInvalidFillRatio ..................   Passed    0.01 sec
+        Start 151: RoutedExecutionEngine.RejectsAllChildren
+151/214 Test #151: RoutedExecutionEngine.RejectsAllChildren .......................   Passed    0.01 sec
+        Start 152: RoutedExecutionEngine.SameSeedProducesSameResults
+152/214 Test #152: RoutedExecutionEngine.SameSeedProducesSameResults ..............   Passed    0.01 sec
+        Start 153: RoutedExecutionEngine.AddsConfiguredLatency
+153/214 Test #153: RoutedExecutionEngine.AddsConfiguredLatency ....................   Passed    0.01 sec
+        Start 154: RoutedExecutionEngine.RejectsInvalidSimulationSettings
+154/214 Test #154: RoutedExecutionEngine.RejectsInvalidSimulationSettings .........   Passed    0.01 sec
+        Start 155: OMS.CreatesParentOrder
+155/214 Test #155: OMS.CreatesParentOrder .........................................   Passed    0.01 sec
+        Start 156: OMS.CreatesChildAndMovesParentToWorking
+156/214 Test #156: OMS.CreatesChildAndMovesParentToWorking ........................   Passed    0.01 sec
+        Start 157: OMS.RecordsPartialChildFill
+157/214 Test #157: OMS.RecordsPartialChildFill ....................................   Passed    0.01 sec
+        Start 158: OMS.CompletesParentAcrossMultipleChildren
+158/214 Test #158: OMS.CompletesParentAcrossMultipleChildren ......................   Passed    0.01 sec
+        Start 159: OMS.RejectsOverfill
+159/214 Test #159: OMS.RejectsOverfill ............................................   Passed    0.01 sec
+        Start 160: OMS.CancelsParentAndWorkingChildren
+160/214 Test #160: OMS.CancelsParentAndWorkingChildren ............................   Passed    0.01 sec
+        Start 161: OMS.RejectsChildAndUpdatesParent
+161/214 Test #161: OMS.RejectsChildAndUpdatesParent ...............................   Passed    0.01 sec
+        Start 162: OMS.ReturnsChildrenAndFillsForParent
+162/214 Test #162: OMS.ReturnsChildrenAndFillsForParent ...........................   Passed    0.01 sec
+        Start 163: OMS.RejectsInvalidParentAndChildRequests
+163/214 Test #163: OMS.RejectsInvalidParentAndChildRequests .......................   Passed    0.01 sec
+        Start 164: FixCodec.EncodesAndParsesLogon
+164/214 Test #164: FixCodec.EncodesAndParsesLogon .................................   Passed    0.01 sec
+        Start 165: FixCodec.EncodesNewOrderSingle
+165/214 Test #165: FixCodec.EncodesNewOrderSingle .................................   Passed    0.01 sec
+        Start 166: FixCodec.RejectsInvalidChecksum
+166/214 Test #166: FixCodec.RejectsInvalidChecksum ................................   Passed    0.01 sec
+        Start 167: FixCodec.RejectsInvalidBodyLength
+167/214 Test #167: FixCodec.RejectsInvalidBodyLength ..............................   Passed    0.01 sec
+        Start 168: FixCodec.SupportsCancelAndExecutionReport
+168/214 Test #168: FixCodec.SupportsCancelAndExecutionReport ......................   Passed    0.01 sec
+        Start 169: FixCodec.PreparesPossDupResend
+169/214 Test #169: FixCodec.PreparesPossDupResend .................................   Passed    0.01 sec
+        Start 170: FixCodec.CreatesSequenceResetGapFill
+170/214 Test #170: FixCodec.CreatesSequenceResetGapFill ...........................   Passed    0.01 sec
+        Start 171: FixSession.AcceptsLogonAndBecomesActive
+171/214 Test #171: FixSession.AcceptsLogonAndBecomesActive ........................   Passed    0.01 sec
+        Start 172: FixSession.RejectsIncorrectSequenceNumber
+172/214 Test #172: FixSession.RejectsIncorrectSequenceNumber ......................   Passed    0.01 sec
+        Start 173: FixSession.RejectsApplicationMessageBeforeLogon
+173/214 Test #173: FixSession.RejectsApplicationMessageBeforeLogon ................   Passed    0.01 sec
+        Start 174: FixSession.AcceptsApplicationMessageAfterLogon
+174/214 Test #174: FixSession.AcceptsApplicationMessageAfterLogon .................   Passed    0.01 sec
+        Start 175: FixSession.RespondsToTestRequestWithHeartbeat
+175/214 Test #175: FixSession.RespondsToTestRequestWithHeartbeat ..................   Passed    0.01 sec
+        Start 176: FixSession.HandlesLogout
+176/214 Test #176: FixSession.HandlesLogout .......................................   Passed    0.01 sec
+        Start 177: FixSession.DetectsHeartbeatAndTestRequestDeadlines
+177/214 Test #177: FixSession.DetectsHeartbeatAndTestRequestDeadlines .............   Passed    0.01 sec
+        Start 178: FixSession.RejectsCompIdMismatch
+178/214 Test #178: FixSession.RejectsCompIdMismatch ...............................   Passed    0.01 sec
+        Start 179: FixSession.OutgoingMessagesIncrementSequence
+179/214 Test #179: FixSession.OutgoingMessagesIncrementSequence ...................   Passed    0.01 sec
+        Start 180: FixSession.ResetRestoresInitialState
+180/214 Test #180: FixSession.ResetRestoresInitialState ...........................   Passed    0.01 sec
+        Start 181: FixSession.SequencesOutboundExecutionReports
+181/214 Test #181: FixSession.SequencesOutboundExecutionReports ...................   Passed    0.01 sec
+        Start 182: FixSession.RestoresPersistentSequenceState
+182/214 Test #182: FixSession.RestoresPersistentSequenceState .....................   Passed    0.01 sec
+        Start 183: FixSession.RequestsResendForSequenceGap
+183/214 Test #183: FixSession.RequestsResendForSequenceGap ........................   Passed    0.01 sec
+        Start 184: FixSession.AcceptsValidResendRequest
+184/214 Test #184: FixSession.AcceptsValidResendRequest ...........................   Passed    0.01 sec
+        Start 185: FixSession.AppliesSequenceReset
+185/214 Test #185: FixSession.AppliesSequenceReset ................................   Passed    0.01 sec
+        Start 186: FixStore.SavesAndLoadsSessionSequenceState
+186/214 Test #186: FixStore.SavesAndLoadsSessionSequenceState .....................   Passed    0.01 sec
+        Start 187: FixStore.ReturnsDefaultsForUnknownSession
+187/214 Test #187: FixStore.ReturnsDefaultsForUnknownSession ......................   Passed    0.01 sec
+        Start 188: FixStore.PersistsInboundAndOutboundMessages
+188/214 Test #188: FixStore.PersistsInboundAndOutboundMessages ....................   Passed    0.01 sec
+        Start 189: FixStore.LoadsOutboundMessagesFromSequence
+189/214 Test #189: FixStore.LoadsOutboundMessagesFromSequence .....................   Passed    0.02 sec
+        Start 190: FixStore.UpdatesExistingSessionSnapshot
+190/214 Test #190: FixStore.UpdatesExistingSessionSnapshot ........................   Passed    0.02 sec
+        Start 191: FixGateway.CreatesOmsOrdersFromNewOrderSingle
+191/214 Test #191: FixGateway.CreatesOmsOrdersFromNewOrderSingle ..................   Passed    0.01 sec
+        Start 192: FixGateway.RejectsDuplicateClientOrderId
+192/214 Test #192: FixGateway.RejectsDuplicateClientOrderId .......................   Passed    0.01 sec
+        Start 193: FixGateway.CancelsExistingOrder
+193/214 Test #193: FixGateway.CancelsExistingOrder ................................   Passed    0.01 sec
+        Start 194: FixGateway.RejectsUnknownCancelOrder
+194/214 Test #194: FixGateway.RejectsUnknownCancelOrder ...........................   Passed    0.01 sec
+        Start 195: FixGateway.RejectsMissingRequiredFields
+195/214 Test #195: FixGateway.RejectsMissingRequiredFields ........................   Passed    0.01 sec
+        Start 196: FixGateway.SupportsMarketOrders
+196/214 Test #196: FixGateway.SupportsMarketOrders ................................   Passed    0.01 sec
+        Start 197: ExecutionRisk.AcceptsValidOrder
+197/214 Test #197: ExecutionRisk.AcceptsValidOrder ................................   Passed    0.01 sec
+        Start 198: ExecutionRisk.KillSwitchRejectsOrders
+198/214 Test #198: ExecutionRisk.KillSwitchRejectsOrders ..........................   Passed    0.01 sec
+        Start 199: ExecutionRisk.RejectsParentQuantityLimit
+199/214 Test #199: ExecutionRisk.RejectsParentQuantityLimit .......................   Passed    0.01 sec
+        Start 200: ExecutionRisk.RejectsChildQuantityLimit
+200/214 Test #200: ExecutionRisk.RejectsChildQuantityLimit ........................   Passed    0.01 sec
+        Start 201: ExecutionRisk.RejectsNotionalLimit
+201/214 Test #201: ExecutionRisk.RejectsNotionalLimit .............................   Passed    0.01 sec
+        Start 202: ExecutionRisk.RejectsParticipationLimit
+202/214 Test #202: ExecutionRisk.RejectsParticipationLimit ........................   Passed    0.01 sec
+        Start 203: ExecutionRisk.RejectsBuyAbovePriceCollar
+203/214 Test #203: ExecutionRisk.RejectsBuyAbovePriceCollar .......................   Passed    0.01 sec
+        Start 204: ExecutionRisk.RejectsSellBelowPriceCollar
+204/214 Test #204: ExecutionRisk.RejectsSellBelowPriceCollar ......................   Passed    0.01 sec
+        Start 205: ExecutionRisk.AllowsFavorablePriceMovement
+205/214 Test #205: ExecutionRisk.AllowsFavorablePriceMovement .....................   Passed    0.01 sec
+        Start 206: ExecutionRisk.RejectsInvalidConfiguration
+206/214 Test #206: ExecutionRisk.RejectsInvalidConfiguration ......................   Passed    0.01 sec
+        Start 207: ExecutionRisk.RejectsInvalidOrderValues
+207/214 Test #207: ExecutionRisk.RejectsInvalidOrderValues ........................   Passed    0.01 sec
+        Start 208: ExecutionRisk.ZeroParticipationLimitDisablesCheck
+208/214 Test #208: ExecutionRisk.ZeroParticipationLimitDisablesCheck ..............   Passed    0.01 sec
+        Start 209: ExecutionStore.CreatesSchema
+209/214 Test #209: ExecutionStore.CreatesSchema ...................................   Passed    0.02 sec
+        Start 210: ExecutionStore.PersistsRouteAndChildren
+210/214 Test #210: ExecutionStore.PersistsRouteAndChildren ........................   Passed    0.02 sec
+        Start 211: ExecutionStore.PersistsMultipleExecutions
+211/214 Test #211: ExecutionStore.PersistsMultipleExecutions ......................   Passed    0.02 sec
+        Start 212: ExecutionStore.LoadsExecutionById
+212/214 Test #212: ExecutionStore.LoadsExecutionById ..............................   Passed    0.01 sec
+        Start 213: ExecutionStore.ReturnsRecentExecutionsNewestFirst
+213/214 Test #213: ExecutionStore.ReturnsRecentExecutionsNewestFirst ..............   Passed    0.01 sec
+        Start 214: ExecutionStore.MissingExecutionReturnsEmpty
+214/214 Test #214: ExecutionStore.MissingExecutionReturnsEmpty ....................   Passed    0.01 sec
+
+100% tests passed out of 214
+
+Total Test time (real) =   2.05 sec
+
+========================================
+ MiniMatch verification PASSED
+========================================

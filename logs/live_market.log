@@ -1,0 +1,2 @@
+Recording normalized market data to data/recordings/btcusd_live_20260719_215926.mmdata
+Live market gateway failed: bind: Address already in use [system:48 at /opt/homebrew/opt/boost/include/boost/asio/detail/reactive_socket_service.hpp:161:33 in function 'boost::system::error_code boost::asio::detail::reactive_socket_service<boost::asio::ip::tcp>::bind(implementation_type &, const endpoint_type &, boost::system::error_code &) [Protocol = boost::asio::ip::tcp]']

@@ -1,5 +1,7 @@
 #include "minimatch/market_recorder.hpp"
 
+#include <iostream>
+
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -924,6 +926,16 @@ bool MarketRecordReader::next(
   );
 
   if (!input_) {
+    
+
+if (input_.eof()) {
+      // A recorder process may terminate while writing the final
+      // record. All records before this point are complete and
+      // replayable, so treat an incomplete tail payload as EOF.
+      input_.clear();
+      return false;
+    }
+
     throw std::runtime_error(
         "truncated market-data record payload"
     );

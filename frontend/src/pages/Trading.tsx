@@ -1,21 +1,35 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { submitOrder } from "../api/orders";
+import {
+  cancelOrder,
+  replaceOrder,
+  getReports,
+} from "../api/trading";
 
 export default function Trading() {
-  const [symbol, setSymbol] = useState("BTC-USD");
+  const [orderId, setOrderId] = useState(4001);
+  const [clientId, setClientId] = useState(30);
+  const [symbol, setSymbol] = useState(1);
+
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [type, setType] = useState<
     "LIMIT" | "MARKET" | "IOC" | "FOK" | "POST_ONLY"
   >("LIMIT");
-  const [quantity, setQuantity] = useState(10);
-  const [price, setPrice] = useState(67842);
-  const [strategy, setStrategy] = useState<
-    "DIRECT" | "TWAP" | "VWAP" | "POV" | "ICEBERG"
-  >("DIRECT");
-  const [maxVenues, setMaxVenues] = useState(3);
-  const [slippageBps, setSlippageBps] = useState(20);
-  const [allOrNone, setAllOrNone] = useState(false);
+
+  const [quantity, setQuantity] = useState(100);
+  const [price, setPrice] = useState(10000);
+
+  const [replacePrice, setReplacePrice] = useState(9999);
+  const [replaceQuantity, setReplaceQuantity] = useState(80);
+
   const [status, setStatus] = useState("READY");
+
+  const { data: reports = [] } = useQuery({
+    queryKey: ["reports"],
+    queryFn: getReports,
+    refetchInterval: 1000,
+  });
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -24,24 +38,67 @@ export default function Trading() {
       setStatus("SUBMITTING...");
 
       const result = await submitOrder({
+        orderId,
+        clientId,
         symbol,
         side,
         type,
         quantity,
-        price: type === "MARKET" ? undefined : price,
-        strategy,
-      });
+        price: type === "MARKET" ? 0 : price,
+      } as any);
 
-      setStatus(`ACCEPTED · ${result.orderId ?? "ORDER CREATED"}`);
+      setStatus(
+        result.ok
+          ? `ORDER ${result.orderId} ACCEPTED`
+          : "ORDER REJECTED"
+      );
     } catch {
       setStatus("ORDER REJECTED");
+    }
+  }
+
+  async function handleCancel() {
+    try {
+      const result = await cancelOrder(
+        orderId,
+        clientId,
+        symbol
+      );
+
+      setStatus(
+        result.ok
+          ? `ORDER ${orderId} CANCELLED`
+          : "CANCEL REJECTED"
+      );
+    } catch {
+      setStatus("CANCEL FAILED");
+    }
+  }
+
+  async function handleReplace() {
+    try {
+      const result = await replaceOrder(
+        orderId,
+        clientId,
+        replacePrice,
+        replaceQuantity,
+        symbol
+      );
+
+      setStatus(
+        result.ok
+          ? `ORDER ${orderId} REPLACED`
+          : "REPLACE REJECTED"
+      );
+    } catch {
+      setStatus("REPLACE FAILED");
     }
   }
 
   return (
     <section className="page">
       <div className="page-heading">
-        <span className="eyebrow">ORDER ENTRY + ROUTING</span>
+        <span className="eyebrow">ORDER ENTRY + LIFECYCLE</span>
         <h1>Trading</h1>
       </div>
 
@@ -53,10 +110,29 @@ export default function Trading() {
 
           <form className="order-form" onSubmit={handleSubmit}>
             <label>
+              ORDER ID
+              <input
+                type="number"
+                value={orderId}
+                onChange={(e) => setOrderId(Number(e.target.value))}
+              />
+            </label>
+
+            <label>
+              CLIENT ID
+              <input
+                type="number"
+                value={clientId}
+                onChange={(e) => setClientId(Number(e.target.value))}
+              />
+            </label>
+
+            <label>
               SYMBOL
               <input
+                type="number"
                 value={symbol}
-                onChange={(e) => setSymbol(e.target.value)}
+                onChange={(e) => setSymbol(Number(e.target.value))}
               />
             </label>
 
@@ -77,7 +153,9 @@ export default function Trading() {
               TYPE
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value as typeof type)}
+                onChange={(e) =>
+                  setType(e.target.value as typeof type)
+                }
               >
                 <option>LIMIT</option>
                 <option>MARKET</option>
@@ -92,7 +170,9 @@ export default function Trading() {
               <input
                 type="number"
                 value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
+                onChange={(e) =>
+                  setQuantity(Number(e.target.value))
+                }
               />
             </label>
 
@@ -102,27 +182,15 @@ export default function Trading() {
                 type="number"
                 disabled={type === "MARKET"}
                 value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
+                onChange={(e) =>
+                  setPrice(Number(e.target.value))
+                }
               />
             </label>
 
-            <label>
-              STRATEGY
-              <select
-                value={strategy}
-                onChange={(e) =>
-                  setStrategy(e.target.value as typeof strategy)
-                }
-              >
-                <option>DIRECT</option>
-                <option>TWAP</option>
-                <option>VWAP</option>
-                <option>POV</option>
-                <option>ICEBERG</option>
-              </select>
-            </label>
-
-            <button type="submit">SUBMIT ORDER</button>
+            <button type="submit">
+              SUBMIT ORDER
+            </button>
           </form>
 
           <div className="feedback">{status}</div>
@@ -130,40 +198,61 @@ export default function Trading() {
 
         <div className="panel">
           <div className="panel-title">
-            <h2>Smart Router Controls</h2>
+            <h2>Cancel / Replace</h2>
           </div>
 
           <label>
-            MAX VENUES
+            NEW PRICE
             <input
               type="number"
-              value={maxVenues}
-              onChange={(e) => setMaxVenues(Number(e.target.value))}
+              value={replacePrice}
+              onChange={(e) =>
+                setReplacePrice(Number(e.target.value))
+              }
             />
           </label>
 
           <label>
-            MAX SLIPPAGE (BPS)
+            NEW QUANTITY
             <input
               type="number"
-              value={slippageBps}
-              onChange={(e) => setSlippageBps(Number(e.target.value))}
+              value={replaceQuantity}
+              onChange={(e) =>
+                setReplaceQuantity(Number(e.target.value))
+              }
             />
           </label>
 
-          <label>
-            <input
-              type="checkbox"
-              checked={allOrNone}
-              onChange={(e) => setAllOrNone(e.target.checked)}
-            />
-            ALL OR NONE
-          </label>
+          <button onClick={handleReplace}>
+            REPLACE ORDER
+          </button>
 
-          <div className="feedback">
-            Router controls configured locally. Wire these into the backend route request next.
-          </div>
+          <button onClick={handleCancel}>
+            CANCEL ORDER
+          </button>
         </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-title">
+          <h2>Execution Reports</h2>
+        </div>
+
+        {reports.length === 0 && (
+          <div className="feedback">
+            No execution reports yet.
+          </div>
+        )}
+
+        {reports.map((report) => (
+          <div className="tape-row" key={report.sequence}>
+            <span>#{report.sequence}</span>
+            <span>ORDER {report.orderId}</span>
+            <span>STATUS {report.status}</span>
+            <span>REM {report.remaining}</span>
+            <span>SYM {report.symbol}</span>
+          </div>
+        ))}
       </div>
     </section>
   );

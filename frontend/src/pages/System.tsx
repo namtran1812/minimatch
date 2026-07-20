@@ -1,4 +1,13 @@
+import { useQuery } from "@tanstack/react-query";
+import { getSystemStats } from "../api/system";
+
 export default function System() {
+  const { data: stats } = useQuery({
+    queryKey: ["system-stats"],
+    queryFn: getSystemStats,
+    refetchInterval: 2000,
+  });
+
   return (
     <section className="page">
       <div className="page-heading">
@@ -9,75 +18,57 @@ export default function System() {
       <div className="metrics">
         <div className="metric-card">
           <span className="eyebrow">THROUGHPUT</span>
-          <strong>12.64M</strong>
+          <strong>{stats?.throughput ?? "—"}</strong>
         </div>
 
         <div className="metric-card">
           <span className="eyebrow">P50</span>
-          <strong>42 ns</strong>
+          <strong>{stats?.p50Ns ?? "—"} ns</strong>
         </div>
 
         <div className="metric-card">
           <span className="eyebrow">P99</span>
-          <strong>167 ns</strong>
+          <strong>{stats?.p99Ns ?? "—"} ns</strong>
         </div>
 
         <div className="metric-card">
           <span className="eyebrow">P99.9</span>
-          <strong>833 ns</strong>
+          <strong>{stats?.p999Ns ?? "—"} ns</strong>
         </div>
       </div>
 
       <div className="terminal-grid">
         <div className="panel">
-          <div className="panel-title">
-            <h2>Matching Pipeline</h2>
-          </div>
-
           <div className="risk-item">
-            <span>SPSC QUEUE</span>
-            <strong className="safe">HEALTHY</strong>
-          </div>
-
-          <div className="risk-item">
-            <span>DROPPED COMMANDS</span>
-            <strong>0</strong>
+            <span>QUEUE DEPTH</span>
+            <strong>{stats?.queueDepth ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
             <span>MAX QUEUE DEPTH</span>
-            <strong>55,744</strong>
+            <strong>{stats?.maxQueueDepth ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
-            <span>MATCHING THREAD</span>
-            <strong className="safe">ACTIVE</strong>
+            <span>DROPPED COMMANDS</span>
+            <strong>{stats?.droppedCommands ?? "—"}</strong>
+          </div>
+
+          <div className="risk-item">
+            <span>ACTIVE ORDERS</span>
+            <strong>{stats?.activeOrders ?? "—"}</strong>
           </div>
         </div>
 
         <div className="panel">
-          <div className="panel-title">
-            <h2>Persistence</h2>
+          <div className="risk-item">
+            <span>EVENT SEQUENCE</span>
+            <strong>{stats?.eventSequence ?? "—"}</strong>
           </div>
 
           <div className="risk-item">
-            <span>EVENT JOURNAL</span>
-            <strong className="safe">SYNCED</strong>
-          </div>
-
-          <div className="risk-item">
-            <span>SNAPSHOT</span>
-            <strong>AVAILABLE</strong>
-          </div>
-
-          <div className="risk-item">
-            <span>EXECUTION STORE</span>
-            <strong className="safe">HEALTHY</strong>
-          </div>
-
-          <div className="risk-item">
-            <span>FIX STORE</span>
-            <strong className="safe">HEALTHY</strong>
+            <span>STATE HASH</span>
+            <strong>{stats?.stateHash ?? "—"}</strong>
           </div>
         </div>
       </div>

@@ -1,26 +1,45 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getRiskState } from "../api/market";
+import { getClientRisk } from "../api/trading";
 
 export default function Risk() {
+  const [clientId, setClientId] = useState(20);
+  const [symbol, setSymbol] = useState(1);
+
   const { data: risk } = useQuery({
-    queryKey: ["risk"],
-    queryFn: getRiskState,
-    refetchInterval: 2000,
+    queryKey: ["client-risk", clientId, symbol],
+    queryFn: () => getClientRisk(clientId, symbol),
+    refetchInterval: 1000,
   });
 
   return (
     <section className="page">
       <div className="page-heading">
-        <span className="eyebrow">PRE-TRADE + EXECUTION RISK</span>
+        <span className="eyebrow">REAL-TIME RISK</span>
         <h1>Risk</h1>
       </div>
 
-      <div className="metrics">
-        <div className="metric-card">
-          <span className="eyebrow">KILL SWITCH</span>
-          <strong>{risk?.killed ? "ACTIVE" : "SAFE"}</strong>
-        </div>
+      <div className="panel">
+        <label>
+          CLIENT ID
+          <input
+            type="number"
+            value={clientId}
+            onChange={(e) => setClientId(Number(e.target.value))}
+          />
+        </label>
 
+        <label>
+          SYMBOL
+          <input
+            type="number"
+            value={symbol}
+            onChange={(e) => setSymbol(Number(e.target.value))}
+          />
+        </label>
+      </div>
+
+      <div className="metrics">
         <div className="metric-card">
           <span className="eyebrow">POSITION</span>
           <strong>{risk?.position ?? "—"}</strong>
@@ -35,26 +54,12 @@ export default function Risk() {
           <span className="eyebrow">REALIZED PNL</span>
           <strong>{risk?.realizedPnl ?? "—"}</strong>
         </div>
-      </div>
 
-      <div className="panel">
-        <div className="panel-title">
-          <h2>Risk Controls</h2>
-        </div>
-
-        <div className="risk-item">
-          <span>MAX POSITION</span>
-          <strong>{risk?.maxPosition ?? "—"}</strong>
-        </div>
-
-        <div className="risk-item">
-          <span>MAX OPEN NOTIONAL</span>
-          <strong>{risk?.maxOpenNotional ?? "—"}</strong>
-        </div>
-
-        <div className="risk-item">
-          <span>MAX DAILY LOSS</span>
-          <strong>{risk?.maxDailyLoss ?? "—"}</strong>
+        <div className="metric-card">
+          <span className="eyebrow">KILL SWITCH</span>
+          <strong>
+            {risk?.killed ? "ACTIVE" : "SAFE"}
+          </strong>
         </div>
       </div>
     </section>
