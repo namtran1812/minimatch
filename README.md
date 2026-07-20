@@ -1,163 +1,581 @@
 # MiniMatch
 
-MiniMatch is a C++20 electronic exchange and quantitative research platform with a pastel Y2K-inspired frontend. This edition uses Coinbase Advanced Trade as the recommended free public live feed, with Kraken Spot and Binance.US as working alternatives. Alpaca and Massive/Polygon are shown as intentional Coming Soon providers when credentials or data entitlements are unavailable.
+MiniMatch is a production-style electronic trading systems project built in modern C++. It combines a low-latency matching engine, order management, risk controls, execution algorithms, smart order routing, FIX 4.4 connectivity, live multi-venue crypto market data, persistent execution history, deterministic market replay, observability, and a React trading terminal.
 
-MiniMatch is a deterministic C++20 electronic exchange and market-microstructure research platform. It combines an in-memory price-time priority matching engine, advanced order semantics, binary TCP ingress, event sourcing, snapshots, deterministic replay, risk controls, quantitative research tools, live external market-data ingestion, and a browser-based visualization workspace.
+The project is designed to model the architecture of a modern exchange and execution platform from market ingestion through routing and post-trade analysis.
 
-## Core capabilities
+---
 
-### Exchange engine
+## Highlights
 
-- Multi-symbol price-time priority matching
-- Limit, market, immediate-or-cancel, fill-or-kill, and post-only orders
-- Cancel and replace with correct priority behavior
-- Partial fills and duplicate-order rejection
-- Aggregate depth and deterministic state hashing
+- Price-time priority matching engine
+- Limit, market, IOC, FOK, and post-only orders
+- Cancel and replace/amend workflows
+- Multi-symbol order books
+- Deterministic event logging and replay
+- Risk checks and kill-switch logic
+- Parent/child OMS
+- TWAP, VWAP, POV, Market, and Iceberg execution schedules
+- Smart order routing across multiple venues
+- Fee- and latency-aware route optimization
+- Execution simulation with partial fills, rejections, latency, and fees
+- SQLite-backed routed execution history
+- FIX 4.4 codec, session state machine, sequence recovery, resend, and gap fill
+- FIX-to-OMS order gateway
+- Live Coinbase, Binance, and Kraken L2 market feeds
+- Venue health and synchronization monitoring
+- Market-data recording and deterministic replay
+- Live/replay WebSocket streaming
+- React operations and trading dashboard
+- End-to-end verification and benchmark tooling
 
-### Systems engineering
+---
 
-- Boost.Asio TCP gateway and binary protocol
-- Append-only event journal
-- Snapshot recovery and deterministic replay
-- Cache-separated SPSC ingress queue and dedicated matching thread
-- Throughput and p50/p95/p99/p99.9 latency instrumentation
-
-### Research and execution
-
-- Inventory-aware market maker
-- Momentum and volatility-targeting backtester
-- Black–Scholes, Greeks, implied volatility, and Monte Carlo pricing
-- Pairs diagnostics, VaR, and Expected Shortfall
-- TWAP/VWAP scheduling and implementation-shortfall simulation
-- Queue-position and fill modeling
-
-### Live market data
-
-- Coinbase Advanced Trade public Level 2 and trade ingestion
-- Kraken Spot public Level 2 and trade ingestion
-- Binance.US depth, trade, and book-ticker ingestion
-- Provider placeholders for Alpaca and Massive/Polygon
-- SQLite and JSONL session recording
-- Feed-health, reconnect, and sequence-gap monitoring
-- External depth visualization and local paper execution
-
-## Frontend
-
-The frontend uses a clean Y2K-inspired visual system while preserving professional market-data conventions. It has a two-font typography system, consistent type scale, four-metric desktop grid, wide command deck, high-density order-book tables, analytical charts, replay controls, and live-feed monitoring.
-
-See [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md).
-
-## Requirements
-
-- CMake 3.20+
-- C++20 compiler
-- Boost 1.74+
-- Python 3.10+ for live-feed adapters
-
-macOS:
-
-```bash
-brew install cmake boost
-```
-
-## Build
-
-```bash
-cmake -S . -B build \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DMINIMATCH_BUILD_TESTS=ON
-cmake --build build -j"$(sysctl -n hw.ncpu)"
-```
-
-## Test
-
-```bash
-./build/minimatch_tests
-ctest --test-dir build --output-on-failure
-```
-
-## Launch the dashboard
-
-```bash
-./scripts/run_dashboard.sh
-```
-
-Open:
+## Architecture
 
 ```text
-http://127.0.0.1:8080
-```
+                   ┌─────────────────────┐
+                   │    Exchange Feeds   │
+                   │ Coinbase / Binance  │
+                   │       Kraken        │
+                   └──────────┬──────────┘
+                              │
+                              ▼
+                  ┌──────────────────────┐
+                  │ Market Normalization │
+                  │ L2 snapshots/updates │
+                  └──────────┬───────────┘
+                             │
+              ┌──────────────┼───────────────┐
+              ▼              ▼               ▼
+       Venue Health    Market Recorder   Consolidated Book
+              │              │               │
+              │              ▼               ▼
+              │         .mmdata files   Smart Order Router
+              │                              │
+              └──────────────┬───────────────┘
+                             ▼
+                    WebSocket Market API
+                             │
+                             ▼
+                    React Trading Terminal
 
-## Performance tools
+FIX Client
+    │
+    ▼
+FIX 4.4 Session
+    │
+    ├── Sequence validation
+    ├── Heartbeat / TestRequest
+    ├── Resend / Gap Fill
+    └── SQLite message persistence
+    │
+    ▼
+FIX Order Gateway
+    │
+    ▼
+OMS
+    │
+    ├── Parent Orders
+    ├── Child Orders
+    └── Execution Reports
+    │
+    ▼
+Matching / Execution / Risk
+Matching Engine
 
-```bash
-./build/minimatch_loadgen 1000000 8
-./build/minimatch_latency 1000000
-./build/minimatch_arena 200000
-```
+The matching engine uses price-time priority and supports:
 
-Only report measurements produced on your own hardware. Do not claim a latency improvement without a defined baseline and controlled comparison.
+Limit orders
+Market orders
+IOC
+FOK
+Post-only
+Cancel
+Replace/amend
+Partial fills
+Multi-symbol isolation
 
-## TCP exchange
+The order book is implemented as an in-memory data structure optimized for deterministic execution and low latency.
 
-Terminal 1:
+Example behavior:
 
-```bash
-rm -f minimatch.events
-./build/minimatch_server 9001 minimatch.events
-```
+SELL 50 @ 10000
+BUY MARKET 20
 
-Terminal 2:
+Result:
+Trade: 20 @ 10000
+Resting sell quantity: 30
+Deterministic Event Replay
 
-```bash
-./build/minimatch_client 127.0.0.1 9001 new 1 10 1 sell limit 10000 50
-./build/minimatch_client 127.0.0.1 9001 new 2 11 1 buy market 0 20
-```
+MiniMatch writes binary event logs that can reconstruct exchange state exactly.
 
-Stop the server and replay:
+Example:
 
-```bash
 ./build/minimatch_replay minimatch.events
-```
 
-## Free live market data
+Running the same replay multiple times produces the same state hash.
 
-```bash
-./scripts/setup_live_feed.sh
-./scripts/run_live_coinbase.sh btcusd
-# or: ./scripts/run_live_kraken.sh btcusd
-# or: ./scripts/run_live_binance.sh btcusd
-```
+Example output:
 
-In another terminal:
+events=2
+input_sequence=2
+symbols=1
+active=1
+state_hash=7633056132652409449
 
-```bash
-./scripts/run_dashboard.sh
-```
+This is useful for:
 
-## Repository structure
+debugging
+regression testing
+post-mortem analysis
+deterministic state reconstruction
+Order Management System
 
-```text
-apps/          Executable entry points
-include/       Public C++ headers
-src/           Exchange, risk, research, and pipeline implementation
-tests/         GoogleTest suites
-frontend/      Browser dashboard
-live_feed/     Coinbase, Kraken, Binance.US, and optional Alpaca adapters
-scripts/       Build, dashboard, feed, and database utilities
-docs/          Architecture and design documentation
-```
+The OMS models a parent-child execution lifecycle.
 
-## Resume-safe description
+Parent Order
+    │
+    ├── Child Order 1
+    ├── Child Order 2
+    └── Child Order N
+            │
+            ▼
+      Execution Reports
+            │
+            ▼
+           Fills
 
-> Built a deterministic C++20 multi-symbol exchange and market-microstructure research platform with advanced order semantics, binary TCP ingress, event sourcing, snapshot recovery, lock-free command processing, native latency instrumentation, live venue data ingestion, and interactive replay and depth visualization.
+Supported parent strategies include:
 
-## Massive historical data
+Market
+TWAP
+VWAP
+POV
+Iceberg
 
-MiniMatch includes a Massive Flat Files integration for historical U.S. equity research. See [`README-MASSIVE-FLAT-FILES.md`](README-MASSIVE-FLAT-FILES.md).
+The OMS tracks:
 
-Quick offline demo:
+requested quantity
+filled quantity
+remaining quantity
+child order status
+execution reports
+fees
+venue
+timestamps
+Execution Algorithms
 
-```bash
-python3 scripts/query_historical_db.py --ticker AAPL --limit 10
-```
+MiniMatch supports multiple execution schedules.
+
+TWAP
+
+Splits quantity across time intervals.
+
+VWAP
+
+Allocates quantity according to a supplied volume profile.
+
+POV
+
+Targets a percentage of expected market volume.
+
+Iceberg
+
+Limits displayed child quantity while progressively executing the parent order.
+
+Market
+
+Executes immediately against available liquidity.
+
+Smart Order Router
+
+The router evaluates multi-venue liquidity using:
+
+execution price
+available quantity
+taker fees
+latency
+latency cost
+slippage constraints
+venue count limits
+limit prices
+all-or-none semantics
+
+Example flow:
+
+RouteRequest
+    │
+    ▼
+Coinbase liquidity
+Kraken liquidity
+Binance liquidity
+    │
+    ▼
+Effective price calculation
+    │
+    ▼
+RoutePlan
+    │
+    ├── Venue A: quantity X
+    ├── Venue B: quantity Y
+    └── Venue C: quantity Z
+Execution Simulation
+
+Routed executions can be simulated with configurable:
+
+fill ratio
+rejection probability
+base latency
+latency jitter
+random seed
+
+The result tracks:
+
+requested quantity
+filled quantity
+remaining quantity
+average fill price
+total notional
+fees
+total latency
+per-child execution status
+
+Execution history is persisted to SQLite and survives API restarts.
+
+FIX 4.4
+
+MiniMatch includes a functional FIX 4.4 stack.
+
+Features include:
+
+FIX encoding and parsing
+checksum validation
+body-length validation
+Logon
+Logout
+Heartbeat
+TestRequest
+ResendRequest
+SequenceReset / GapFill
+message sequencing
+persistent session state
+persistent inbound/outbound messages
+NewOrderSingle
+OrderCancelRequest
+ExecutionReport
+FIX-to-OMS routing
+
+Example session:
+
+IN  Logon
+OUT Logon
+
+IN  NewOrderSingle
+OUT ExecutionReport ACK
+
+IN  OrderCancelRequest
+OUT ExecutionReport CANCEL
+Live Market Data
+
+MiniMatch connects to live crypto exchange feeds and normalizes L2 data from:
+
+Coinbase
+Binance
+Kraken
+
+The live market gateway maintains:
+
+per-venue books
+consolidated BBO
+midpoint
+spread
+venue sequence state
+smart routing previews
+
+The dashboard stream is exposed through WebSocket.
+
+Venue Health
+
+Each venue is continuously classified as:
+
+UNKNOWN
+HEALTHY
+DELAYED
+STALE
+DISCONNECTED
+
+Metrics include:
+
+synchronization state
+quote age
+message count
+snapshot count
+update count
+messages per second
+reconnect count
+rejected updates
+sequence gaps
+checksum errors
+
+A venue is routable only when it is synchronized and sufficiently fresh.
+
+Market Recording and Replay
+
+Normalized market data can be recorded during live ingestion:
+
+./build/minimatch_live_market_ws \
+  8090 \
+  BTC-USD \
+  --record data/recordings/btcusd_live.mmdata
+
+Replay:
+
+./build/minimatch_market_replay_ws \
+  8091 \
+  data/recordings/btcusd_live.mmdata \
+  BTC-USD \
+  1.0
+
+Replay supports:
+
+play
+pause
+restart
+speed control
+seek by record
+seek by timestamp
+deterministic state checksums
+
+The same frontend can consume either LIVE or REPLAY mode.
+
+Frontend
+
+The React frontend includes pages for:
+
+Overview
+Markets
+Trading
+Execution
+OMS
+Risk
+FIX
+Replay
+Backtest
+Analytics
+System
+Operations
+
+The frontend supports a shared market-data provider with interchangeable:
+
+LIVE
+or
+REPLAY
+
+sources.
+
+Benchmarks
+
+Example local results on an Apple Silicon development machine:
+
+1,000,000 orders
+8 symbols
+~6.59M generated orders/sec
+
+Latency benchmark:
+
+1,000,000 orders
+
+p50   ~42 ns
+p95   ~125 ns
+p99   ~167 ns
+p999  ~833 ns
+
+Arena pipeline benchmark:
+
+200,000 steps
+200,000 processed
+0 dropped
+156,892 trades
+456,873 reports
+
+Results vary by hardware and build configuration.
+
+For reproducibility, see:
+
+benchmark_results/
+Testing
+
+MiniMatch includes extensive GoogleTest coverage across:
+
+matching
+order types
+cancel/replace
+replay
+risk
+OMS
+execution schedules
+router
+multi-venue market data
+Coinbase normalization
+Binance normalization
+Kraken normalization
+backtesting
+FIX codec
+FIX session
+FIX store
+FIX gateway
+execution persistence
+
+Example:
+
+ctest \
+  --test-dir build \
+  --output-on-failure
+
+FIX-only tests:
+
+./build/minimatch_tests \
+  --gtest_filter='Fix*'
+End-to-End Verification
+
+Run:
+
+./scripts/verify_e2e.sh
+
+The script verifies:
+
+HTTP API
+Matching engine
+Submit/cancel lifecycle
+Order book
+Historical backtest
+OMS
+Smart order routing
+Execution simulation
+SQLite execution persistence
+FIX observability
+Deterministic replay
+Core test suite
+One-Command Startup
+
+Configure, build, test, and launch:
+
+./scripts/dev_start.sh
+
+Launch without rebuilding:
+
+./scripts/dev_up.sh
+
+This starts:
+
+HTTP API
+FIX gateway
+Live market gateway
+Replay server
+React frontend
+
+Logs are written under:
+
+logs/
+Manual Build
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build build \
+  -j"$(sysctl -n hw.ncpu)"
+
+ctest \
+  --test-dir build \
+  --output-on-failure
+
+Frontend:
+
+cd frontend
+npm install
+npm run build
+npm run dev
+Example API Requests
+
+Submit an order:
+
+curl -X POST \
+  http://127.0.0.1:8081/api/orders \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "orderId": 1001,
+    "clientId": 10,
+    "side": "buy",
+    "type": "limit",
+    "price": 10000,
+    "quantity": 100,
+    "symbol": 1
+  }'
+
+Run a TWAP backtest:
+
+curl -X POST \
+  http://127.0.0.1:8081/api/backtest \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "symbol": "btcusd",
+    "side": "buy",
+    "quantity": 2,
+    "algorithm": "TWAP",
+    "slices": 2,
+    "durationSeconds": 2,
+    "takerFeeBps": 5
+  }'
+
+Preview smart routing:
+
+curl -X POST \
+  http://127.0.0.1:8081/api/router/preview \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "symbol": "btcusd",
+    "side": "buy",
+    "quantity": 0.2,
+    "maxSlippageBps": 100,
+    "maxVenueCount": 3
+  }'
+Project Goals
+
+MiniMatch was built to explore the systems problems behind modern trading infrastructure:
+
+deterministic matching
+low-latency data structures
+real-time market-data processing
+execution quality
+smart routing
+protocol-level reliability
+risk management
+observability
+replayability
+
+It is intended as an educational and engineering project, not a production trading system.
+
+Tech Stack
+Backend
+C++20
+Boost.Asio
+Boost.Beast
+OpenSSL
+SQLite
+GoogleTest
+Google Benchmark
+CMake
+Frontend
+React
+TypeScript
+Vite
+TanStack Query
+Infrastructure
+WebSockets
+FIX 4.4
+Binary event logs
+SQLite persistence
+Live exchange APIs
+License
+
+This project is intended for educational and portfolio use.
