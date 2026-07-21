@@ -12,10 +12,14 @@ OUTPUT_DIR="${OUTPUT_DIR:-benchmark_results}"
 mkdir -p "$OUTPUT_DIR"
 
 if [[ ! -x build/minimatch_latency ]] ||
-   [[ ! -x build/minimatch_loadgen ]]; then
+   [[ ! -x build/minimatch_loadgen ]] ||
+   [[ ! -x build/minimatch_drop_copy_benchmark ]]; then
   echo "Benchmark binaries are missing. Building them..."
   cmake --build build \
-    --target minimatch_latency minimatch_loadgen \
+    --target \
+      minimatch_latency \
+      minimatch_loadgen \
+      minimatch_drop_copy_benchmark \
     --parallel 2
 fi
 
@@ -32,6 +36,23 @@ fi
     ./build/minimatch_loadgen "$ORDERS" "$SYMBOLS"
   done
 } | tee "$OUTPUT_DIR/loadgen_${RUNS}_runs.txt"
+
+{
+  echo "===== DROP-COPY MULTI-MATCH ====="
+
+  for events in 1000 10000 100000; do
+    echo "===== drop-copy multi: $events events ====="
+    ./build/minimatch_drop_copy_benchmark "$events"
+  done
+
+  echo
+  echo "===== DROP-COPY SINGLE-MATCH ====="
+
+  for events in 1000 10000 100000; do
+    echo "===== drop-copy single: $events events ====="
+    ./build/minimatch_drop_copy_benchmark "$events" single
+  done
+} | tee "$OUTPUT_DIR/drop_copy_lookup.txt"
 
 echo
 echo "Benchmark results written to $OUTPUT_DIR"

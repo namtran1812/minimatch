@@ -101,9 +101,21 @@ add_library(minimatch
     src/kraken_feed.cpp
     src/backtest_engine.cpp
     src/execution_engine.cpp
+    src/execution_analytics.cpp
+    src/midpoint_history.cpp
+    src/midpoint_store.cpp
+    src/live_algo_executor.cpp
+    src/algo_scheduler.cpp
+    src/algo_store.cpp
     src/oms.cpp
+    src/position_manager.cpp
+    src/portfolio_risk.cpp
+    src/drop_copy.cpp
+    src/system_settings_store.cpp
+    src/oms_store.cpp
     src/execution_risk.cpp
     src/execution_store.cpp
+    src/reconciliation.cpp
 )
 target_include_directories(
   minimatch
@@ -139,6 +151,17 @@ foreach(app server client replay loadgen latency snapshot backtest market_maker 
   add_executable(minimatch_${app} apps/${app}.cpp)
   target_link_libraries(minimatch_${app} PRIVATE minimatch)
 endforeach()
+
+add_executable(
+  minimatch_drop_copy_benchmark
+  benchmarks/drop_copy_lookup_benchmark.cpp
+)
+
+target_link_libraries(
+  minimatch_drop_copy_benchmark
+  PRIVATE
+    minimatch
+)
 
 
 add_executable(
@@ -286,7 +309,11 @@ if(MINIMATCH_BUILD_TESTS)
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
   enable_testing()
-  add_executable(minimatch_tests tests/order_book_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/router_market_data_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/market_data_test.cpp tests/venue_health_test.cpp tests/latency_stats_test.cpp
+  add_executable(minimatch_tests tests/order_book_test.cpp
+    tests/stp_test.cpp
+    tests/algo_recovery_test.cpp
+    tests/reconciliation_test.cpp
+    tests/drop_copy_lookup_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/router_market_data_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/market_data_test.cpp tests/venue_health_test.cpp tests/latency_stats_test.cpp
     tests/market_recorder_test.cpp tests/replay_control_test.cpp tests/coinbase_l2_test.cpp tests/binance_l2_test.cpp tests/kraken_l2_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/fix_test.cpp tests/fix_session_test.cpp tests/fix_store_test.cpp tests/fix_gateway_test.cpp tests/execution_risk_test.cpp tests/execution_store_test.cpp)
   
 
@@ -324,4 +351,42 @@ target_link_libraries(
   minimatch_fix_client
   PRIVATE
     minimatch
+)
+
+
+add_executable(
+    minimatch_drop_copy_ws
+    apps/drop_copy_ws.cpp
+)
+
+target_link_libraries(
+    minimatch_drop_copy_ws
+    PRIVATE
+    minimatch
+)
+
+add_test(
+  NAME minimatch_reconciliation_api
+  COMMAND
+    ${CMAKE_SOURCE_DIR}/scripts/test_reconciliation_api.sh
+)
+
+set_tests_properties(
+  minimatch_reconciliation_api
+  PROPERTIES
+    WORKING_DIRECTORY
+      ${CMAKE_SOURCE_DIR}
+)
+
+add_test(
+  NAME minimatch_benchmark_regressions
+  COMMAND
+    ${CMAKE_SOURCE_DIR}/scripts/check_benchmark_regressions.sh
+)
+
+set_tests_properties(
+  minimatch_benchmark_regressions
+  PROPERTIES
+    WORKING_DIRECTORY
+      ${CMAKE_SOURCE_DIR}
 )

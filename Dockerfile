@@ -28,6 +28,7 @@ COPY include ./include
 COPY src ./src
 COPY apps ./apps
 COPY tests ./tests
+COPY benchmarks ./benchmarks
 
 RUN cmake \
     -S . \

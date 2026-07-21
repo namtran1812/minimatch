@@ -1,0 +1,52 @@
+groups:
+  - name: minimatch-reconciliation
+    rules:
+      - alert: MiniMatchReconciliationFailure
+        expr: minimatch_reconciliation_inconsistent_parents > 0
+        for: 30s
+        labels:
+          severity: critical
+          service: minimatch
+        annotations:
+          summary: "MiniMatch reconciliation failure"
+          description: "One or more verifiable parent orders are inconsistent."
+
+      - alert: MiniMatchReconciliationUnhealthy
+        expr: minimatch_reconciliation_verifiable_consistent == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: minimatch
+        annotations:
+          summary: "MiniMatch reconciliation health is unhealthy"
+          description: "At least one verifiable reconciliation invariant has failed."
+
+      - alert: MiniMatchRepeatedAlgoRecovery
+        expr: increase(minimatch_algo_recovery_total[5m]) >= 3
+        for: 30s
+        labels:
+          severity: warning
+          service: minimatch
+        annotations:
+          summary: "MiniMatch algorithm recovery spike"
+          description: "At least three algorithm recoveries occurred within five minutes."
+
+      - alert: MiniMatchPositionReconciliationFailure
+        expr: minimatch_position_reconciliation_consistent == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: minimatch
+        annotations:
+          summary: "MiniMatch position reconciliation failure"
+          description: "Reconstructed OMS positions do not match live position state."
+
+      - alert: MiniMatchDropCopyLookupLatencyHigh
+        expr: minimatch_drop_copy_lookup_100k_single_nanoseconds > 50000
+        for: 1m
+        labels:
+          severity: warning
+          service: minimatch
+        annotations:
+          summary: "MiniMatch drop-copy lookup latency is high"
+          description: "100K-row single-match drop-copy lookup benchmark exceeded 50 microseconds."

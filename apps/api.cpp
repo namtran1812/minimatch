@@ -1,7 +1,9 @@
+#include "minimatch/reconciliation.hpp"
 #include "minimatch/exchange.hpp"
 #include "minimatch/fix_store.hpp"
 #include "minimatch/latency_stats.hpp"
 #include "minimatch/oms.hpp"
+#include "minimatch/oms_store.hpp"
 #include "minimatch/execution_algo.hpp"
 #include "minimatch/market_replay.hpp"
 #include "minimatch/backtest_engine.hpp"
@@ -10,13 +12,26 @@
 #include "minimatch/execution_engine.hpp"
 #include "minimatch/execution_store.hpp"
 #include "minimatch/live_router_quotes.hpp"
+#include "minimatch/live_algo_executor.hpp"
+#include "minimatch/algo_scheduler.hpp"
+#include "minimatch/algo_store.hpp"
+#include "minimatch/position_manager.hpp"
+#include "minimatch/portfolio_risk.hpp"
+#include "minimatch/drop_copy.hpp"
+#include "minimatch/system_settings_store.hpp"
+#include "minimatch/execution_analytics.hpp"
+#include "minimatch/midpoint_history.hpp"
+#include "minimatch/midpoint_store.hpp"
 #include "minimatch/types.hpp"
 
+#include <fstream>
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cmath>
 #include <cctype>
 #include <cstdint>
 #include <limits>
@@ -27,6 +42,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <unordered_map>
 
 namespace asio = boost::asio;
@@ -59,11 +75,161 @@ using minimatch::Trade;
 
 namespace {
 
+std::string execution_status_string(
+    ExecutionReport::Status status
+) {
+    switch (status) {
+        case ExecutionReport::Status::Accepted:
+            return "ACCEPTED";
+
+        case ExecutionReport::Status::PartiallyFilled:
+            return "PARTIALLY_FILLED";
+
+        case ExecutionReport::Status::Filled:
+            return "FILLED";
+
+        case ExecutionReport::Status::Cancelled:
+            return "CANCELLED";
+
+        case ExecutionReport::Status::Replaced:
+            return "REPLACED";
+
+        case ExecutionReport::Status::Rejected:
+            return "REJECTED";
+
+        case ExecutionReport::Status::Expired:
+            return "EXPIRED";
+    }
+
+    return "UNKNOWN";
+}
+
+std::string reject_reason_string(
+    minimatch::RejectReason reason
+) {
+    switch (reason) {
+        case minimatch::RejectReason::None:
+            return "NONE";
+
+        case minimatch::RejectReason::DuplicateOrderId:
+            return "DUPLICATE_ORDER_ID";
+
+        case minimatch::RejectReason::UnknownOrder:
+            return "UNKNOWN_ORDER";
+
+        case minimatch::RejectReason::InvalidQuantity:
+            return "INVALID_QUANTITY";
+
+        case minimatch::RejectReason::InvalidPrice:
+            return "INVALID_PRICE";
+
+        case minimatch::RejectReason::CapacityExceeded:
+            return "CAPACITY_EXCEEDED";
+
+        case minimatch::RejectReason::WouldTrade:
+            return "WOULD_TRADE";
+
+        case minimatch::RejectReason::InsufficientLiquidity:
+            return "INSUFFICIENT_LIQUIDITY";
+
+        case minimatch::RejectReason::ClientMismatch:
+            return "CLIENT_MISMATCH";
+
+        case minimatch::RejectReason::InvalidReplacement:
+            return "INVALID_REPLACEMENT";
+
+        case minimatch::RejectReason::TradingHalted:
+            return "TRADING_HALTED";
+
+        case minimatch::RejectReason::PriceBandViolation:
+            return "PRICE_BAND_VIOLATION";
+    }
+
+    return "UNKNOWN";
+}
+
+std::string stp_policy_string(
+    minimatch::
+        SelfTradePreventionPolicy policy
+) {
+    switch (policy) {
+        case minimatch::
+            SelfTradePreventionPolicy::
+                CancelNewest:
+            return "CANCEL_NEWEST";
+
+        case minimatch::
+            SelfTradePreventionPolicy::
+                CancelOldest:
+            return "CANCEL_OLDEST";
+
+        case minimatch::
+            SelfTradePreventionPolicy::
+                CancelBoth:
+            return "CANCEL_BOTH";
+
+        case minimatch::
+            SelfTradePreventionPolicy::
+                None:
+            return "NONE";
+    }
+
+    return "NONE";
+}
+
+struct VolatilityCircuitBreakerConfig {
+    bool enabled{
+        false
+    };
+
+    double threshold_percent{
+        5.0
+    };
+
+    std::uint64_t window_ns{
+        30'000'000'000ULL
+    };
+};
+
 struct ApiState {
     Exchange exchange{100'000};
     RiskEngine risk;
     LatencyStats latency;
     OrderManagementSystem oms;
+    minimatch::OmsStore oms_store{
+        "data/oms/minimatch_oms.sqlite"
+    };
+
+    minimatch::AlgoScheduler algo_scheduler;
+
+    minimatch::AlgoStore algo_store{
+        "data/algo/minimatch_algo.sqlite"
+    };
+    minimatch::PositionManager positions;
+    minimatch::PortfolioRiskManager portfolio_risk;
+    minimatch::DropCopyStore drop_copy{
+        "data/drop_copy/minimatch_drop_copy.sqlite"
+    };
+
+    minimatch::SystemSettingsStore settings_store{
+        "data/settings/minimatch_settings.sqlite"
+    };
+    minimatch::ExecutionAnalytics execution_analytics;
+
+    minimatch::MidpointHistory midpoint_history;
+
+    minimatch::MidpointStore midpoint_store{
+        "data/market/minimatch_midpoints.sqlite"
+    };
+
+    VolatilityCircuitBreakerConfig
+        volatility_breaker;
+
+    std::atomic<bool> market_sampler_running{
+        true
+    };
+
+    std::thread market_sampler;
 
     std::uint64_t submitted{0};
     std::uint64_t accepted{0};
@@ -78,7 +244,242 @@ struct ApiState {
 
     std::mutex mutex;
 
-    ApiState() {
+    ApiState()
+        : algo_scheduler(
+              oms,
+              [](
+                  const std::string& symbol
+              ) {
+                  return minimatch::
+                      read_live_router_quotes(
+                          symbol
+                      );
+              },
+              []() {
+                  return static_cast<
+                      std::uint64_t
+                  >(
+                      std::chrono::
+                          duration_cast<
+                              std::chrono::
+                                  nanoseconds
+                          >(
+                              std::chrono::
+                                  system_clock::
+                                      now()
+                                          .time_since_epoch()
+                          )
+                          .count()
+                  );
+              }
+          ) {
+        const auto midpoint_now =
+            static_cast<
+                std::uint64_t
+            >(
+                std::chrono::
+                    duration_cast<
+                        std::chrono::
+                            nanoseconds
+                    >(
+                        std::chrono::
+                            system_clock::
+                                now()
+                            .time_since_epoch()
+                    )
+                    .count()
+            );
+
+        constexpr std::uint64_t
+            midpoint_retention_ns =
+                300'000'000'000ULL;
+
+        const auto restored_midpoints =
+            midpoint_store.load_since(
+                "btcusd",
+                midpoint_now >
+                        midpoint_retention_ns
+                    ? midpoint_now -
+                          midpoint_retention_ns
+                    : 0
+            );
+
+        for (
+            const auto& observation :
+            restored_midpoints
+        ) {
+            midpoint_history.record(
+                "btcusd",
+                observation.timestamp_ns,
+                observation.midpoint
+            );
+        }
+
+        const auto recovered =
+            oms_store.load();
+
+        oms.restore(
+            recovered.parents,
+            recovered.children,
+            recovered.fills
+        );
+
+        const auto recovered_algos =
+            algo_store.load_recoverable();
+
+        std::vector<
+            minimatch::AlgoOrderState
+        > recovered_algo_states;
+
+        recovered_algo_states.reserve(
+            recovered_algos.size()
+        );
+
+        for (
+            const auto& recovered_algo :
+            recovered_algos
+        ) {
+            recovered_algo_states.push_back(
+                recovered_algo.state
+            );
+        }
+
+        portfolio_risk.set_limits(
+            settings_store
+                .load_portfolio_limits()
+        );
+
+        const auto saved_breaker =
+            settings_store
+                .load_circuit_breaker();
+
+        volatility_breaker.enabled =
+            saved_breaker.enabled;
+
+        volatility_breaker
+            .threshold_percent =
+            saved_breaker
+                .threshold_percent;
+
+        volatility_breaker.window_ns =
+            saved_breaker.window_ns;
+
+        algo_scheduler.set_state_callback(
+            [this](
+                const minimatch::
+                    AlgoOrderState& state
+            ) {
+                algo_store.save(
+                    state
+                );
+            }
+        );
+
+        algo_scheduler.restore_recoverable(
+            recovered_algos
+        );
+
+
+        for (const auto& fill : recovered.fills) {
+            const auto parent =
+                oms.find_parent(
+                    fill.parent_id
+                );
+
+            if (parent) {
+                positions.apply_fill(
+                    *parent,
+                    fill
+                );
+            }
+        }
+
+        oms.set_mutation_callback(
+            [this](
+                const OrderManagementSystem::
+                    MutationEvent& event
+            ) {
+                if (event.parent) {
+                    oms_store.save_parent(
+                        *event.parent
+                    );
+                }
+
+                if (event.child) {
+                    oms_store.save_child(
+                        *event.child
+                    );
+                }
+
+                if (event.fill) {
+                    oms_store.save_fill(
+                        *event.fill
+                    );
+
+                    drop_copy.publish(
+                        minimatch::DropCopyEvent{
+                            .timestamp_ns =
+                                event.fill->timestamp_ns,
+                            .order_id =
+                                static_cast<OrderId>(
+                                    event.fill->child_id
+                                ),
+                            .symbol =
+                                minimatch::DEFAULT_SYMBOL,
+                            .event_type =
+                                "OMS_FILL",
+                            .status =
+                                "FILLED",
+                            .remaining =
+                                0,
+                            .reject_reason =
+                                minimatch::RejectReason::None
+                        }
+                    );
+
+                    if (event.parent) {
+                        positions.apply_fill(
+                            *event.parent,
+                            *event.fill
+                        );
+
+                        const auto portfolio_status =
+                            portfolio_risk.evaluate(
+                                positions.positions()
+                            );
+
+                        if (
+                            portfolio_status.breached
+                        ) {
+                            exchange.halt_all();
+                        }
+                    }
+                }
+
+                if (
+                    event.type ==
+                        OrderManagementSystem::
+                            MutationType::
+                                ParentUpdated &&
+                    event.parent
+                ) {
+                    const auto children =
+                        oms.children_for_parent(
+                            event.parent->id
+                        );
+
+                    for (
+                        const auto& child :
+                        children
+                    ) {
+                        oms_store.save_child(
+                            child
+                        );
+                    }
+                }
+            }
+        );
+
         exchange.on_trade([this](const Trade& trade) {
             ++trades;
 
@@ -90,6 +491,45 @@ struct ApiState {
         });
 
         exchange.on_report([this](const ExecutionReport& report) {
+
+            const auto drop_copy_now =
+                static_cast<
+                    std::uint64_t
+                >(
+                    std::chrono::
+                        duration_cast<
+                            std::chrono::
+                                nanoseconds
+                        >(
+                            std::chrono::
+                                system_clock::
+                                    now()
+                                .time_since_epoch()
+                        )
+                        .count()
+                );
+
+            drop_copy.publish(
+                minimatch::DropCopyEvent{
+                    .timestamp_ns =
+                        drop_copy_now,
+                    .order_id =
+                        report.order_id,
+                    .symbol =
+                        report.symbol,
+                    .event_type =
+                        "EXECUTION_REPORT",
+                    .status =
+                        execution_status_string(
+                            report.status
+                        ),
+                    .remaining =
+                        report.remaining,
+                    .reject_reason =
+                        report.reject_reason
+                }
+            );
+
             ++reports;
 
             report_feed.push_front(report);
@@ -106,7 +546,199 @@ struct ApiState {
                 ++rejected;
             }
         });
+    
+
+        market_sampler =
+            std::thread(
+                [this]() {
+                    while (
+                        market_sampler_running.load()
+                    ) {
+                        try {
+                            const auto quotes =
+                                minimatch::
+                                    read_live_router_quotes(
+                                        "btcusd"
+                                    );
+
+                            double best_bid = 0.0;
+                            double best_ask = 0.0;
+
+                            for (
+                                const auto& quote :
+                                quotes
+                            ) {
+                                if (
+                                    quote.bids.empty() ||
+                                    quote.asks.empty()
+                                ) {
+                                    continue;
+                                }
+
+                                const double bid =
+                                    quote.bids
+                                        .front()
+                                        .price;
+
+                                const double ask =
+                                    quote.asks
+                                        .front()
+                                        .price;
+
+                                if (
+                                    best_bid == 0.0 ||
+                                    bid > best_bid
+                                ) {
+                                    best_bid = bid;
+                                }
+
+                                if (
+                                    best_ask == 0.0 ||
+                                    ask < best_ask
+                                ) {
+                                    best_ask = ask;
+                                }
+                            }
+
+                            if (
+                                best_bid > 0.0 &&
+                                best_ask > 0.0
+                            ) {
+                                const auto now =
+                                    static_cast<
+                                        std::uint64_t
+                                    >(
+                                        std::chrono::
+                                            duration_cast<
+                                                std::chrono::
+                                                    nanoseconds
+                                            >(
+                                                std::chrono::
+                                                    system_clock::
+                                                        now()
+                                                            .time_since_epoch()
+                                            )
+                                            .count()
+                                    );
+
+                                const double midpoint =
+                                    (
+                                        best_bid +
+                                        best_ask
+                                    ) /
+                                        2.0;
+
+                                midpoint_history.record(
+                                    "btcusd",
+                                    now,
+                                    midpoint
+                                );
+
+                                midpoint_store.save(
+                                    "btcusd",
+                                    now,
+                                    midpoint
+                                );
+
+                                static std::uint64_t
+                                    last_midpoint_prune_ns =
+                                        0;
+
+                                if (
+                                    last_midpoint_prune_ns ==
+                                        0 ||
+                                    now -
+                                            last_midpoint_prune_ns >=
+                                        60'000'000'000ULL
+                                ) {
+                                    const auto cutoff =
+                                        now >
+                                                300'000'000'000ULL
+                                            ? now -
+                                                  300'000'000'000ULL
+                                            : 0;
+
+                                    midpoint_store
+                                        .prune_before(
+                                            cutoff
+                                        );
+
+                                    last_midpoint_prune_ns =
+                                        now;
+                                }
+
+                                if (
+                                    volatility_breaker
+                                        .enabled &&
+                                    now >
+                                        volatility_breaker
+                                            .window_ns
+                                ) {
+                                    const auto previous =
+                                        midpoint_history
+                                            .at_or_before(
+                                                "btcusd",
+                                                now -
+                                                    volatility_breaker
+                                                        .window_ns
+                                            );
+
+                                    if (
+                                        previous &&
+                                        previous->midpoint >
+                                            0.0
+                                    ) {
+                                        const double move =
+                                            std::abs(
+                                                midpoint -
+                                                previous
+                                                    ->midpoint
+                                            ) /
+                                            previous
+                                                ->midpoint *
+                                            100.0;
+
+                                        if (
+                                            move >=
+                                            volatility_breaker
+                                                .threshold_percent
+                                        ) {
+                                            exchange
+                                                .halt_symbol(
+                                                    1
+                                                );
+                                        }
+                                    }
+                                }
+                            }
+
+                        } catch (...) {
+                        }
+
+                        std::this_thread::
+                            sleep_for(
+                                std::chrono::
+                                    milliseconds(
+                                        100
+                                    )
+                            );
+                    }
+                }
+            );
+}
+
+    ~ApiState() {
+        market_sampler_running.store(
+            false
+        );
+
+        if (
+            market_sampler.joinable()
+        ) {
+            market_sampler.join();
+        }
     }
+
 };
 
 ApiState state;
@@ -143,6 +775,35 @@ json_response(
 
     return res;
 }
+
+http::response<http::string_body>
+text_response(
+    http::status status,
+    const std::string& body,
+    const std::string& content_type =
+        "text/plain; version=0.0.4"
+) {
+    http::response<http::string_body> res{
+        status,
+        11
+    };
+
+    res.set(
+        http::field::content_type,
+        content_type
+    );
+
+    res.set(
+        http::field::access_control_allow_origin,
+        "*"
+    );
+
+    res.body() = body;
+    res.prepare_payload();
+
+    return res;
+}
+
 
 std::unordered_map<std::string, std::string>
 parse_json_like_body(const std::string& body) {
@@ -488,6 +1149,1238 @@ oms_children_json(
     out << "]";
     return out.str();
 }
+
+enum class ReconciliationStatus {
+    Consistent,
+    LegacyUnverifiable,
+    Inconsistent
+};
+
+const char*
+reconciliation_status_string(
+    ReconciliationStatus status
+) {
+    switch (status) {
+        case ReconciliationStatus::
+            Consistent:
+            return "CONSISTENT";
+
+        case ReconciliationStatus::
+            LegacyUnverifiable:
+            return "LEGACY_UNVERIFIABLE";
+
+        case ReconciliationStatus::
+            Inconsistent:
+            return "INCONSISTENT";
+    }
+
+    return "INCONSISTENT";
+}
+
+
+ReconciliationStatus
+parent_reconciliation_status(
+    ParentOrderId parent_id
+) {
+    const auto parent =
+        state.oms.find_parent(
+            parent_id
+        );
+
+    if (!parent) {
+        return ReconciliationStatus::
+            Inconsistent;
+    }
+
+    const auto fills =
+        state.oms.fills_for_parent(
+            parent_id
+        );
+
+    const auto children =
+        state.oms.children_for_parent(
+            parent_id
+        );
+
+    double fill_quantity =
+        0.0;
+
+    double child_fill_quantity =
+        0.0;
+
+    double fill_notional =
+        0.0;
+
+    double total_fees =
+        0.0;
+
+    std::size_t drop_copy_fill_count =
+        0;
+
+    for (
+        const auto& fill :
+        fills
+    ) {
+        fill_quantity +=
+            fill.quantity;
+
+        fill_notional +=
+            fill.notional;
+
+        total_fees +=
+            fill.fee;
+    }
+
+    for (
+        const auto& child :
+        children
+    ) {
+        child_fill_quantity +=
+            child.filled_quantity;
+
+        const auto child_events =
+            state.drop_copy.events_for_order(
+                static_cast<OrderId>(
+                    child.id
+                )
+            );
+
+        for (
+            const auto& event :
+            child_events
+        ) {
+            if (
+                event.event_type ==
+                    "OMS_FILL"
+            ) {
+                ++drop_copy_fill_count;
+                break;
+            }
+        }
+    }
+
+    const auto algo_state =
+        state.algo_scheduler.find(
+            parent_id
+        );
+
+    const double arrival_price =
+        algo_state
+            ? algo_state->arrival_price
+            : 0.0;
+
+    const auto quality =
+        state.execution_analytics.analyze(
+            *parent,
+            fills,
+            arrival_price
+        );
+
+    constexpr double epsilon =
+        1e-9;
+
+    const bool non_drop_copy_consistent =
+        std::abs(
+            parent->filled_quantity -
+            fill_quantity
+        ) <= epsilon &&
+        std::abs(
+            parent->filled_quantity -
+            child_fill_quantity
+        ) <= epsilon &&
+        std::abs(
+            quality.filled_quantity -
+            fill_quantity
+        ) <= epsilon &&
+        std::abs(
+            quality.total_notional -
+            fill_notional
+        ) <= epsilon &&
+        std::abs(
+            quality.total_fees -
+            total_fees
+        ) <= epsilon;
+
+    if (!non_drop_copy_consistent) {
+        return ReconciliationStatus::
+            Inconsistent;
+    }
+
+    if (
+        drop_copy_fill_count ==
+        fills.size()
+    ) {
+        return ReconciliationStatus::
+            Consistent;
+    }
+
+    if (
+        !fills.empty() &&
+        drop_copy_fill_count == 0
+    ) {
+        return ReconciliationStatus::
+            LegacyUnverifiable;
+    }
+
+    return ReconciliationStatus::
+        Inconsistent;
+}
+
+
+bool
+parent_reconciliation_consistent(
+    ParentOrderId parent_id
+) {
+    const auto parent =
+        state.oms.find_parent(
+            parent_id
+        );
+
+    if (!parent) {
+        return false;
+    }
+
+    const auto fills =
+        state.oms.fills_for_parent(
+            parent_id
+        );
+
+    const auto children =
+        state.oms.children_for_parent(
+            parent_id
+        );
+
+    double fill_quantity =
+        0.0;
+
+    double child_fill_quantity =
+        0.0;
+
+    double fill_notional =
+        0.0;
+
+    double total_fees =
+        0.0;
+
+    std::size_t drop_copy_fill_count =
+        0;
+
+    for (
+        const auto& fill :
+        fills
+    ) {
+        fill_quantity +=
+            fill.quantity;
+
+        fill_notional +=
+            fill.notional;
+
+        total_fees +=
+            fill.fee;
+    }
+
+    for (
+        const auto& child :
+        children
+    ) {
+        child_fill_quantity +=
+            child.filled_quantity;
+
+        const auto child_events =
+            state.drop_copy.events_for_order(
+                static_cast<OrderId>(
+                    child.id
+                )
+            );
+
+        for (
+            const auto& event :
+            child_events
+        ) {
+            if (
+                event.event_type ==
+                    "OMS_FILL"
+            ) {
+                ++drop_copy_fill_count;
+                break;
+            }
+        }
+    }
+
+    const auto algo_state =
+        state.algo_scheduler.find(
+            parent_id
+        );
+
+    const double arrival_price =
+        algo_state
+            ? algo_state->arrival_price
+            : 0.0;
+
+    const auto quality =
+        state.execution_analytics.analyze(
+            *parent,
+            fills,
+            arrival_price
+        );
+
+    constexpr double epsilon =
+        1e-9;
+
+    return
+        std::abs(
+            parent->filled_quantity -
+            fill_quantity
+        ) <= epsilon &&
+        std::abs(
+            parent->filled_quantity -
+            child_fill_quantity
+        ) <= epsilon &&
+        std::abs(
+            quality.filled_quantity -
+            fill_quantity
+        ) <= epsilon &&
+        std::abs(
+            quality.total_notional -
+            fill_notional
+        ) <= epsilon &&
+        std::abs(
+            quality.total_fees -
+            total_fees
+        ) <= epsilon &&
+        drop_copy_fill_count ==
+            fills.size();
+}
+
+
+std::vector<
+    minimatch::PositionReconciliationResult
+>
+reconcile_positions() {
+    const auto parents =
+        state.oms.parents();
+
+    std::unordered_map<
+        std::string,
+        minimatch::PositionReconciliationInput
+    > inputs_by_symbol;
+
+    for (
+        const auto& parent :
+        parents
+    ) {
+        auto& input =
+            inputs_by_symbol[
+                parent.symbol
+            ];
+
+        input.symbol =
+            parent.symbol;
+
+        const auto fills =
+            state.oms.fills_for_parent(
+                parent.id
+            );
+
+        for (
+            const auto& fill :
+            fills
+        ) {
+            input.fills.push_back(
+                minimatch::
+                    PositionFillInput{
+                        .side =
+                            parent.side,
+                        .quantity =
+                            fill.quantity,
+                        .price =
+                            fill.price,
+                        .fee =
+                            fill.fee
+                    }
+            );
+        }
+    }
+
+    std::vector<
+        minimatch::PositionReconciliationInput
+    > inputs;
+
+    inputs.reserve(
+        inputs_by_symbol.size()
+    );
+
+    for (
+        auto& [symbol, input] :
+        inputs_by_symbol
+    ) {
+        const auto quotes =
+            minimatch::
+                read_live_router_quotes(
+                    symbol
+                );
+
+        double best_bid =
+            0.0;
+
+        double best_ask =
+            0.0;
+
+        for (
+            const auto& quote :
+            quotes
+        ) {
+            if (
+                !quote.healthy ||
+                quote.bids.empty() ||
+                quote.asks.empty()
+            ) {
+                continue;
+            }
+
+            const double bid =
+                quote.bids
+                    .front()
+                    .price;
+
+            const double ask =
+                quote.asks
+                    .front()
+                    .price;
+
+            if (
+                best_bid == 0.0 ||
+                bid > best_bid
+            ) {
+                best_bid =
+                    bid;
+            }
+
+            if (
+                best_ask == 0.0 ||
+                ask < best_ask
+            ) {
+                best_ask =
+                    ask;
+            }
+        }
+
+        if (
+            best_bid > 0.0 &&
+            best_ask > 0.0
+        ) {
+            state.positions.mark(
+                symbol,
+                (
+                    best_bid +
+                    best_ask
+                ) /
+                2.0
+            );
+        }
+
+        input.actual =
+            state.positions.position(
+                symbol
+            );
+
+        inputs.push_back(
+            std::move(input)
+        );
+    }
+
+    return minimatch::
+        reconcile_positions(
+            inputs
+        );
+}
+
+
+bool
+positions_reconciliation_consistent() {
+    const auto results =
+        reconcile_positions();
+
+    return std::all_of(
+        results.begin(),
+        results.end(),
+        [](
+            const auto& result
+        ) {
+            return result.consistent;
+        }
+    );
+}
+
+
+std::string
+position_reconciliation_json() {
+    const auto results =
+        reconcile_positions();
+
+    const bool all_consistent =
+        std::all_of(
+            results.begin(),
+            results.end(),
+            [](
+                const auto& result
+            ) {
+                return result.consistent;
+            }
+        );
+
+    std::ostringstream out;
+
+    out << "{\"symbols\":[";
+
+    for (
+        std::size_t index = 0;
+        index < results.size();
+        ++index
+    ) {
+        const auto& result =
+            results[index];
+
+        if (index != 0) {
+            out << ",";
+        }
+
+        out
+            << "{"
+            << "\"symbol\":\""
+            << result.symbol
+            << "\""
+
+            << ",\"expectedNetQuantity\":"
+            << result.expected_net_quantity
+
+            << ",\"actualNetQuantity\":"
+            << result.actual_net_quantity
+
+            << ",\"difference\":"
+            << result.quantity_difference
+
+            << ",\"expectedAverageCost\":"
+            << result.expected_average_cost
+
+            << ",\"actualAverageCost\":"
+            << result.actual_average_cost
+
+            << ",\"averageCostDifference\":"
+            << result.average_cost_difference
+
+            << ",\"expectedRealizedPnl\":"
+            << result.expected_realized_pnl
+
+            << ",\"actualRealizedPnl\":"
+            << result.actual_realized_pnl
+
+            << ",\"realizedPnlDifference\":"
+            << result.realized_pnl_difference
+
+            << ",\"markPrice\":"
+            << result.mark_price
+
+            << ",\"expectedUnrealizedPnl\":"
+            << result.expected_unrealized_pnl
+
+            << ",\"actualUnrealizedPnl\":"
+            << result.actual_unrealized_pnl
+
+            << ",\"unrealizedPnlDifference\":"
+            << result.unrealized_pnl_difference
+
+            << ",\"expectedTotalPnl\":"
+            << result.expected_total_pnl
+
+            << ",\"actualTotalPnl\":"
+            << result.actual_total_pnl
+
+            << ",\"totalPnlDifference\":"
+            << result.total_pnl_difference
+
+            << ",\"quantityConsistent\":"
+            << (
+                result.quantity_consistent
+                    ? "true"
+                    : "false"
+            )
+
+            << ",\"averageCostConsistent\":"
+            << (
+                result.average_cost_consistent
+                    ? "true"
+                    : "false"
+            )
+
+            << ",\"realizedPnlConsistent\":"
+            << (
+                result.realized_pnl_consistent
+                    ? "true"
+                    : "false"
+            )
+
+            << ",\"unrealizedPnlConsistent\":"
+            << (
+                result.unrealized_pnl_consistent
+                    ? "true"
+                    : "false"
+            )
+
+            << ",\"totalPnlConsistent\":"
+            << (
+                result.total_pnl_consistent
+                    ? "true"
+                    : "false"
+            )
+
+            << ",\"consistent\":"
+            << (
+                result.consistent
+                    ? "true"
+                    : "false"
+            )
+
+            << "}";
+    }
+
+    out
+        << "]"
+        << ",\"symbolCount\":"
+        << results.size()
+        << ",\"allConsistent\":"
+        << (
+            all_consistent
+                ? "true"
+                : "false"
+        )
+        << "}";
+
+    return out.str();
+}
+
+
+minimatch::GlobalParentReconciliationResult
+reconcile_all_parents() {
+    const auto parents =
+        state.oms.parents();
+
+    std::vector<
+        minimatch::ParentReconciliationInput
+    > inputs;
+
+    inputs.reserve(
+        parents.size()
+    );
+
+    for (
+        const auto& parent :
+        parents
+    ) {
+        minimatch::ReconciliationClassification
+            classification =
+                minimatch::
+                    ReconciliationClassification::
+                        Consistent;
+
+        switch (
+            parent_reconciliation_status(
+                parent.id
+            )
+        ) {
+            case ReconciliationStatus::
+                Consistent:
+                classification =
+                    minimatch::
+                        ReconciliationClassification::
+                            Consistent;
+                break;
+
+            case ReconciliationStatus::
+                LegacyUnverifiable:
+                classification =
+                    minimatch::
+                        ReconciliationClassification::
+                            LegacyUnverifiable;
+                break;
+
+            case ReconciliationStatus::
+                Inconsistent:
+                classification =
+                    minimatch::
+                        ReconciliationClassification::
+                            Inconsistent;
+                break;
+        }
+
+        inputs.push_back(
+            minimatch::
+                ParentReconciliationInput{
+                    .parent_id =
+                        parent.id,
+                    .classification =
+                        classification
+                }
+        );
+    }
+
+    return minimatch::
+        reconcile_parents(
+            inputs
+        );
+}
+
+
+std::string
+reconciliation_prometheus_metrics() {
+    const auto parent_reconciliation =
+        reconcile_all_parents();
+
+    const bool all_verifiable_consistent =
+        parent_reconciliation
+            .all_verifiable_consistent;
+
+    const bool position_reconciliation_consistent =
+        positions_reconciliation_consistent();
+
+    const auto algo_orders =
+        state.algo_scheduler.orders();
+
+    std::size_t recovered_orders =
+        0;
+
+    std::size_t recovery_total =
+        0;
+
+    std::uint64_t last_recovered_at_ns =
+        0;
+
+    for (
+        const auto& algo :
+        algo_orders
+    ) {
+        recovery_total +=
+            algo.recovery_count;
+
+        if (
+            algo.recovery_count >
+            0
+        ) {
+            ++recovered_orders;
+        }
+
+        last_recovered_at_ns =
+            std::max(
+                last_recovered_at_ns,
+                algo.last_recovered_at_ns
+            );
+    }
+
+    /*
+     * Position reconciliation is already included
+     * in global_reconciliation_json(). For now,
+     * derive the overall operational state from
+     * the same invariant that currently determines
+     * whether verifiable reconciliation has failed.
+     *
+     * We will expose the detailed position gauge
+     * separately after extracting position
+     * reconciliation into a typed result.
+     */
+
+    std::ostringstream out;
+
+    out
+        << "# HELP minimatch_reconciliation_parent_count "
+        << "Total OMS parent orders\n"
+        << "# TYPE minimatch_reconciliation_parent_count gauge\n"
+        << "minimatch_reconciliation_parent_count "
+        << parent_reconciliation
+               .parent_count
+        << "\n"
+
+        << "# HELP minimatch_reconciliation_consistent_parents "
+        << "Parent orders with consistent reconciliation\n"
+        << "# TYPE minimatch_reconciliation_consistent_parents gauge\n"
+        << "minimatch_reconciliation_consistent_parents "
+        << parent_reconciliation
+               .consistent_parents
+        << "\n"
+
+        << "# HELP minimatch_reconciliation_legacy_unverifiable_parents "
+        << "Legacy parents missing sufficient historical evidence\n"
+        << "# TYPE minimatch_reconciliation_legacy_unverifiable_parents gauge\n"
+        << "minimatch_reconciliation_legacy_unverifiable_parents "
+        << parent_reconciliation
+               .legacy_unverifiable_parents
+        << "\n"
+
+        << "# HELP minimatch_reconciliation_inconsistent_parents "
+        << "Parent orders with reconciliation failures\n"
+        << "# TYPE minimatch_reconciliation_inconsistent_parents gauge\n"
+        << "minimatch_reconciliation_inconsistent_parents "
+        << parent_reconciliation
+               .inconsistent_parents
+        << "\n"
+
+        << "# HELP minimatch_reconciliation_verifiable_consistent "
+        << "Whether all verifiable parents reconcile successfully\n"
+        << "# TYPE minimatch_reconciliation_verifiable_consistent gauge\n"
+        << "minimatch_reconciliation_verifiable_consistent "
+        << (
+            all_verifiable_consistent
+                ? 1
+                : 0
+        )
+        << "\n"
+
+        << "# HELP minimatch_position_reconciliation_consistent "
+        << "Whether reconstructed positions match live position state\n"
+        << "# TYPE minimatch_position_reconciliation_consistent gauge\n"
+        << "minimatch_position_reconciliation_consistent "
+        << (
+            position_reconciliation_consistent
+                ? 1
+                : 0
+        )
+        << "\n"
+
+        << "# HELP minimatch_algo_recovery_total "
+        << "Total algorithm recovery operations across persisted orders\n"
+        << "# TYPE minimatch_algo_recovery_total counter\n"
+        << "minimatch_algo_recovery_total "
+        << recovery_total
+        << "\n"
+
+        << "# HELP minimatch_algo_recovered_orders "
+        << "Number of algorithm orders recovered at least once\n"
+        << "# TYPE minimatch_algo_recovered_orders gauge\n"
+        << "minimatch_algo_recovered_orders "
+        << recovered_orders
+        << "\n"
+
+        << "# HELP minimatch_algo_last_recovered_timestamp_seconds "
+        << "Unix timestamp of the most recent algorithm recovery\n"
+        << "# TYPE minimatch_algo_last_recovered_timestamp_seconds gauge\n"
+        << "minimatch_algo_last_recovered_timestamp_seconds "
+        << (
+            static_cast<double>(
+                last_recovered_at_ns
+            ) /
+            1'000'000'000.0
+        )
+        << "\n";
+
+    const std::string benchmark_metrics_path =
+        "benchmark_results/benchmark_metrics.prom";
+
+    std::ifstream benchmark_metrics(
+        benchmark_metrics_path
+    );
+
+    if (benchmark_metrics) {
+        out
+            << "\n"
+            << benchmark_metrics.rdbuf();
+    }
+
+    return out.str();
+}
+
+
+std::string
+global_reconciliation_json() {
+    const auto parent_reconciliation =
+        reconcile_all_parents();
+
+    const bool positions_consistent =
+        positions_reconciliation_consistent();
+
+    const bool overall_consistent =
+        parent_reconciliation
+            .all_verifiable_consistent &&
+        positions_consistent;
+
+    std::ostringstream out;
+
+    out
+        << "{"
+        << "\"parentCount\":"
+        << parent_reconciliation
+               .parent_count
+
+        << ",\"consistentParents\":"
+        << parent_reconciliation
+               .consistent_parents
+
+        << ",\"legacyUnverifiableParents\":"
+        << parent_reconciliation
+               .legacy_unverifiable_parents
+
+        << ",\"inconsistentParents\":"
+        << parent_reconciliation
+               .inconsistent_parents
+
+        << ",\"allVerifiableParentsConsistent\":"
+        << (
+            parent_reconciliation
+                .all_verifiable_consistent
+                ? "true"
+                : "false"
+        )
+
+        << ",\"positionsConsistent\":"
+        << (
+            positions_consistent
+                ? "true"
+                : "false"
+        )
+
+        << ",\"overallConsistent\":"
+        << (
+            overall_consistent
+                ? "true"
+                : "false"
+        )
+
+        << ",\"legacyUnverifiableParentIds\":[";
+
+    for (
+        std::size_t index = 0;
+        index <
+            parent_reconciliation
+                .legacy_unverifiable_ids
+                .size();
+        ++index
+    ) {
+        if (index != 0) {
+            out << ",";
+        }
+
+        out
+            << "\""
+            << parent_reconciliation
+                   .legacy_unverifiable_ids[
+                       index
+                   ]
+            << "\"";
+    }
+
+    out
+        << "]"
+        << ",\"inconsistentParentIds\":[";
+
+    for (
+        std::size_t index = 0;
+        index <
+            parent_reconciliation
+                .inconsistent_ids
+                .size();
+        ++index
+    ) {
+        if (index != 0) {
+            out << ",";
+        }
+
+        out
+            << "\""
+            << parent_reconciliation
+                   .inconsistent_ids[
+                       index
+                   ]
+            << "\"";
+    }
+
+    out << "]}";
+
+    return out.str();
+}
+
+
+std::string
+parent_reconciliation_json(
+    ParentOrderId parent_id
+) {
+    const auto parent =
+        state.oms.find_parent(
+            parent_id
+        );
+
+    if (!parent) {
+        return {};
+    }
+
+    const auto fills =
+        state.oms.fills_for_parent(
+            parent_id
+        );
+
+    const auto children =
+        state.oms.children_for_parent(
+            parent_id
+        );
+
+    const auto drop_copy_events =
+        state.drop_copy.recent(
+            10'000
+        );
+
+    double fill_quantity =
+        0.0;
+
+    std::size_t drop_copy_fill_count =
+        0;
+
+    double child_fill_quantity =
+        0.0;
+
+    double fill_notional =
+        0.0;
+
+    double total_fees =
+        0.0;
+
+    for (
+        const auto& fill :
+        fills
+    ) {
+        fill_quantity +=
+            fill.quantity;
+
+        fill_notional +=
+            fill.notional;
+
+        total_fees +=
+            fill.fee;
+    }
+
+    for (
+        const auto& child :
+        children
+    ) {
+        child_fill_quantity +=
+            child.filled_quantity;
+
+        for (
+            const auto& event :
+            drop_copy_events
+        ) {
+            if (
+                event.event_type ==
+                    "OMS_FILL" &&
+                event.order_id ==
+                    static_cast<OrderId>(
+                        child.id
+                    )
+            ) {
+                ++drop_copy_fill_count;
+                break;
+            }
+        }
+    }
+
+    const auto algo_state =
+        state.algo_scheduler.find(
+            parent_id
+        );
+
+    const double arrival_price =
+        algo_state
+            ? algo_state->arrival_price
+            : 0.0;
+
+    const auto quality =
+        state.execution_analytics.analyze(
+            *parent,
+            fills,
+            arrival_price
+        );
+
+    constexpr double epsilon =
+        1e-9;
+
+    const bool quantity_consistent =
+        std::abs(
+            parent->filled_quantity -
+            fill_quantity
+        ) <= epsilon;
+
+    const bool child_quantity_consistent =
+        std::abs(
+            parent->filled_quantity -
+            child_fill_quantity
+        ) <= epsilon;
+
+    const bool analytics_quantity_consistent =
+        std::abs(
+            quality.filled_quantity -
+            fill_quantity
+        ) <= epsilon;
+
+    const bool analytics_notional_consistent =
+        std::abs(
+            quality.total_notional -
+            fill_notional
+        ) <= epsilon;
+
+    const bool analytics_fees_consistent =
+        std::abs(
+            quality.total_fees -
+            total_fees
+        ) <= epsilon;
+
+    const bool drop_copy_consistent =
+        drop_copy_fill_count ==
+        fills.size();
+
+    const auto reconciliation_status =
+        parent_reconciliation_status(
+            parent_id
+        );
+
+    std::string reconciliation_reason;
+
+    if (
+        reconciliation_status ==
+        ReconciliationStatus::
+            LegacyUnverifiable
+    ) {
+        reconciliation_reason =
+            "missing historical OMS_FILL drop-copy events";
+    } else if (
+        reconciliation_status ==
+        ReconciliationStatus::
+            Inconsistent
+    ) {
+        if (!quantity_consistent) {
+            reconciliation_reason =
+                "parent filled quantity differs from OMS fills";
+        } else if (!child_quantity_consistent) {
+            reconciliation_reason =
+                "parent filled quantity differs from child fills";
+        } else if (
+            !analytics_quantity_consistent
+        ) {
+            reconciliation_reason =
+                "execution analytics quantity mismatch";
+        } else if (
+            !analytics_notional_consistent
+        ) {
+            reconciliation_reason =
+                "execution analytics notional mismatch";
+        } else if (
+            !analytics_fees_consistent
+        ) {
+            reconciliation_reason =
+                "execution analytics fee mismatch";
+        } else if (
+            !drop_copy_consistent
+        ) {
+            reconciliation_reason =
+                "drop-copy fill mismatch";
+        } else {
+            reconciliation_reason =
+                "unknown reconciliation mismatch";
+        }
+    }
+
+    std::ostringstream out;
+
+    out
+        << "{"
+        << "\"parentOrderId\":\""
+        << parent_id
+        << "\""
+        << ",\"symbol\":\""
+        << parent->symbol
+        << "\""
+        << ",\"reconciliationStatus\":\""
+        << reconciliation_status_string(
+               reconciliation_status
+           )
+        << "\""
+        << ",\"reason\":\""
+        << reconciliation_reason
+        << "\""
+        << ",\"parentFilledQuantity\":"
+        << parent->filled_quantity
+        << ",\"omsFillQuantity\":"
+        << fill_quantity
+        << ",\"childFilledQuantity\":"
+        << child_fill_quantity
+        << ",\"omsFillNotional\":"
+        << fill_notional
+        << ",\"totalFees\":"
+        << total_fees
+        << ",\"analyticsFilledQuantity\":"
+        << quality.filled_quantity
+        << ",\"analyticsTotalNotional\":"
+        << quality.total_notional
+        << ",\"analyticsTotalFees\":"
+        << quality.total_fees
+        << ",\"fillCount\":"
+        << fills.size()
+        << ",\"dropCopyFillCount\":"
+        << drop_copy_fill_count
+        << ",\"childCount\":"
+        << children.size()
+        << ",\"quantityDifference\":"
+        << (
+            parent->filled_quantity -
+            fill_quantity
+        )
+        << ",\"quantityConsistent\":"
+        << (
+            quantity_consistent
+                ? "true"
+                : "false"
+        )
+        << ",\"childQuantityConsistent\":"
+        << (
+            child_quantity_consistent
+                ? "true"
+                : "false"
+        )
+        << ",\"analyticsQuantityConsistent\":"
+        << (
+            analytics_quantity_consistent
+                ? "true"
+                : "false"
+        )
+        << ",\"analyticsNotionalConsistent\":"
+        << (
+            analytics_notional_consistent
+                ? "true"
+                : "false"
+        )
+        << ",\"analyticsFeesConsistent\":"
+        << (
+            analytics_fees_consistent
+                ? "true"
+                : "false"
+        )
+        << ",\"dropCopyConsistent\":"
+        << (
+            drop_copy_consistent
+                ? "true"
+                : "false"
+        )
+        << ",\"consistent\":"
+        << (
+            quantity_consistent &&
+            child_quantity_consistent &&
+            analytics_quantity_consistent &&
+            analytics_notional_consistent &&
+            analytics_fees_consistent &&
+            drop_copy_consistent
+                ? "true"
+                : "false"
+        )
+        << "}";
+
+    return out.str();
+}
+
 
 std::string
 oms_fills_json(
@@ -1047,6 +2940,790 @@ handle_request(
         );
     }
 
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/metrics"
+    ) {
+        return text_response(
+            http::status::ok,
+            reconciliation_prometheus_metrics()
+        );
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/system/stp"
+    ) {
+        std::ostringstream out;
+
+        out
+            << "{"
+            << "\"policy\":\""
+            << stp_policy_string(
+                   state.exchange
+                       .stp_policy()
+               )
+            << "\""
+            << "}";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target ==
+            "/api/system/stp"
+    ) {
+        try {
+            const auto fields =
+                parse_json_like_body(
+                    req.body()
+                );
+
+            std::string policy =
+                fields.at("policy");
+
+            std::transform(
+                policy.begin(),
+                policy.end(),
+                policy.begin(),
+                [](unsigned char c) {
+                    return static_cast<char>(
+                        std::toupper(c)
+                    );
+                }
+            );
+
+            minimatch::
+                SelfTradePreventionPolicy
+                    value =
+                        minimatch::
+                            SelfTradePreventionPolicy::
+                                None;
+
+            if (
+                policy ==
+                "CANCEL_NEWEST"
+            ) {
+                value =
+                    minimatch::
+                        SelfTradePreventionPolicy::
+                            CancelNewest;
+
+            } else if (
+                policy ==
+                "CANCEL_OLDEST"
+            ) {
+                value =
+                    minimatch::
+                        SelfTradePreventionPolicy::
+                            CancelOldest;
+
+            } else if (
+                policy ==
+                "CANCEL_BOTH"
+            ) {
+                value =
+                    minimatch::
+                        SelfTradePreventionPolicy::
+                            CancelBoth;
+
+            } else if (
+                policy != "NONE"
+            ) {
+                return json_response(
+                    http::status::
+                        bad_request,
+                    R"({"error":"invalid STP policy"})"
+                );
+            }
+
+            state.exchange
+                .set_stp_policy(
+                    value
+                );
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"ok\":true"
+                << ",\"policy\":\""
+                << stp_policy_string(
+                       value
+                   )
+                << "\""
+                << "}";
+
+            return json_response(
+                http::status::ok,
+                out.str()
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::
+                    bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/system/circuit-breakers"
+    ) {
+        const auto latest =
+            state.midpoint_history.last(
+                "btcusd"
+            );
+
+        std::optional<
+            minimatch::MidpointObservation
+        > reference;
+
+        if (
+            latest &&
+            latest->timestamp_ns >
+                state
+                    .volatility_breaker
+                    .window_ns
+        ) {
+            reference =
+                state.midpoint_history
+                    .at_or_before(
+                        "btcusd",
+                        latest->timestamp_ns -
+                            state
+                                .volatility_breaker
+                                .window_ns
+                    );
+        }
+
+        double move_percent =
+            0.0;
+
+        if (
+            latest &&
+            reference &&
+            reference->midpoint >
+                0.0
+        ) {
+            move_percent =
+                std::abs(
+                    latest->midpoint -
+                    reference->midpoint
+                ) /
+                reference->midpoint *
+                100.0;
+        }
+
+        std::ostringstream out;
+
+        out
+            << "{"
+            << "\"enabled\":"
+            << (
+                state
+                    .volatility_breaker
+                    .enabled
+                    ? "true"
+                    : "false"
+            )
+            << ",\"thresholdPercent\":"
+            << state
+                   .volatility_breaker
+                   .threshold_percent
+            << ",\"windowSeconds\":"
+            << (
+                state
+                    .volatility_breaker
+                    .window_ns /
+                1'000'000'000ULL
+            )
+            << ",\"currentMidpoint\":"
+            << (
+                latest
+                    ? latest->midpoint
+                    : 0.0
+            )
+            << ",\"referenceMidpoint\":"
+            << (
+                reference
+                    ? reference->midpoint
+                    : 0.0
+            )
+            << ",\"movePercent\":"
+            << move_percent
+            << ",\"symbolHalted\":"
+            << (
+                state.exchange
+                        .symbol_halted(1)
+                    ? "true"
+                    : "false"
+            )
+            << ",\"observations\":"
+            << state.midpoint_history
+                   .size("btcusd")
+            << "}";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target ==
+            "/api/system/circuit-breakers/config"
+    ) {
+        try {
+            const auto fields =
+                parse_json_like_body(
+                    req.body()
+                );
+
+            if (
+                fields.count(
+                    "enabled"
+                )
+            ) {
+                const auto value =
+                    fields.at(
+                        "enabled"
+                    );
+
+                state
+                    .volatility_breaker
+                    .enabled =
+                    (
+                        value == "true" ||
+                        value == "1" ||
+                        value == "TRUE"
+                    );
+            }
+
+            if (
+                fields.count(
+                    "thresholdPercent"
+                )
+            ) {
+                const double threshold =
+                    std::stod(
+                        fields.at(
+                            "thresholdPercent"
+                        )
+                    );
+
+                if (
+                    threshold <= 0.0
+                ) {
+                    return json_response(
+                        http::status::
+                            bad_request,
+                        R"({"error":"thresholdPercent must be positive"})"
+                    );
+                }
+
+                state
+                    .volatility_breaker
+                    .threshold_percent =
+                    threshold;
+            }
+
+            if (
+                fields.count(
+                    "windowSeconds"
+                )
+            ) {
+                const auto seconds =
+                    std::stoull(
+                        fields.at(
+                            "windowSeconds"
+                        )
+                    );
+
+                if (
+                    seconds == 0
+                ) {
+                    return json_response(
+                        http::status::
+                            bad_request,
+                        R"({"error":"windowSeconds must be positive"})"
+                    );
+                }
+
+                state
+                    .volatility_breaker
+                    .window_ns =
+                    seconds *
+                    1'000'000'000ULL;
+            }
+
+            state.settings_store
+                .save_circuit_breaker(
+                    minimatch::
+                        CircuitBreakerSettings{
+                            state
+                                .volatility_breaker
+                                .enabled,
+                            state
+                                .volatility_breaker
+                                .threshold_percent,
+                            state
+                                .volatility_breaker
+                                .window_ns
+                        }
+                );
+
+            return json_response(
+                http::status::ok,
+                R"({"ok":true})"
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::
+                    bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target.rfind(
+            "/api/symbols/",
+            0
+        ) == 0 &&
+        target.ends_with(
+            "/status"
+        )
+    ) {
+        try {
+            const std::string prefix =
+                "/api/symbols/";
+
+            const std::string suffix =
+                target.substr(
+                    prefix.size()
+                );
+
+            const auto slash =
+                suffix.find('/');
+
+            if (
+                slash ==
+                std::string::npos
+            ) {
+                return json_response(
+                    http::status::bad_request,
+                    R"({"error":"invalid symbol status route"})"
+                );
+            }
+
+            const auto symbol =
+                static_cast<SymbolId>(
+                    std::stoul(
+                        suffix.substr(
+                            0,
+                            slash
+                        )
+                    )
+                );
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"symbol\":"
+                << symbol
+                << ",\"halted\":"
+                << (
+                    state.exchange
+                            .symbol_halted(
+                                symbol
+                            )
+                        ? "true"
+                        : "false"
+                )
+                << ",\"globallyHalted\":"
+                << (
+                    state.exchange
+                            .globally_halted()
+                        ? "true"
+                        : "false"
+                )
+                << "}";
+
+            return json_response(
+                http::status::ok,
+                out.str()
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/system/trading-status"
+    ) {
+        return json_response(
+            http::status::ok,
+            std::string(
+                "{\"globallyHalted\":"
+            ) +
+                (
+                    state.exchange
+                            .globally_halted()
+                        ? "true"
+                        : "false"
+                ) +
+                "}"
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target ==
+            "/api/system/halt"
+    ) {
+        state.exchange.halt_all();
+
+        return json_response(
+            http::status::ok,
+            R"({"ok":true,"globallyHalted":true})"
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target ==
+            "/api/system/resume"
+    ) {
+        state.exchange.resume_all();
+
+        return json_response(
+            http::status::ok,
+            R"({"ok":true,"globallyHalted":false})"
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target.rfind(
+            "/api/symbols/",
+            0
+        ) == 0
+     &&
+        (
+            target.ends_with(
+                "/halt"
+            ) ||
+            target.ends_with(
+                "/resume"
+            )
+        )
+     &&
+        (
+            target.ends_with(
+                "/halt"
+            ) ||
+            target.ends_with(
+                "/resume"
+            )
+        )
+) {
+        try {
+            const std::string prefix =
+                "/api/symbols/";
+
+            const std::string suffix =
+                target.substr(
+                    prefix.size()
+                );
+
+            const auto slash =
+                suffix.find('/');
+
+            if (
+                slash ==
+                std::string::npos
+            ) {
+                return json_response(
+                    http::status::bad_request,
+                    R"({"error":"invalid symbol halt route"})"
+                );
+            }
+
+            const auto symbol =
+                static_cast<SymbolId>(
+                    std::stoul(
+                        suffix.substr(
+                            0,
+                            slash
+                        )
+                    )
+                );
+
+            const auto action =
+                suffix.substr(
+                    slash + 1
+                );
+
+            if (
+                action == "halt"
+            ) {
+                state.exchange
+                    .halt_symbol(
+                        symbol
+                    );
+
+            } else if (
+                action == "resume"
+            ) {
+                state.exchange
+                    .resume_symbol(
+                        symbol
+                    );
+
+            } else {
+                // This is not a halt/resume route.
+                // Allow later /api/symbols/* handlers
+                // such as /price-band to process it.
+                goto skip_symbol_halt_route;
+            }
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"ok\":true"
+                << ",\"symbol\":"
+                << symbol
+                << ",\"halted\":"
+                << (
+                    state.exchange
+                            .symbol_halted(
+                                symbol
+                            )
+                        ? "true"
+                        : "false"
+                )
+                << "}";
+
+            return json_response(
+                http::status::ok,
+                out.str()
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
+    skip_symbol_halt_route:
+
+    if (
+        target.rfind(
+            "/api/symbols/",
+            0
+        ) == 0 &&
+        target.find(
+            "/price-band"
+        ) != std::string::npos
+    ) {
+        try {
+            const std::string prefix =
+                "/api/symbols/";
+
+            const std::string suffix =
+                target.substr(
+                    prefix.size()
+                );
+
+            const auto slash =
+                suffix.find('/');
+
+            if (
+                slash ==
+                std::string::npos
+            ) {
+                return json_response(
+                    http::status::bad_request,
+                    R"({"error":"invalid price-band route"})"
+                );
+            }
+
+            const auto symbol =
+                static_cast<SymbolId>(
+                    std::stoul(
+                        suffix.substr(
+                            0,
+                            slash
+                        )
+                    )
+                );
+
+            const auto action =
+                suffix.substr(
+                    slash + 1
+                );
+
+            if (
+                action != "price-band"
+            ) {
+                return json_response(
+                    http::status::bad_request,
+                    R"({"error":"invalid price-band route"})"
+                );
+            }
+
+            if (
+                req.method() ==
+                    http::verb::post
+            ) {
+                const auto fields =
+                    parse_json_like_body(
+                        req.body()
+                    );
+
+                const auto reference_price =
+                    static_cast<Price>(
+                        std::stoll(
+                            fields.at(
+                                "referencePrice"
+                            )
+                        )
+                    );
+
+                const double band_percent =
+                    std::stod(
+                        fields.at(
+                            "bandPercent"
+                        )
+                    );
+
+                state.exchange
+                    .set_price_band(
+                        symbol,
+                        reference_price,
+                        band_percent
+                    );
+
+                std::ostringstream out;
+
+                out
+                    << "{"
+                    << "\"ok\":true"
+                    << ",\"symbol\":"
+                    << symbol
+                    << ",\"referencePrice\":"
+                    << reference_price
+                    << ",\"bandPercent\":"
+                    << band_percent
+                    << "}";
+
+                return json_response(
+                    http::status::ok,
+                    out.str()
+                );
+            }
+
+            if (
+                req.method() ==
+                    http::verb::delete_
+            ) {
+                state.exchange
+                    .clear_price_band(
+                        symbol
+                    );
+
+                std::ostringstream out;
+
+                out
+                    << "{"
+                    << "\"ok\":true"
+                    << ",\"symbol\":"
+                    << symbol
+                    << "}";
+
+                return json_response(
+                    http::status::ok,
+                    out.str()
+                );
+            }
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
     if (
         req.method() ==
             http::verb::get &&
@@ -1504,125 +4181,313 @@ handle_request(
 
 
 
+
     if (
         req.method() ==
-            http::verb::post &&
+            http::verb::get &&
         target ==
             "/api/oms/parents"
     ) {
-        try {
-            const auto fields =
-                parse_json_like_body(
-                    req.body()
-                );
+        const auto parents =
+            state.oms.parents();
 
-            const auto side =
-                parse_side(
-                    fields.at("side")
-                );
+        std::ostringstream out;
 
-            if (!side) {
-                throw std::runtime_error(
-                    "invalid side"
-                );
+        out << "[";
+
+        for (
+            std::size_t i = 0;
+            i < parents.size();
+            ++i
+        ) {
+            if (i) {
+                out << ",";
             }
 
-            const auto quantity =
-                std::stod(
-                    fields.at(
-                        "quantity"
-                    )
-                );
+            const auto& parent =
+                parents[i];
 
             std::string strategy =
-                fields.count(
-                    "strategy"
-                )
-                    ? fields.at(
-                          "strategy"
-                      )
-                    : "MARKET";
+                "MARKET";
 
-            std::transform(
-                strategy.begin(),
-                strategy.end(),
-                strategy.begin(),
-                [](unsigned char c) {
-                    return static_cast<
-                        char
-                    >(
-                        std::toupper(c)
-                    );
-                }
-            );
+            switch (
+                parent.algorithm
+            ) {
+                case ExecutionAlgorithm::TWAP:
+                    strategy = "TWAP";
+                    break;
 
-            ExecutionAlgorithm algorithm =
-                ExecutionAlgorithm::Market;
+                case ExecutionAlgorithm::VWAP:
+                    strategy = "VWAP";
+                    break;
 
-            if (
-                strategy ==
-                "TWAP"
-            ) {
-                algorithm =
-                    ExecutionAlgorithm::TWAP;
-            } else if (
-                strategy ==
-                "VWAP"
-            ) {
-                algorithm =
-                    ExecutionAlgorithm::VWAP;
-            } else if (
-                strategy ==
-                "POV"
-            ) {
-                algorithm =
-                    ExecutionAlgorithm::POV;
-            } else if (
-                strategy ==
-                "ICEBERG"
-            ) {
-                algorithm =
-                    ExecutionAlgorithm::Iceberg;
+                case ExecutionAlgorithm::POV:
+                    strategy = "POV";
+                    break;
+
+                case ExecutionAlgorithm::Iceberg:
+                    strategy = "ICEBERG";
+                    break;
+
+                case ExecutionAlgorithm::Market:
+                    strategy = "MARKET";
+                    break;
             }
-
-            const auto now =
-                minimatch::
-                    steady_now_ns();
-
-            std::lock_guard<std::mutex>
-                lock(state.mutex);
-
-            const auto parent_id =
-                state.oms.create_parent(
-                    ParentOrderRequest{
-                        fields.at(
-                            "symbol"
-                        ),
-                        *side ==
-                                Side::Buy
-                            ? RouteSide::Buy
-                            : RouteSide::Sell,
-                        quantity,
-                        algorithm
-                    },
-                    now
-                );
-
-            std::ostringstream out;
 
             out
                 << "{"
-                << "\"ok\":true"
-                << ",\"parentId\":\""
-                << parent_id
+                << "\"id\":\""
+                << parent.id
+                << "\""
+                << ",\"symbol\":\""
+                << parent.symbol
+                << "\""
+                << ",\"side\":\""
+                << (
+                    parent.side ==
+                            RouteSide::Buy
+                        ? "BUY"
+                        : "SELL"
+                )
+                << "\""
+                << ",\"status\":\""
+                << minimatch::to_string(
+                       parent.status
+                   )
+                << "\""
+                << ",\"quantity\":"
+                << parent.quantity
+                << ",\"filledQuantity\":"
+                << parent.filled_quantity
+                << ",\"remainingQuantity\":"
+                << parent.remaining_quantity
+                << ",\"strategy\":\""
+                << strategy
                 << "\""
                 << "}";
+        }
 
-            return json_response(
-                http::status::
-                    created,
-                out.str()
-            );
+        out << "]";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target.rfind(
+            "/api/oms/parents/",
+            0
+        ) == 0
+    ) {
+        try {
+            const std::string prefix =
+                "/api/oms/parents/";
+
+            const std::string suffix =
+                target.substr(
+                    prefix.size()
+                );
+
+            const std::string
+                children_suffix =
+                    "/children";
+
+            const std::string
+                fills_suffix =
+                    "/fills";
+
+            if (
+                suffix.size() >
+                    children_suffix.size() &&
+                suffix.ends_with(
+                    children_suffix
+                )
+            ) {
+                const auto id_text =
+                    suffix.substr(
+                        0,
+                        suffix.size() -
+                            children_suffix.size()
+                    );
+
+                const auto parent_id =
+                    static_cast<
+                        ParentOrderId
+                    >(
+                        std::stoull(
+                            id_text
+                        )
+                    );
+
+                const auto parent =
+                    state.oms.find_parent(
+                        parent_id
+                    );
+
+                if (!parent) {
+                    return json_response(
+                        http::status::
+                            not_found,
+                        R"({"error":"not found"})"
+                    );
+                }
+
+                const auto children =
+                    state.oms
+                        .children_for_parent(
+                            parent_id
+                        );
+
+                std::ostringstream out;
+
+                out << "[";
+
+                for (
+                    std::size_t i = 0;
+                    i < children.size();
+                    ++i
+                ) {
+                    if (i) {
+                        out << ",";
+                    }
+
+                    const auto& child =
+                        children[i];
+
+                    out
+                        << "{"
+                        << "\"id\":\""
+                        << child.id
+                        << "\""
+                        << ",\"parentId\":\""
+                        << child.parent_id
+                        << "\""
+                        << ",\"venue\":\""
+                        << child.venue
+                        << "\""
+                        << ",\"status\":\""
+                        << minimatch::to_string(
+                               child.status
+                           )
+                        << "\""
+                        << ",\"price\":"
+                        << child.price
+                        << ",\"quantity\":"
+                        << child.quantity
+                        << ",\"filledQuantity\":"
+                        << child
+                               .filled_quantity
+                        << ",\"remainingQuantity\":"
+                        << child
+                               .remaining_quantity
+                        << "}";
+                }
+
+                out << "]";
+
+                return json_response(
+                    http::status::ok,
+                    out.str()
+                );
+            }
+
+            if (
+                suffix.size() >
+                    fills_suffix.size() &&
+                suffix.ends_with(
+                    fills_suffix
+                )
+            ) {
+                const auto id_text =
+                    suffix.substr(
+                        0,
+                        suffix.size() -
+                            fills_suffix.size()
+                    );
+
+                const auto parent_id =
+                    static_cast<
+                        ParentOrderId
+                    >(
+                        std::stoull(
+                            id_text
+                        )
+                    );
+
+                const auto parent =
+                    state.oms.find_parent(
+                        parent_id
+                    );
+
+                if (!parent) {
+                    return json_response(
+                        http::status::
+                            not_found,
+                        R"({"error":"not found"})"
+                    );
+                }
+
+                const auto fills =
+                    state.oms
+                        .fills_for_parent(
+                            parent_id
+                        );
+
+                std::ostringstream out;
+
+                out << "[";
+
+                for (
+                    std::size_t i = 0;
+                    i < fills.size();
+                    ++i
+                ) {
+                    if (i) {
+                        out << ",";
+                    }
+
+                    const auto& fill =
+                        fills[i];
+
+                    out
+                        << "{"
+                        << "\"id\":\""
+                        << fill
+                               .execution_report_id
+                        << "\""
+                        << ",\"childOrderId\":\""
+                        << fill.child_id
+                        << "\""
+                        << ",\"parentId\":\""
+                        << fill.parent_id
+                        << "\""
+                        << ",\"venue\":\""
+                        << fill.venue
+                        << "\""
+                        << ",\"price\":"
+                        << fill.price
+                        << ",\"quantity\":"
+                        << fill.quantity
+                        << ",\"notional\":"
+                        << fill.notional
+                        << ",\"fee\":"
+                        << fill.fee
+                        << ",\"timestamp\":"
+                        << fill.timestamp_ns
+                        << "}";
+                }
+
+                out << "]";
+
+                return json_response(
+                    http::status::ok,
+                    out.str()
+                );
+            }
 
         } catch (
             const std::exception& ex
@@ -1638,9 +4503,6 @@ handle_request(
             );
         }
     }
-
-
-
 
     if (
         req.method() ==
@@ -1708,209 +4570,62 @@ handle_request(
         }
     }
 
-    if (
-        req.method() ==
-            http::verb::post &&
-        target ==
-            "/api/oms/fills"
-    ) {
-        try {
-            const auto fields =
-                parse_json_like_body(
-                    req.body()
-                );
 
-            const auto child_id =
-                static_cast<
-                    minimatch::ChildOrderId
-                >(
-                    std::stoull(
-                        fields.at(
-                            "childId"
-                        )
-                    )
-                );
-
-            const auto price =
-                std::stod(
-                    fields.at("price")
-                );
-
-            const auto quantity =
-                std::stod(
-                    fields.at(
-                        "quantity"
-                    )
-                );
-
-            const auto fee =
-                fields.count("fee")
-                    ? std::stod(
-                          fields.at(
-                              "fee"
-                          )
-                      )
-                    : 0.0;
-
-            const auto now =
-                minimatch::
-                    steady_now_ns();
-
-            std::lock_guard<std::mutex>
-                lock(state.mutex);
-
-            const auto report =
-                state.oms.record_fill(
-                    child_id,
-                    price,
-                    quantity,
-                    fee,
-                    now
-                );
-
-            std::ostringstream out;
-
-            out
-                << "{"
-                << "\"ok\":true"
-                << ",\"executionReportId\":\""
-                << report.execution_report_id
-                << "\""
-                << ",\"parentId\":\""
-                << report.parent_id
-                << "\""
-                << ",\"childId\":\""
-                << report.child_id
-                << "\""
-                << ",\"quantity\":"
-                << report.quantity
-                << ",\"price\":"
-                << report.price
-                << ",\"notional\":"
-                << report.notional
-                << ",\"fee\":"
-                << report.fee
-                << "}";
-
-            return json_response(
-                http::status::created,
-                out.str()
-            );
-
-        } catch (
-            const std::exception& ex
-        ) {
-            return json_response(
-                http::status::bad_request,
-                std::string(
-                    "{\"error\":\""
-                ) +
-                    ex.what() +
-                    "\"}"
-            );
-        }
-    }
-
-    if (
-        req.method() ==
-            http::verb::post &&
-        target ==
-            "/api/oms/children"
-    ) {
-        try {
-            const auto fields =
-                parse_json_like_body(
-                    req.body()
-                );
-
-            const auto parent_id =
-                static_cast<ParentOrderId>(
-                    std::stoull(
-                        fields.at(
-                            "parentId"
-                        )
-                    )
-                );
-
-            const auto venue =
-                fields.at("venue");
-
-            const auto price =
-                std::stod(
-                    fields.at("price")
-                );
-
-            const auto quantity =
-                std::stod(
-                    fields.at(
-                        "quantity"
-                    )
-                );
-
-            const auto now =
-                minimatch::
-                    steady_now_ns();
-
-            std::lock_guard<std::mutex>
-                lock(state.mutex);
-
-            const auto child_id =
-                state.oms.create_child(
-                    ChildOrderRequest{
-                        parent_id,
-                        venue,
-                        price,
-                        quantity,
-                        now
-                    }
-                );
-
-            state.oms.mark_child_working(
-                child_id,
-                now
-            );
-
-            std::ostringstream out;
-
-            out
-                << "{"
-                << "\"ok\":true"
-                << ",\"childId\":\""
-                << child_id
-                << "\""
-                << "}";
-
-            return json_response(
-                http::status::created,
-                out.str()
-            );
-
-        } catch (
-            const std::exception& ex
-        ) {
-            return json_response(
-                http::status::bad_request,
-                std::string(
-                    "{\"error\":\""
-                ) +
-                    ex.what() +
-                    "\"}"
-            );
-        }
-    }
 
     if (
         req.method() ==
             http::verb::get &&
         target ==
-            "/api/oms/parents"
+            "/api/midpoint-history"
     ) {
-        std::lock_guard<std::mutex>
-            lock(state.mutex);
+        const auto first =
+            state.midpoint_history.first(
+                "btcusd"
+            );
+
+        const auto last =
+            state.midpoint_history.last(
+                "btcusd"
+            );
+
+        std::ostringstream out;
+
+        out
+            << "{"
+            << "\"symbol\":\"btcusd\""
+            << ",\"observations\":"
+            << state.midpoint_history.size(
+                   "btcusd"
+               )
+            << ",\"firstTimestampNs\":"
+            << (
+                first
+                    ? first->timestamp_ns
+                    : 0
+            )
+            << ",\"firstMidpoint\":"
+            << (
+                first
+                    ? first->midpoint
+                    : 0.0
+            )
+            << ",\"lastTimestampNs\":"
+            << (
+                last
+                    ? last->timestamp_ns
+                    : 0
+            )
+            << ",\"lastMidpoint\":"
+            << (
+                last
+                    ? last->midpoint
+                    : 0.0
+            )
+            << "}";
 
         return json_response(
             http::status::ok,
-            oms_parents_json()
+            out.str()
         );
     }
 
@@ -1918,82 +4633,1161 @@ handle_request(
         req.method() ==
             http::verb::get &&
         target.rfind(
-            "/api/oms/parents/",
+            "/api/execution-quality/",
             0
         ) == 0
     ) {
         try {
-            const std::string prefix =
-                "/api/oms/parents/";
-
-            const auto suffix =
+            const std::string id_text =
                 target.substr(
-                    prefix.size()
+                    std::string(
+                        "/api/execution-quality/"
+                    ).size()
                 );
-
-            const auto slash =
-                suffix.find('/');
-
-            if (
-                slash ==
-                std::string::npos
-            ) {
-                return json_response(
-                    http::status::
-                        bad_request,
-                    R"({"error":"expected children or fills"})"
-                );
-            }
 
             const auto parent_id =
                 static_cast<
                     ParentOrderId
                 >(
                     std::stoull(
-                        suffix.substr(
-                            0,
-                            slash
-                        )
+                        id_text
                     )
                 );
 
-            const auto resource =
-                suffix.substr(
-                    slash + 1
+            const auto parent =
+                state.oms.find_parent(
+                    parent_id
                 );
 
-            std::lock_guard<std::mutex>
-                lock(state.mutex);
-
-            if (
-                resource ==
-                "children"
-            ) {
+            if (!parent) {
                 return json_response(
-                    http::status::ok,
-                    oms_children_json(
-                        parent_id
-                    )
+                    http::status::not_found,
+                    R"({"error":"parent order not found"})"
                 );
             }
 
-            if (
-                resource ==
-                "fills"
-            ) {
-                return json_response(
-                    http::status::ok,
-                    oms_fills_json(
+            const auto algo_state =
+                state.algo_scheduler.find(
+                    parent_id
+                );
+
+            const double arrival_price =
+                algo_state
+                    ? algo_state
+                          ->arrival_price
+                    : 0.0;
+
+            const auto fills =
+                state.oms
+                    .fills_for_parent(
                         parent_id
+                    );
+
+            const auto quality =
+                state.execution_analytics
+                    .analyze(
+                        *parent,
+                        fills,
+                        arrival_price
+                    );
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"parentOrderId\":\""
+                << quality.parent_order_id
+                << "\""
+                << ",\"symbol\":\""
+                << quality.symbol
+                << "\""
+                << ",\"requestedQuantity\":"
+                << quality.requested_quantity
+                << ",\"filledQuantity\":"
+                << quality.filled_quantity
+                << ",\"arrivalPrice\":"
+                << quality.arrival_price
+                << ",\"averageFillPrice\":"
+                << quality.average_fill_price
+                << ",\"totalNotional\":"
+                << quality.total_notional
+                << ",\"totalFees\":"
+                << quality.total_fees
+                << ",\"implementationShortfallBps\":"
+                << quality
+                       .implementation_shortfall_bps
+                << ",\"feeAdjustedShortfallBps\":"
+                << quality
+                       .fee_adjusted_shortfall_bps
+                << "}";
+
+            return json_response(
+                http::status::ok,
+                out.str()
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/reconciliation/positions"
+    ) {
+        return json_response(
+            http::status::ok,
+            position_reconciliation_json()
+        );
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/reconciliation"
+    ) {
+        return json_response(
+            http::status::ok,
+            global_reconciliation_json()
+        );
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target.starts_with(
+            "/api/reconciliation/parents/"
+        )
+    ) {
+        try {
+            const std::string prefix =
+                "/api/reconciliation/parents/";
+
+            const auto id_text =
+                target.substr(
+                    prefix.size()
+                );
+
+            const auto parent_id =
+                static_cast<
+                    ParentOrderId
+                >(
+                    std::stoull(
+                        id_text
                     )
+                );
+
+            const auto body =
+                parent_reconciliation_json(
+                    parent_id
+                );
+
+            if (body.empty()) {
+                return json_response(
+                    http::status::not_found,
+                    R"({"error":"parent order not found"})"
                 );
             }
 
             return json_response(
-                http::status::
-                    not_found,
-                R"({"error":"unknown OMS resource"})"
+                http::status::ok,
+                body
             );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    json_escape(
+                        ex.what()
+                    ) +
+                    "\"}"
+            );
+        }
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target ==
+            "/api/algo-orders"
+    ) {
+        try {
+            const auto fields =
+                parse_json_like_body(
+                    req.body()
+                );
+
+            const std::string symbol =
+                fields.at("symbol");
+
+            std::string side_text =
+                fields.at("side");
+
+            std::transform(
+                side_text.begin(),
+                side_text.end(),
+                side_text.begin(),
+                [](unsigned char c) {
+                    return static_cast<char>(
+                        std::toupper(c)
+                    );
+                }
+            );
+
+            const RouteSide side =
+                side_text == "SELL"
+                    ? RouteSide::Sell
+                    : RouteSide::Buy;
+
+            const double quantity =
+                std::stod(
+                    fields.at("quantity")
+                );
+
+            std::string algorithm_text =
+                fields.count("algorithm")
+                    ? fields.at("algorithm")
+                    : "MARKET";
+
+            std::transform(
+                algorithm_text.begin(),
+                algorithm_text.end(),
+                algorithm_text.begin(),
+                [](unsigned char c) {
+                    return static_cast<char>(
+                        std::toupper(c)
+                    );
+                }
+            );
+
+            ExecutionAlgorithm algorithm =
+                ExecutionAlgorithm::Market;
+
+            if (algorithm_text == "TWAP") {
+                algorithm =
+                    ExecutionAlgorithm::TWAP;
+            } else if (
+                algorithm_text == "VWAP"
+            ) {
+                algorithm =
+                    ExecutionAlgorithm::VWAP;
+            } else if (
+                algorithm_text == "POV"
+            ) {
+                algorithm =
+                    ExecutionAlgorithm::POV;
+            } else if (
+                algorithm_text == "ICEBERG"
+            ) {
+                algorithm =
+                    ExecutionAlgorithm::Iceberg;
+            }
+
+            minimatch::ExecutionScheduleRequest schedule;
+
+            schedule.algorithm =
+                algorithm;
+
+            schedule.quantity =
+                quantity;
+
+            schedule.slices =
+                fields.count("slices")
+                    ? std::stoi(
+                          fields.at("slices")
+                      )
+                    : 1;
+
+            schedule.duration_seconds =
+                fields.count(
+                    "durationSeconds"
+                )
+                    ? std::stod(
+                          fields.at(
+                              "durationSeconds"
+                          )
+                      )
+                    : 0.0;
+
+            schedule.participation_rate =
+                fields.count(
+                    "participationRate"
+                )
+                    ? std::stod(
+                          fields.at(
+                              "participationRate"
+                          )
+                      )
+                    : 0.10;
+
+            schedule.displayed_quantity =
+                fields.count(
+                    "displayedQuantity"
+                )
+                    ? std::stod(
+                          fields.at(
+                              "displayedQuantity"
+                          )
+                      )
+                    : quantity;
+
+            minimatch::LiveAlgoRequest algo_request;
+
+            algo_request.symbol =
+                symbol;
+
+            algo_request.side =
+                side;
+
+            algo_request.quantity =
+                quantity;
+
+            algo_request.schedule =
+                schedule;
+
+            if (
+                fields.count(
+                    "maxSlippageBps"
+                )
+            ) {
+                algo_request.max_slippage_bps =
+                    std::stod(
+                        fields.at(
+                            "maxSlippageBps"
+                        )
+                    );
+            }
+
+            if (
+                fields.count(
+                    "maxVenueCount"
+                )
+            ) {
+                algo_request.max_venue_count =
+                    static_cast<std::size_t>(
+                        std::stoull(
+                            fields.at(
+                                "maxVenueCount"
+                            )
+                        )
+                    );
+            }
+
+            const auto parent_id =
+                state.algo_scheduler.submit(
+                    algo_request
+                );
+
+            state.algo_store.save_request(
+                parent_id,
+                algo_request
+            );
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"ok\":true"
+                << ",\"parentOrderId\":\""
+                << parent_id
+                << "\""
+                << ",\"status\":\"RUNNING\""
+                << "}";
+
+            return json_response(
+                http::status::accepted,
+                out.str()
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/drop-copy"
+    ) {
+        const auto events =
+            state.drop_copy.recent(
+                100
+            );
+
+        std::ostringstream out;
+
+        out << "[";
+
+        for (
+            std::size_t i = 0;
+            i < events.size();
+            ++i
+        ) {
+            if (i) {
+                out << ",";
+            }
+
+            const auto& event =
+                events[i];
+
+            out
+                << "{"
+                << "\"id\":"
+                << event.id
+                << ",\"timestampNs\":"
+                << event.timestamp_ns
+                << ",\"orderId\":"
+                << event.order_id
+                << ",\"symbol\":"
+                << event.symbol
+                << ",\"eventType\":\""
+                << event.event_type
+                << "\""
+                << ",\"status\":\""
+                << event.status
+                << "\""
+                << ",\"remaining\":"
+                << event.remaining
+                << ",\"rejectReason\":\""
+                << reject_reason_string(
+                       event.reject_reason
+                   )
+                << "\""
+                << "}";
+        }
+
+        out << "]";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/portfolio"
+    ) {
+        const auto positions =
+            state.positions.positions();
+
+        const auto summary =
+            state.portfolio_risk
+                .summarize(
+                    positions
+                );
+
+        std::ostringstream out;
+
+        out
+            << "{"
+            << "\"grossExposure\":"
+            << summary.gross_exposure
+            << ",\"netExposure\":"
+            << summary.net_exposure
+            << ",\"realizedPnl\":"
+            << summary.realized_pnl
+            << ",\"unrealizedPnl\":"
+            << summary.unrealized_pnl
+            << ",\"totalPnl\":"
+            << summary.total_pnl
+            << ",\"positionCount\":"
+            << summary.position_count
+            << ",\"largestPositionSymbol\":\""
+            << summary
+                   .largest_position_symbol
+            << "\""
+            << ",\"largestPositionExposure\":"
+            << summary
+                   .largest_position_exposure
+            << ",\"largestConcentrationPercent\":"
+            << summary
+                   .largest_concentration_percent
+            << "}";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/portfolio/risk"
+    ) {
+        const auto positions =
+            state.positions.positions();
+
+        const auto risk =
+            state.portfolio_risk
+                .evaluate(
+                    positions
+                );
+
+        std::ostringstream out;
+
+        out
+            << "{"
+            << "\"breached\":"
+            << (
+                risk.breached
+                    ? "true"
+                    : "false"
+            )
+            << ",\"grossExposureBreached\":"
+            << (
+                risk
+                    .gross_exposure_breached
+                    ? "true"
+                    : "false"
+            )
+            << ",\"netExposureBreached\":"
+            << (
+                risk
+                    .net_exposure_breached
+                    ? "true"
+                    : "false"
+            )
+            << ",\"concentrationBreached\":"
+            << (
+                risk
+                    .concentration_breached
+                    ? "true"
+                    : "false"
+            )
+            << ",\"dailyLossBreached\":"
+            << (
+                risk
+                    .daily_loss_breached
+                    ? "true"
+                    : "false"
+            )
+            << ",\"grossExposure\":"
+            << risk.summary
+                   .gross_exposure
+            << ",\"netExposure\":"
+            << risk.summary
+                   .net_exposure
+            << ",\"totalPnl\":"
+            << risk.summary
+                   .total_pnl
+            << ",\"largestConcentrationPercent\":"
+            << risk.summary
+                   .largest_concentration_percent
+            << ",\"limits\":{"
+            << "\"maxGrossExposure\":"
+            << risk.limits
+                   .max_gross_exposure
+            << ",\"maxNetExposure\":"
+            << risk.limits
+                   .max_net_exposure
+            << ",\"maxConcentrationPercent\":"
+            << risk.limits
+                   .max_concentration_percent
+            << ",\"maxDailyLoss\":"
+            << risk.limits
+                   .max_daily_loss
+            << "}"
+            << "}";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::post &&
+        target ==
+            "/api/portfolio/risk/limits"
+    ) {
+        try {
+            const auto fields =
+                parse_json_like_body(
+                    req.body()
+                );
+
+            auto limits =
+                state.portfolio_risk
+                    .limits();
+
+            if (
+                fields.count(
+                    "maxGrossExposure"
+                )
+            ) {
+                limits.max_gross_exposure =
+                    std::stod(
+                        fields.at(
+                            "maxGrossExposure"
+                        )
+                    );
+            }
+
+            if (
+                fields.count(
+                    "maxNetExposure"
+                )
+            ) {
+                limits.max_net_exposure =
+                    std::stod(
+                        fields.at(
+                            "maxNetExposure"
+                        )
+                    );
+            }
+
+            if (
+                fields.count(
+                    "maxConcentrationPercent"
+                )
+            ) {
+                limits
+                    .max_concentration_percent =
+                    std::stod(
+                        fields.at(
+                            "maxConcentrationPercent"
+                        )
+                    );
+            }
+
+            if (
+                fields.count(
+                    "maxDailyLoss"
+                )
+            ) {
+                limits.max_daily_loss =
+                    std::stod(
+                        fields.at(
+                            "maxDailyLoss"
+                        )
+                    );
+            }
+
+            state.portfolio_risk
+                .set_limits(
+                    limits
+                );
+
+            state.settings_store
+                .save_portfolio_limits(
+                    limits
+                );
+
+            const auto risk_status =
+                state.portfolio_risk
+                    .evaluate(
+                        state.positions
+                            .positions()
+                    );
+
+            if (
+                risk_status.breached
+            ) {
+                state.exchange
+                    .halt_all();
+            }
+
+            return json_response(
+                http::status::ok,
+                R"({"ok":true})"
+            );
+
+        } catch (
+            const std::exception& ex
+        ) {
+            return json_response(
+                http::status::bad_request,
+                std::string(
+                    "{\"error\":\""
+                ) +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/positions"
+    ) {
+        {
+            const auto quotes =
+                minimatch::
+                    read_live_router_quotes(
+                        "btcusd"
+                    );
+
+            double best_bid = 0.0;
+            double best_ask = 0.0;
+
+            for (const auto& quote : quotes) {
+                if (
+                    !quote.healthy ||
+                    quote.bids.empty() ||
+                    quote.asks.empty()
+                ) {
+                    continue;
+                }
+
+                const double bid =
+                    quote.bids.front().price;
+
+                const double ask =
+                    quote.asks.front().price;
+
+                if (
+                    best_bid == 0.0 ||
+                    bid > best_bid
+                ) {
+                    best_bid = bid;
+                }
+
+                if (
+                    best_ask == 0.0 ||
+                    ask < best_ask
+                ) {
+                    best_ask = ask;
+                }
+            }
+
+            if (
+                best_bid > 0.0 &&
+                best_ask > 0.0
+            ) {
+                state.positions.mark(
+                    "btcusd",
+                    (
+                        best_bid +
+                        best_ask
+                    ) /
+                    2.0
+                );
+            }
+        }
+
+        const auto positions =
+            state.positions.positions();
+
+        std::ostringstream out;
+        out << "[";
+
+        for (
+            std::size_t i = 0;
+            i < positions.size();
+            ++i
+        ) {
+            if (i) {
+                out << ",";
+            }
+
+            const auto& position =
+                positions[i];
+
+            out
+                << "{"
+                << "\"symbol\":\""
+                << position.symbol
+                << "\""
+                << ",\"netQuantity\":"
+                << position.net_quantity
+                << ",\"averageCost\":"
+                << position.average_cost
+                << ",\"markPrice\":"
+                << position.mark_price
+                << ",\"realizedPnl\":"
+                << position.realized_pnl
+                << ",\"unrealizedPnl\":"
+                << position.unrealized_pnl
+                << ",\"totalPnl\":"
+                << (
+                    position.realized_pnl +
+                    position.unrealized_pnl
+                )
+                << "}";
+        }
+
+        out << "]";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target.rfind(
+            "/api/positions/",
+            0
+        ) == 0
+    ) {
+        const std::string symbol =
+            target.substr(
+                std::string(
+                    "/api/positions/"
+                ).size()
+            );
+
+        if (symbol.empty()) {
+            return json_response(
+                http::status::bad_request,
+                R"({"error":"symbol required"})"
+            );
+        }
+
+        {
+            const auto quotes =
+                minimatch::
+                    read_live_router_quotes(
+                        symbol
+                    );
+
+            double best_bid = 0.0;
+            double best_ask = 0.0;
+
+            for (const auto& quote : quotes) {
+                if (
+                    !quote.healthy ||
+                    quote.bids.empty() ||
+                    quote.asks.empty()
+                ) {
+                    continue;
+                }
+
+                const double bid =
+                    quote.bids.front().price;
+
+                const double ask =
+                    quote.asks.front().price;
+
+                if (
+                    best_bid == 0.0 ||
+                    bid > best_bid
+                ) {
+                    best_bid = bid;
+                }
+
+                if (
+                    best_ask == 0.0 ||
+                    ask < best_ask
+                ) {
+                    best_ask = ask;
+                }
+            }
+
+            if (
+                best_bid > 0.0 &&
+                best_ask > 0.0
+            ) {
+                state.positions.mark(
+                    symbol,
+                    (
+                        best_bid +
+                        best_ask
+                    ) /
+                    2.0
+                );
+            }
+        }
+
+        const auto position =
+            state.positions.position(
+                symbol
+            );
+
+        std::ostringstream out;
+
+        out
+            << "{"
+            << "\"symbol\":\""
+            << position.symbol
+            << "\""
+            << ",\"netQuantity\":"
+            << position.net_quantity
+            << ",\"averageCost\":"
+            << position.average_cost
+            << ",\"markPrice\":"
+            << position.mark_price
+            << ",\"realizedPnl\":"
+            << position.realized_pnl
+            << ",\"unrealizedPnl\":"
+            << position.unrealized_pnl
+            << ",\"totalPnl\":"
+            << (
+                position.realized_pnl +
+                position.unrealized_pnl
+            )
+            << "}";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+
+    if (
+        req.method() ==
+            http::verb::get &&
+        target ==
+            "/api/algo-orders"
+    ) {
+        const auto orders =
+            state.algo_scheduler.orders();
+
+        std::ostringstream out;
+        out << "[";
+
+        for (
+            std::size_t i = 0;
+            i < orders.size();
+            ++i
+        ) {
+            if (i) {
+                out << ",";
+            }
+
+            const auto& order =
+                orders[i];
+
+            out
+                << "{"
+                << "\"parentOrderId\":\""
+                << order.parent_order_id
+                << "\""
+                << ",\"status\":\""
+                << minimatch::to_string(
+                       order.status
+                   )
+                << "\""
+                << ",\"symbol\":\""
+                << order.symbol
+                << "\""
+                << ",\"currentSlice\":"
+                << order.current_slice
+                << ",\"totalSlices\":"
+                << order.total_slices
+                << ",\"startedAtNs\":"
+                << order.started_at_ns
+                << ",\"nextSliceAtNs\":"
+                << order.next_slice_at_ns
+                << ",\"completedAtNs\":"
+                << order.completed_at_ns
+                << ",\"requestedQuantity\":"
+                << order.requested_quantity
+                << ",\"filledQuantity\":"
+                << order.filled_quantity
+                << ",\"remainingQuantity\":"
+                << order.remaining_quantity
+                << ",\"recovered\":"
+                << (
+                    order.recovered
+                        ? "true"
+                        : "false"
+                )
+                << ",\"recoveryCount\":"
+                << order.recovery_count
+                << ",\"lastRecoveredAtNs\":"
+                << order.last_recovered_at_ns
+                << ",\"arrivalPrice\":"
+                << order.arrival_price
+                << ",\"error\":\""
+                << order.error
+                << "\""
+                << "}";
+        }
+
+        out << "]";
+
+        return json_response(
+            http::status::ok,
+            out.str()
+        );
+    }
+
+    if (
+        target.rfind(
+            "/api/algo-orders/",
+            0
+        ) == 0
+    ) {
+        try {
+            const std::string suffix =
+                target.substr(
+                    std::string(
+                        "/api/algo-orders/"
+                    ).size()
+                );
+
+            const std::string cancel_suffix =
+                "/cancel";
+
+            if (
+                req.method() ==
+                    http::verb::post &&
+                suffix.size() >
+                    cancel_suffix.size() &&
+                suffix.ends_with(
+                    cancel_suffix
+                )
+            ) {
+                const auto id_text =
+                    suffix.substr(
+                        0,
+                        suffix.size() -
+                            cancel_suffix.size()
+                    );
+
+                const auto parent_id =
+                    static_cast<
+                        ParentOrderId
+                    >(
+                        std::stoull(
+                            id_text
+                        )
+                    );
+
+                const bool cancelled =
+                    state.algo_scheduler
+                        .cancel(
+                            parent_id
+                        );
+
+                return json_response(
+                    cancelled
+                        ? http::status::ok
+                        : http::status::
+                              not_found,
+                    cancelled
+                        ? R"({"ok":true})"
+                        : R"({"error":"algo order not found or not running"})"
+                );
+            }
+
+            if (
+                req.method() ==
+                    http::verb::get
+            ) {
+                const auto parent_id =
+                    static_cast<
+                        ParentOrderId
+                    >(
+                        std::stoull(
+                            suffix
+                        )
+                    );
+
+                const auto order =
+                    state.algo_scheduler
+                        .find(
+                            parent_id
+                        );
+
+                if (!order) {
+                    return json_response(
+                        http::status::
+                            not_found,
+                        R"({"error":"algo order not found"})"
+                    );
+                }
+
+                std::ostringstream out;
+
+                out
+                    << "{"
+                    << "\"parentOrderId\":\""
+                    << order
+                           ->parent_order_id
+                    << "\""
+                    << ",\"status\":\""
+                    << minimatch::to_string(
+                           order->status
+                       )
+                    << "\""
+                    << ",\"symbol\":\""
+                    << order->symbol
+                    << "\""
+                    << ",\"currentSlice\":"
+                    << order
+                           ->current_slice
+                    << ",\"totalSlices\":"
+                    << order
+                           ->total_slices
+                    << ",\"startedAtNs\":"
+                    << order
+                           ->started_at_ns
+                    << ",\"nextSliceAtNs\":"
+                    << order
+                           ->next_slice_at_ns
+                    << ",\"completedAtNs\":"
+                    << order
+                           ->completed_at_ns
+                    << ",\"requestedQuantity\":"
+                    << order
+                           ->requested_quantity
+                    << ",\"filledQuantity\":"
+                    << order
+                           ->filled_quantity
+                    << ",\"remainingQuantity\":"
+                    << order
+                           ->remaining_quantity
+                    << ",\"arrivalPrice\":"
+                    << order
+                           ->arrival_price
+                    << ",\"error\":\""
+                    << order->error
+                    << "\""
+                    << "}";
+
+                return json_response(
+                    http::status::ok,
+                    out.str()
+                );
+            }
 
         } catch (
             const std::exception& ex
@@ -2009,7 +5803,6 @@ handle_request(
             );
         }
     }
-
 
     if (
         req.method() ==
@@ -2944,19 +6737,40 @@ int main() {
     try {
         asio::io_context io;
 
+        unsigned short port =
+            8081;
+
+        if (
+            const char* configured =
+                std::getenv(
+                    "MINIMATCH_API_PORT"
+                )
+        ) {
+            port =
+                static_cast<
+                    unsigned short
+                >(
+                    std::stoul(
+                        configured
+                    )
+                );
+        }
+
         tcp::acceptor acceptor(
             io,
             {
                 asio::ip::make_address(
                     "127.0.0.1"
                 ),
-                8081
+                port
             }
         );
 
         std::cout
             << "MiniMatch API listening on "
-            << "http://127.0.0.1:8081\n";
+            << "http://127.0.0.1:"
+            << port
+            << "\n";
 
         while (true) {
             tcp::socket socket(io);
