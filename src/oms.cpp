@@ -91,6 +91,15 @@ ParentOrderId OrderManagementSystem::create_parent(
       }
   );
 
+  notify_mutation(
+      MutationEvent{
+          .type =
+              MutationType::ParentCreated,
+          .parent =
+              parents_.at(id)
+      }
+  );
+
   return id;
 }
 
@@ -169,6 +178,19 @@ ChildOrderId OrderManagementSystem::create_child(
   parent.updated_timestamp_ns =
       request.created_timestamp_ns;
 
+  notify_mutation(
+      MutationEvent{
+          .type =
+              MutationType::ChildCreated,
+          .parent =
+              parents_.at(
+                  request.parent_id
+              ),
+          .child =
+              children_.at(id)
+      }
+  );
+
   return id;
 }
 
@@ -199,6 +221,18 @@ bool OrderManagementSystem::mark_child_working(
   refresh_parent(
       child.parent_id,
       timestamp_ns
+  );
+
+  notify_mutation(
+      MutationEvent{
+          .type =
+              MutationType::ChildUpdated,
+          .parent =
+              parents_.at(
+                  child.parent_id
+              ),
+          .child = child
+      }
   );
 
   return true;
@@ -288,6 +322,19 @@ OrderManagementSystem::record_fill(
       timestamp_ns
   );
 
+  notify_mutation(
+      MutationEvent{
+          .type =
+              MutationType::FillRecorded,
+          .parent =
+              parents_.at(
+                  child.parent_id
+              ),
+          .child = child,
+          .fill = report
+      }
+  );
+
   return report;
 }
 
@@ -317,6 +364,18 @@ bool OrderManagementSystem::cancel_child(
       timestamp_ns
   );
 
+  notify_mutation(
+      MutationEvent{
+          .type =
+              MutationType::ChildUpdated,
+          .parent =
+              parents_.at(
+                  child.parent_id
+              ),
+          .child = child
+      }
+  );
+
   return true;
 }
 
@@ -344,6 +403,18 @@ bool OrderManagementSystem::reject_child(
   refresh_parent(
       child.parent_id,
       timestamp_ns
+  );
+
+  notify_mutation(
+      MutationEvent{
+          .type =
+              MutationType::ChildUpdated,
+          .parent =
+              parents_.at(
+                  child.parent_id
+              ),
+          .child = child
+      }
   );
 
   return true;
@@ -392,6 +463,14 @@ bool OrderManagementSystem::cancel_parent(
   parent.status = OrderStatus::Cancelled;
   parent.updated_timestamp_ns =
       timestamp_ns;
+
+  notify_mutation(
+      MutationEvent{
+          .type =
+              MutationType::ParentUpdated,
+          .parent = parent
+      }
+  );
 
   return true;
 }
@@ -512,6 +591,58 @@ std::size_t
 OrderManagementSystem::execution_report_count()
     const {
   return execution_reports_.size();
+}
+
+void OrderManagementSystem::restore(
+    std::vector<ParentOrder> parents,
+    std::vector<ChildOrder> children,
+    std::vector<OmsExecutionReport> reports
+) {
+  parents_.clear();
+  children_.clear();
+  execution_reports_.clear();
+
+  next_parent_id_ = 1;
+  next_child_id_ = 1;
+  next_execution_report_id_ = 1;
+
+  for (auto& parent : parents) {
+    next_parent_id_ =
+        std::max(
+            next_parent_id_,
+            parent.id + 1
+        );
+
+    parents_.emplace(
+        parent.id,
+        std::move(parent)
+    );
+  }
+
+  for (auto& child : children) {
+    next_child_id_ =
+        std::max(
+            next_child_id_,
+            child.id + 1
+        );
+
+    children_.emplace(
+        child.id,
+        std::move(child)
+    );
+  }
+
+  for (auto& report : reports) {
+    next_execution_report_id_ =
+        std::max(
+            next_execution_report_id_,
+            report.execution_report_id + 1
+        );
+
+    execution_reports_.push_back(
+        std::move(report)
+    );
+  }
 }
 
 void OrderManagementSystem::refresh_parent(

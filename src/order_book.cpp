@@ -73,19 +73,113 @@ void OrderBook::emit_trade(const Node& maker, const OrderRequest& taker, Price p
 }
 
 template <typename Levels>
-void OrderBook::match_against(Levels& levels, const OrderRequest& taker, Quantity& remaining) {
+OrderBook::MatchOutcome
+OrderBook::match_against(
+    Levels& levels,
+    const OrderRequest& taker,
+    Quantity& remaining
+) {
   while (remaining > 0 && !levels.empty()) {
     auto level_it = levels.begin();
     if (!crosses(taker, level_it->first)) break;
     auto& level = level_it->second;
-    while (remaining > 0 && level.head != npos) {
+
+    bool restart_outer =
+        false;
+
+    while (
+        remaining > 0 &&
+        level.head != npos
+    ) {
       const auto maker_idx = level.head;
       auto& maker = nodes_[maker_idx];
-      const Quantity fill = std::min(remaining, maker.remaining);
+
+      if (
+          stp_policy_ !=
+              SelfTradePreventionPolicy::None &&
+          maker.client_id ==
+              taker.client_id
+      ) {
+        if (
+            stp_policy_ ==
+                SelfTradePreventionPolicy::
+                    CancelNewest
+        ) {
+          emit_report(
+              taker.order_id,
+              ExecutionReport::Status::
+                  Cancelled,
+              remaining
+          );
+
+          return MatchOutcome::
+              TakerCancelled;
+        }
+
+        const auto maker_id =
+            maker.id;
+
+        const auto maker_remaining =
+            maker.remaining;
+
+        if (
+            stp_policy_ ==
+                SelfTradePreventionPolicy::
+                    CancelOldest ||
+            stp_policy_ ==
+                SelfTradePreventionPolicy::
+                    CancelBoth
+        ) {
+          remove_without_report(
+              maker_idx
+          );
+
+          emit_report(
+              maker_id,
+              ExecutionReport::Status::
+                  Cancelled,
+              maker_remaining
+          );
+
+          if (
+              stp_policy_ ==
+                  SelfTradePreventionPolicy::
+                      CancelBoth
+          ) {
+            emit_report(
+                taker.order_id,
+                ExecutionReport::Status::
+                    Cancelled,
+                remaining
+            );
+
+            return MatchOutcome::
+                TakerCancelled;
+          }
+
+          restart_outer =
+              true;
+
+          break;
+        }
+      }
+
+      const Quantity fill =
+          std::min(
+              remaining,
+              maker.remaining
+          );
+
       remaining -= fill;
       maker.remaining -= fill;
       level.total -= fill;
-      emit_trade(maker, taker, maker.price, fill);
+
+      emit_trade(
+          maker,
+          taker,
+          maker.price,
+          fill
+      );
       emit_report(maker.id,
                   maker.remaining == 0 ? ExecutionReport::Status::Filled
                                        : ExecutionReport::Status::PartiallyFilled,
@@ -100,8 +194,16 @@ void OrderBook::match_against(Levels& levels, const OrderRequest& taker, Quantit
         --active_count_;
       }
     }
-    if (level.head == npos) levels.erase(level_it);
+    if (restart_outer) {
+      continue;
+    }
+
+    if (level.head == npos) {
+      levels.erase(level_it);
+    }
   }
+
+  return MatchOutcome::Completed;
 }
 
 bool OrderBook::submit(const OrderRequest& r) {
@@ -123,10 +225,34 @@ bool OrderBook::submit(const OrderRequest& r) {
     return false;
   }
 
-  emit_report(r.order_id, ExecutionReport::Status::Accepted, r.quantity);
-  Quantity remaining = r.quantity;
-  if (r.side == Side::Buy) match_against(asks_, r, remaining);
-  else match_against(bids_, r, remaining);
+  emit_report(
+      r.order_id,
+      ExecutionReport::Status::Accepted,
+      r.quantity
+  );
+
+  Quantity remaining =
+      r.quantity;
+
+  const auto outcome =
+      r.side == Side::Buy
+          ? match_against(
+                asks_,
+                r,
+                remaining
+            )
+          : match_against(
+                bids_,
+                r,
+                remaining
+            );
+
+  if (
+      outcome ==
+      MatchOutcome::TakerCancelled
+  ) {
+    return true;
+  }
 
   if (remaining == 0) {
     emit_report(r.order_id, ExecutionReport::Status::Filled, 0);
@@ -341,8 +467,17 @@ std::uint64_t OrderBook::state_hash() const noexcept {
   return hash;
 }
 
-template void OrderBook::match_against<OrderBook::Bids>(OrderBook::Bids&, const OrderRequest&,
-                                                         Quantity&);
-template void OrderBook::match_against<OrderBook::Asks>(OrderBook::Asks&, const OrderRequest&,
-                                                         Quantity&);
+template OrderBook::MatchOutcome
+OrderBook::match_against<OrderBook::Bids>(
+    OrderBook::Bids&,
+    const OrderRequest&,
+    Quantity&
+);
+
+template OrderBook::MatchOutcome
+OrderBook::match_against<OrderBook::Asks>(
+    OrderBook::Asks&,
+    const OrderRequest&,
+    Quantity&
+);
 }  // namespace minimatch

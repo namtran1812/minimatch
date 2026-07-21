@@ -26,7 +26,16 @@ Exchange::Exchange(std::size_t per_symbol_capacity) : per_symbol_capacity_(per_s
 OrderBook& Exchange::book_for(SymbolId symbol) {
   auto it = books_.find(symbol);
   if (it != books_.end()) return *it->second;
-  auto book = std::make_unique<OrderBook>(per_symbol_capacity_, symbol);
+  auto book =
+      std::make_unique<OrderBook>(
+          per_symbol_capacity_,
+          symbol
+      );
+
+  book->set_stp_policy(
+      stp_policy_
+  );
+
   attach_handlers(*book);
   auto [inserted, ok] = books_.emplace(symbol, std::move(book));
   (void)ok;
@@ -42,7 +51,166 @@ void Exchange::attach_handlers(OrderBook& book) {
   });
 }
 
-bool Exchange::submit(const OrderRequest& request) { return book_for(request.symbol).submit(request); }
+bool Exchange::submit(
+    const OrderRequest& request
+) {
+  if (
+      globally_halted_ ||
+      halted_symbols_.contains(
+          request.symbol
+      )
+  ) {
+    if (report_handler_) {
+      report_handler_(
+          ExecutionReport{
+              0,
+              request.order_id,
+              ExecutionReport::Status::
+                  Rejected,
+              request.quantity,
+              RejectReason::
+                  TradingHalted,
+              request.symbol
+          }
+      );
+    }
+
+    return false;
+  }
+
+  if (
+      request.type !=
+          OrderType::Market
+  ) {
+    const auto band_it =
+        price_bands_.find(
+            request.symbol
+        );
+
+    if (
+        band_it !=
+        price_bands_.end()
+    ) {
+      const auto& band =
+          band_it->second;
+
+      const double lower =
+          static_cast<double>(
+              band.reference_price
+          ) *
+          (
+              1.0 -
+              band.band_percent /
+                  100.0
+          );
+
+      const double upper =
+          static_cast<double>(
+              band.reference_price
+          ) *
+          (
+              1.0 +
+              band.band_percent /
+                  100.0
+          );
+
+      if (
+          static_cast<double>(
+              request.price
+          ) < lower ||
+          static_cast<double>(
+              request.price
+          ) > upper
+      ) {
+        if (report_handler_) {
+          report_handler_(
+              ExecutionReport{
+                  0,
+                  request.order_id,
+                  ExecutionReport::Status::
+                      Rejected,
+                  request.quantity,
+                  RejectReason::
+                      PriceBandViolation,
+                  request.symbol
+              }
+          );
+        }
+
+        return false;
+      }
+    }
+  }
+
+  return book_for(
+      request.symbol
+  ).submit(
+      request
+  );
+}
+void Exchange::halt_all() noexcept {
+  globally_halted_ =
+      true;
+}
+
+void Exchange::resume_all() noexcept {
+  globally_halted_ =
+      false;
+}
+
+void Exchange::halt_symbol(
+    SymbolId symbol
+) {
+  halted_symbols_.insert(
+      symbol
+  );
+}
+
+void Exchange::resume_symbol(
+    SymbolId symbol
+) {
+  halted_symbols_.erase(
+      symbol
+  );
+}
+
+bool Exchange::symbol_halted(
+    SymbolId symbol
+) const {
+  return halted_symbols_.contains(
+      symbol
+  );
+}
+
+void Exchange::set_price_band(
+    SymbolId symbol,
+    Price reference_price,
+    double band_percent
+) {
+  if (
+      reference_price <= 0 ||
+      band_percent <= 0.0
+  ) {
+    throw std::invalid_argument(
+        "invalid price band"
+    );
+  }
+
+  price_bands_[symbol] =
+      PriceBand{
+          reference_price,
+          band_percent
+      };
+}
+
+void Exchange::clear_price_band(
+    SymbolId symbol
+) {
+  price_bands_.erase(
+      symbol
+  );
+}
+
 bool Exchange::cancel(const CancelRequest& request) { return book_for(request.symbol).cancel(request); }
 bool Exchange::replace(const ReplaceRequest& request) { return book_for(request.symbol).replace(request); }
 
@@ -86,6 +254,24 @@ void Exchange::on_trade(OrderBook::TradeHandler handler) {
   trade_handler_ = std::move(handler);
   for (auto& [_, book] : books_) attach_handlers(*book);
 }
+void Exchange::set_stp_policy(
+    SelfTradePreventionPolicy policy
+) {
+  stp_policy_ =
+      policy;
+
+  for (
+      auto& [symbol, book] :
+      books_
+  ) {
+    (void)symbol;
+
+    book->set_stp_policy(
+        policy
+    );
+  }
+}
+
 void Exchange::on_report(OrderBook::ReportHandler handler) {
   report_handler_ = std::move(handler);
   for (auto& [_, book] : books_) attach_handlers(*book);
@@ -128,7 +314,16 @@ void Exchange::load_snapshot(const std::string& path) {
     in.read(reinterpret_cast<char*>(orders.data()),
             static_cast<std::streamsize>(orders.size() * sizeof(OrderRequest)));
     if (!in) throw std::runtime_error("truncated snapshot");
-    auto book = std::make_unique<OrderBook>(per_symbol_capacity_, book_header.symbol);
+    auto book =
+        std::make_unique<OrderBook>(
+            per_symbol_capacity_,
+            book_header.symbol
+        );
+
+    book->set_stp_policy(
+        stp_policy_
+    );
+
     attach_handlers(*book);
     book->restore_resting_orders(orders, book_header.sequence);
     if (book->state_hash() != book_header.state_hash) {
