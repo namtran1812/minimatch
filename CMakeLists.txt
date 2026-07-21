@@ -381,7 +381,7 @@ set_tests_properties(
 add_test(
   NAME minimatch_benchmark_regressions
   COMMAND
-    ${CMAKE_SOURCE_DIR}/scripts/check_benchmark_regressions.sh
+    ${CMAKE_SOURCE_DIR}/scripts/test_benchmark_regressions.sh
 )
 
 set_tests_properties(

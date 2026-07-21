@@ -254,9 +254,93 @@ void AlgoStore::initialize_schema() {
 
       arrival_price REAL NOT NULL,
 
-      error TEXT NOT NULL
+      error TEXT NOT NULL,
+
+      recovery_count INTEGER NOT NULL DEFAULT 0,
+      last_recovered_at_ns INTEGER NOT NULL DEFAULT 0
     );
   )SQL");
+
+  /*
+   * Backward-compatible migrations for databases
+   * created before algorithm recovery metadata was
+   * persisted.
+   */
+  {
+    char* error = nullptr;
+
+    const int result = sqlite3_exec(
+        database_,
+        "ALTER TABLE algo_orders "
+        "ADD COLUMN recovery_count "
+        "INTEGER NOT NULL DEFAULT 0;",
+        nullptr,
+        nullptr,
+        &error
+    );
+
+    if (
+        result != SQLITE_OK &&
+        (
+            error == nullptr ||
+            std::string(error).find(
+                "duplicate column name"
+            ) == std::string::npos
+        )
+    ) {
+      const std::string message =
+          error != nullptr
+              ? error
+              : sqlite3_errmsg(database_);
+
+      sqlite3_free(error);
+
+      throw std::runtime_error(
+          "migrate algo recovery_count: " +
+          message
+      );
+    }
+
+    sqlite3_free(error);
+  }
+
+  {
+    char* error = nullptr;
+
+    const int result = sqlite3_exec(
+        database_,
+        "ALTER TABLE algo_orders "
+        "ADD COLUMN last_recovered_at_ns "
+        "INTEGER NOT NULL DEFAULT 0;",
+        nullptr,
+        nullptr,
+        &error
+    );
+
+    if (
+        result != SQLITE_OK &&
+        (
+            error == nullptr ||
+            std::string(error).find(
+                "duplicate column name"
+            ) == std::string::npos
+        )
+    ) {
+      const std::string message =
+          error != nullptr
+              ? error
+              : sqlite3_errmsg(database_);
+
+      sqlite3_free(error);
+
+      throw std::runtime_error(
+          "migrate algo last_recovered_at_ns: " +
+          message
+      );
+    }
+
+    sqlite3_free(error);
+  }
 
   execute(R"SQL(
     CREATE TABLE IF NOT EXISTS
