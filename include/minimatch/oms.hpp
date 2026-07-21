@@ -4,6 +4,7 @@
 #include "minimatch/router.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -100,6 +101,37 @@ struct OmsExecutionReport {
 
 class OrderManagementSystem {
  public:
+  enum class MutationType {
+    ParentCreated,
+    ParentUpdated,
+    ChildCreated,
+    ChildUpdated,
+    FillRecorded
+  };
+
+  struct MutationEvent {
+    MutationType type{
+        MutationType::ParentUpdated
+    };
+
+    std::optional<ParentOrder> parent;
+    std::optional<ChildOrder> child;
+    std::optional<OmsExecutionReport> fill;
+  };
+
+  using MutationCallback =
+      std::function<void(
+          const MutationEvent&
+      )>;
+
+  void set_mutation_callback(
+      MutationCallback callback
+  ) {
+    mutation_callback_ =
+        std::move(callback);
+  }
+
+
   ParentOrderId create_parent(
       const ParentOrderRequest& request,
       std::uint64_t timestamp_ns
@@ -160,6 +192,12 @@ class OrderManagementSystem {
   [[nodiscard]] std::size_t child_count() const;
   [[nodiscard]] std::size_t execution_report_count() const;
 
+  void restore(
+      std::vector<ParentOrder> parents,
+      std::vector<ChildOrder> children,
+      std::vector<OmsExecutionReport> reports
+  );
+
  private:
   ParentOrderId next_parent_id_{1};
   ChildOrderId next_child_id_{1};
@@ -177,6 +215,16 @@ class OrderManagementSystem {
 
   std::vector<OmsExecutionReport>
       execution_reports_;
+
+  MutationCallback mutation_callback_;
+
+  void notify_mutation(
+      MutationEvent event
+  ) const {
+    if (mutation_callback_) {
+      mutation_callback_(event);
+    }
+  }
 
   void refresh_parent(
       ParentOrderId parent_id,

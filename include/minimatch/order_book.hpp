@@ -34,6 +34,17 @@ class OrderBook {
   void on_trade(TradeHandler h) { trade_handler_ = std::move(h); }
   void on_report(ReportHandler h) { report_handler_ = std::move(h); }
 
+  void set_stp_policy(
+      SelfTradePreventionPolicy policy
+  ) noexcept {
+    stp_policy_ = policy;
+  }
+
+  [[nodiscard]]
+  SelfTradePreventionPolicy stp_policy() const noexcept {
+    return stp_policy_;
+  }
+
  private:
   static constexpr std::uint32_t npos = std::numeric_limits<std::uint32_t>::max();
   struct Node {
@@ -68,8 +79,17 @@ class OrderBook {
   bool crosses(const OrderRequest& taker, Price maker_price) const noexcept;
   [[nodiscard]] Quantity available_to_match(const OrderRequest& request) const noexcept;
 
+  enum class MatchOutcome {
+    Completed,
+    TakerCancelled
+  };
+
   template <typename Levels>
-  void match_against(Levels& levels, const OrderRequest& taker, Quantity& remaining);
+  MatchOutcome match_against(
+      Levels& levels,
+      const OrderRequest& taker,
+      Quantity& remaining
+  );
 
   SymbolId symbol_;
   std::vector<Node> nodes_;
@@ -81,6 +101,9 @@ class OrderBook {
   Sequence sequence_{0};
   TradeHandler trade_handler_;
   ReportHandler report_handler_;
+  SelfTradePreventionPolicy stp_policy_{
+      SelfTradePreventionPolicy::None
+  };
 };
 
 }  // namespace minimatch

@@ -14,6 +14,13 @@ constexpr Price MARKET_PRICE = 0;
 constexpr SymbolId DEFAULT_SYMBOL = 1;
 
 enum class Side : std::uint8_t { Buy = 0, Sell = 1 };
+
+enum class SelfTradePreventionPolicy : std::uint8_t {
+  None = 0,
+  CancelNewest = 1,
+  CancelOldest = 2,
+  CancelBoth = 3
+};
 enum class OrderType : std::uint8_t {
   Limit = 0,
   Market = 1,
@@ -32,7 +39,9 @@ enum class RejectReason : std::uint8_t {
   WouldTrade,
   InsufficientLiquidity,
   ClientMismatch,
-  InvalidReplacement
+  InvalidReplacement,
+  TradingHalted,
+  PriceBandViolation
 };
 
 struct OrderRequest {
