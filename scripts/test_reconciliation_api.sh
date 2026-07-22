@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+BUILD_DIR="${BUILD_DIR:-$(pwd)}"
+
 cd "$(dirname "$0")/.."
 
-API="./build/minimatch_api"
+API=""${BUILD_DIR}/minimatch_api""
 PORT="${MINIMATCH_TEST_API_PORT:-18081}"
 URL="http://127.0.0.1:${PORT}"
 

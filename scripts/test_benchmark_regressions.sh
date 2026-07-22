@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+BUILD_DIR="${BUILD_DIR:-$(pwd)}"
+
 cd "$(dirname "$0")/.."
 
 OUTPUT_DIR="benchmark_results/ci"

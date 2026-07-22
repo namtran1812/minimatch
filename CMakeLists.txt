@@ -376,6 +376,9 @@ set_tests_properties(
   PROPERTIES
     WORKING_DIRECTORY
       ${CMAKE_SOURCE_DIR}
+
+    ENVIRONMENT
+      "BUILD_DIR=${CMAKE_BINARY_DIR}"
 )
 
 add_test(
@@ -389,4 +392,7 @@ set_tests_properties(
   PROPERTIES
     WORKING_DIRECTORY
       ${CMAKE_SOURCE_DIR}
+
+    ENVIRONMENT
+      "BUILD_DIR=${CMAKE_BINARY_DIR}"
 )
