@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BUILD_DIR="${BUILD_DIR:-$(pwd)}"
+export BUILD_DIR="${BUILD_DIR:-$(pwd)}"
 
 cd "$(dirname "$0")/.."
 
