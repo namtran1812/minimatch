@@ -84,6 +84,9 @@ jobs:
             --parallel 2
 
       - name: Run sanitizer tests
+        env:
+          MIN_MATCHING_THROUGHPUT: "200000"
+          MAX_MATCHING_P99_NS: "20000"
         run: |
           ctest \
             --test-dir build-asan \
