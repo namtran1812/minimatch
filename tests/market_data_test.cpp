@@ -443,3 +443,260 @@ TEST(MarketData, RejectsCrossedConsolidatedBbo) {
 
 
 }  // namespace
+
+
+namespace {
+
+minimatch::MarketDataSnapshot recovery_snapshot(
+    std::uint64_t sequence
+) {
+  return minimatch::MarketDataSnapshot{
+      .venue = "TEST",
+      .symbol = "BTC-USD",
+      .sequence = sequence,
+      .timestamp_ns = sequence * 100,
+      .bids = {
+          minimatch::MarketDataLevel{
+              .price = 99.0,
+              .quantity = 10.0
+          }
+      },
+      .asks = {
+          minimatch::MarketDataLevel{
+              .price = 101.0,
+              .quantity = 10.0
+          }
+      }
+  };
+}
+
+minimatch::MarketDataUpdate recovery_update(
+    std::uint64_t sequence,
+    double price,
+    double quantity
+) {
+  return minimatch::MarketDataUpdate{
+      .venue = "TEST",
+      .symbol = "BTC-USD",
+      .sequence = sequence,
+      .timestamp_ns = sequence * 100,
+      .side = minimatch::MarketDataSide::Bid,
+      .type =
+          minimatch::MarketDataUpdateType::Upsert,
+      .price = price,
+      .quantity = quantity
+  };
+}
+
+}  // namespace
+
+TEST(
+    MarketDataRecovery,
+    DetectsGapAndBuffersUpdate
+) {
+  minimatch::Level2Book book;
+
+  ASSERT_TRUE(
+      book.apply_snapshot(
+          recovery_snapshot(100)
+      ).accepted
+  );
+
+  const auto decision =
+      book.apply(
+          recovery_update(
+              102,
+              98.0,
+              4.0
+          )
+      );
+
+  EXPECT_FALSE(decision.accepted);
+  EXPECT_TRUE(decision.sequence_gap);
+
+  EXPECT_FALSE(book.synchronized());
+  EXPECT_TRUE(book.recovering());
+
+  EXPECT_EQ(book.sequence(), 100U);
+  EXPECT_EQ(book.missing_sequence(), 101U);
+  EXPECT_EQ(
+      book.buffered_update_count(),
+      1U
+  );
+  EXPECT_EQ(book.sequence_gap_count(), 1U);
+}
+
+TEST(
+    MarketDataRecovery,
+    BuffersAdditionalUpdatesDuringRecovery
+) {
+  minimatch::Level2Book book;
+
+  ASSERT_TRUE(
+      book.apply_snapshot(
+          recovery_snapshot(100)
+      ).accepted
+  );
+
+  static_cast<void>(
+      book.apply(
+          recovery_update(
+              102,
+              98.0,
+              4.0
+          )
+      )
+  );
+
+  static_cast<void>(
+      book.apply(
+          recovery_update(
+              103,
+              97.0,
+              5.0
+          )
+      )
+  );
+
+  EXPECT_TRUE(book.recovering());
+  EXPECT_EQ(
+      book.buffered_update_count(),
+      2U
+  );
+}
+
+TEST(
+    MarketDataRecovery,
+    ReplaysBufferedUpdatesAfterSnapshot
+) {
+  minimatch::Level2Book book;
+
+  ASSERT_TRUE(
+      book.apply_snapshot(
+          recovery_snapshot(100)
+      ).accepted
+  );
+
+  static_cast<void>(
+      book.apply(
+          recovery_update(
+              102,
+              98.0,
+              4.0
+          )
+      )
+  );
+
+  static_cast<void>(
+      book.apply(
+          recovery_update(
+              103,
+              97.0,
+              5.0
+          )
+      )
+  );
+
+  const auto decision =
+      book.apply_snapshot(
+          recovery_snapshot(101)
+      );
+
+  EXPECT_TRUE(decision.accepted);
+  EXPECT_FALSE(decision.sequence_gap);
+
+  EXPECT_TRUE(book.synchronized());
+  EXPECT_FALSE(book.recovering());
+
+  EXPECT_EQ(book.sequence(), 103U);
+  EXPECT_EQ(book.missing_sequence(), 0U);
+  EXPECT_EQ(
+      book.buffered_update_count(),
+      0U
+  );
+  EXPECT_EQ(book.recovery_count(), 1U);
+
+  const auto bids = book.bids(10);
+
+  ASSERT_EQ(bids.size(), 3U);
+  EXPECT_DOUBLE_EQ(bids[1].price, 98.0);
+  EXPECT_DOUBLE_EQ(bids[1].quantity, 4.0);
+  EXPECT_DOUBLE_EQ(bids[2].price, 97.0);
+  EXPECT_DOUBLE_EQ(bids[2].quantity, 5.0);
+}
+
+TEST(
+    MarketDataRecovery,
+    RemainsUnsynchronizedWhenGapStillExists
+) {
+  minimatch::Level2Book book;
+
+  ASSERT_TRUE(
+      book.apply_snapshot(
+          recovery_snapshot(100)
+      ).accepted
+  );
+
+  static_cast<void>(
+      book.apply(
+          recovery_update(
+              103,
+              98.0,
+              4.0
+          )
+      )
+  );
+
+  const auto decision =
+      book.apply_snapshot(
+          recovery_snapshot(101)
+      );
+
+  EXPECT_TRUE(decision.accepted);
+  EXPECT_TRUE(decision.sequence_gap);
+
+  EXPECT_FALSE(book.synchronized());
+  EXPECT_TRUE(book.recovering());
+
+  EXPECT_EQ(book.sequence(), 101U);
+  EXPECT_EQ(book.missing_sequence(), 102U);
+  EXPECT_EQ(
+      book.buffered_update_count(),
+      1U
+  );
+  EXPECT_EQ(book.recovery_count(), 0U);
+}
+
+TEST(
+    MarketDataRecovery,
+    IgnoresStaleAndDuplicateUpdates
+) {
+  minimatch::Level2Book book;
+
+  ASSERT_TRUE(
+      book.apply_snapshot(
+          recovery_snapshot(100)
+      ).accepted
+  );
+
+  const auto stale =
+      book.apply(
+          recovery_update(
+              99,
+              98.0,
+              4.0
+          )
+      );
+
+  EXPECT_FALSE(stale.accepted);
+  EXPECT_FALSE(stale.sequence_gap);
+
+  EXPECT_TRUE(book.synchronized());
+  EXPECT_FALSE(book.recovering());
+
+  EXPECT_EQ(book.sequence(), 100U);
+  EXPECT_EQ(
+      book.buffered_update_count(),
+      0U
+  );
+}

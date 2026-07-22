@@ -108,6 +108,11 @@ class Level2Book {
   [[nodiscard]] std::uint64_t timestamp_ns() const;
 
   [[nodiscard]] bool synchronized() const;
+  [[nodiscard]] bool recovering() const;
+  [[nodiscard]] std::uint64_t missing_sequence() const;
+  [[nodiscard]] std::size_t buffered_update_count() const;
+  [[nodiscard]] std::uint64_t sequence_gap_count() const;
+  [[nodiscard]] std::uint64_t recovery_count() const;
 
   void clear();
 
@@ -124,6 +129,15 @@ class Level2Book {
   std::uint64_t timestamp_ns_{0};
 
   bool synchronized_{false};
+
+  std::map<std::uint64_t, MarketDataUpdate>
+      recovery_buffer_;
+
+  std::uint64_t missing_sequence_{0};
+  std::uint64_t sequence_gap_count_{0};
+  std::uint64_t recovery_count_{0};
+
+  std::size_t max_recovery_buffer_{4096};
 };
 
 class ConsolidatedMarketData {

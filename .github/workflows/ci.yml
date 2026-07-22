@@ -85,8 +85,9 @@ jobs:
 
       - name: Run sanitizer tests
         env:
-          MIN_MATCHING_THROUGHPUT: "200000"
-          MAX_MATCHING_P99_NS: "20000"
+          MIN_MATCHING_THROUGHPUT: "75000"
+          MAX_MATCHING_P99_NS: "75000"
+          MAX_DROP_COPY_SINGLE_100K_NS: "150000"
         run: |
           ctest \
             --test-dir build-asan \

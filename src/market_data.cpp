@@ -154,23 +154,66 @@ MarketDataDecision Level2Book::apply_snapshot(
     );
   }
 
+  const bool was_recovering =
+      !recovery_buffer_.empty() ||
+      missing_sequence_ != 0;
+
+  std::vector<MarketDataUpdate>
+      buffered_updates;
+
+  buffered_updates.reserve(
+      recovery_buffer_.size()
+  );
+
+  for (const auto& [sequence, update] :
+       recovery_buffer_) {
+    static_cast<void>(sequence);
+    buffered_updates.push_back(update);
+  }
+
+  recovery_buffer_.clear();
+
   bids_ = std::move(next_bids);
   asks_ = std::move(next_asks);
 
   sequence_ = snapshot.sequence;
   timestamp_ns_ = snapshot.timestamp_ns;
   synchronized_ = true;
+  missing_sequence_ = 0;
+
+  for (const auto& update :
+       buffered_updates) {
+    if (update.sequence <= sequence_) {
+      continue;
+    }
+
+    static_cast<void>(apply(update));
+  }
+
+  if (was_recovering && synchronized_) {
+    ++recovery_count_;
+  }
 
   return MarketDataDecision{
       .accepted = true,
-      .sequence_gap = false,
+      .sequence_gap = !synchronized_,
       .expected_sequence =
-          snapshot.sequence,
+          synchronized_
+              ? sequence_ + 1
+              : missing_sequence_,
       .received_sequence =
           snapshot.sequence,
-      .message = "snapshot accepted"
+      .message =
+          synchronized_
+              ? (
+                    was_recovering
+                        ? "snapshot accepted and recovery completed"
+                        : "snapshot accepted"
+                )
+              : "snapshot accepted but buffered replay still contains a gap"
   };
 }
+
 
 MarketDataDecision Level2Book::apply(
     const MarketDataUpdate& update
@@ -189,23 +232,70 @@ MarketDataDecision Level2Book::apply(
     );
   }
 
-  if (!synchronized_) {
+  if (update.sequence <= sequence_) {
     return MarketDataDecision{
         .accepted = false,
-        .sequence_gap = true,
-        .expected_sequence = 1,
+        .sequence_gap = false,
+        .expected_sequence =
+            sequence_ + 1,
         .received_sequence =
             update.sequence,
         .message =
-            "snapshot required before incrementals"
+            "stale or duplicate update ignored"
+    };
+  }
+
+  if (!synchronized_) {
+    if (
+        recovery_buffer_.size() >=
+            max_recovery_buffer_ &&
+        !recovery_buffer_.contains(
+            update.sequence
+        )
+    ) {
+      return MarketDataDecision{
+          .accepted = false,
+          .sequence_gap = true,
+          .expected_sequence =
+              missing_sequence_,
+          .received_sequence =
+              update.sequence,
+          .message =
+              "recovery buffer capacity exceeded"
+      };
+    }
+
+    recovery_buffer_.try_emplace(
+        update.sequence,
+        update
+    );
+
+    return MarketDataDecision{
+        .accepted = false,
+        .sequence_gap = true,
+        .expected_sequence =
+            missing_sequence_ != 0
+                ? missing_sequence_
+                : sequence_ + 1,
+        .received_sequence =
+            update.sequence,
+        .message =
+            "incremental buffered during recovery"
     };
   }
 
   const std::uint64_t expected =
       sequence_ + 1;
 
-  if (update.sequence != expected) {
+  if (update.sequence > expected) {
     synchronized_ = false;
+    missing_sequence_ = expected;
+    ++sequence_gap_count_;
+
+    recovery_buffer_.try_emplace(
+        update.sequence,
+        update
+    );
 
     return MarketDataDecision{
         .accepted = false,
@@ -266,7 +356,8 @@ MarketDataDecision Level2Book::apply(
       .expected_sequence = expected,
       .received_sequence =
           update.sequence,
-      .message = "incremental update accepted"
+      .message =
+          "incremental update accepted"
   };
 }
 
@@ -452,13 +543,45 @@ bool Level2Book::synchronized() const {
   return synchronized_;
 }
 
+bool Level2Book::recovering() const {
+  return !synchronized_ &&
+         missing_sequence_ != 0;
+}
+
+std::uint64_t
+Level2Book::missing_sequence() const {
+  return missing_sequence_;
+}
+
+std::size_t
+Level2Book::buffered_update_count() const {
+  return recovery_buffer_.size();
+}
+
+std::uint64_t
+Level2Book::sequence_gap_count() const {
+  return sequence_gap_count_;
+}
+
+std::uint64_t
+Level2Book::recovery_count() const {
+  return recovery_count_;
+}
+
+
 void Level2Book::clear() {
   bids_.clear();
   asks_.clear();
 
+  recovery_buffer_.clear();
+
   sequence_ = 0;
   timestamp_ns_ = 0;
+
   synchronized_ = false;
+  missing_sequence_ = 0;
+  sequence_gap_count_ = 0;
+  recovery_count_ = 0;
 }
 
 MarketDataDecision
