@@ -18,15 +18,15 @@ TEST(ExecutionAnalytics, ConvertsOmsFillsIntoTcaReport) {
   plan.legs.push_back(RouteLeg{
       .venue = "VENUE_A",
       .price = 100.0,
-      .effective_price = 100.05,
       .quantity = 60.0,
+      .effective_price = 100.05,
   });
 
   plan.legs.push_back(RouteLeg{
       .venue = "VENUE_B",
       .price = 100.1,
-      .effective_price = 100.15,
       .quantity = 40.0,
+      .effective_price = 100.15,
   });
 
   const std::vector<OmsExecutionReport> fills{
@@ -82,8 +82,8 @@ TEST(ExecutionAnalytics, IncludesOpportunityCostForUnfilledQuantity) {
   plan.legs.push_back(RouteLeg{
       .venue = "VENUE_A",
       .price = 100.0,
-      .effective_price = 100.0,
       .quantity = 50.0,
+      .effective_price = 100.0,
   });
 
   const std::vector<OmsExecutionReport> fills{
