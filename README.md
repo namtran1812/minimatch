@@ -579,3 +579,27 @@ Live exchange APIs
 License
 
 This project is intended for educational and portfolio use.
+
+---
+
+## Screenshots
+
+### Live Markets
+
+![Live Markets](docs/screenshots/markets.png)
+
+### Smart Order Routing & Execution
+
+![Execution](docs/screenshots/execution.png)
+
+### FIX 4.4 Session Monitor
+
+![FIX](docs/screenshots/fix.png)
+
+### Deterministic Replay
+
+![Replay](docs/screenshots/replay.png)
+
+### Venue Health & Operations
+
+![Operations](docs/screenshots/operations.png)

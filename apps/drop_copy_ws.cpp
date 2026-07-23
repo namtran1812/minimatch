@@ -24,6 +24,11 @@ struct Event {
   std::string json;
 };
 
+struct TradeEvent {
+  std::uint64_t sequence{0};
+  std::string json;
+};
+
 std::string fetch_drop_copy(
     const std::string& host,
     const std::string& port
@@ -88,6 +93,122 @@ std::string fetch_drop_copy(
   );
 
   return response.body();
+}
+
+std::string fetch_trades(
+    const std::string& host,
+    const std::string& port
+) {
+  asio::io_context io;
+
+  tcp::resolver resolver(io);
+  beast::tcp_stream stream(io);
+
+  const auto endpoints =
+      resolver.resolve(host, port);
+
+  stream.connect(endpoints);
+
+  http::request<
+      http::empty_body
+  > request{
+      http::verb::get,
+      "/api/trades",
+      11
+  };
+
+  request.set(
+      http::field::host,
+      host
+  );
+
+  request.set(
+      http::field::user_agent,
+      "minimatch-drop-copy-ws"
+  );
+
+  http::write(stream, request);
+
+  beast::flat_buffer buffer;
+
+  http::response<
+      http::string_body
+  > response;
+
+  http::read(
+      stream,
+      buffer,
+      response
+  );
+
+  beast::error_code ec;
+
+  stream.socket().shutdown(
+      tcp::socket::shutdown_both,
+      ec
+  );
+
+  return response.body();
+}
+
+std::vector<TradeEvent>
+parse_trades(
+    const std::string& body
+) {
+  std::vector<TradeEvent> result;
+
+  std::size_t pos = 0;
+
+  while (true) {
+    const auto begin =
+        body.find('{', pos);
+
+    if (begin == std::string::npos) {
+      break;
+    }
+
+    const auto end =
+        body.find('}', begin);
+
+    if (end == std::string::npos) {
+      break;
+    }
+
+    const auto object =
+        body.substr(
+            begin,
+            end - begin + 1
+        );
+
+    static const std::regex
+        sequence_pattern(
+            R"("sequence":([0-9]+))"
+        );
+
+    std::smatch match;
+
+    if (
+        std::regex_search(
+            object,
+            match,
+            sequence_pattern
+        )
+    ) {
+      result.push_back(
+          TradeEvent{
+              .sequence =
+                  std::stoull(
+                      match[1].str()
+                  ),
+              .json = object
+          }
+      );
+    }
+
+    pos = end + 1;
+  }
+
+  return result;
 }
 
 std::vector<Event>
@@ -198,6 +319,9 @@ void run_session(
   std::uint64_t last_seen_id =
       0;
 
+  std::uint64_t last_seen_trade_sequence =
+      0;
+
   const std::string target =
       std::string(
           request.target()
@@ -289,6 +413,43 @@ void run_session(
 
         last_seen_id =
             iterator->id;
+      }
+
+      const auto trade_body =
+          fetch_trades(
+              "127.0.0.1",
+              "8081"
+          );
+
+      const auto trades =
+          parse_trades(
+              trade_body
+          );
+
+      // REST trade feed is newest-first.
+      // Emit oldest-first so the client sees
+      // executions in matching-engine order.
+      for (
+          auto iterator =
+              trades.rbegin();
+          iterator != trades.rend();
+          ++iterator
+      ) {
+        if (
+            iterator->sequence <=
+            last_seen_trade_sequence
+        ) {
+          continue;
+        }
+
+        ws.write(
+            asio::buffer(
+                iterator->json
+            )
+        );
+
+        last_seen_trade_sequence =
+            iterator->sequence;
       }
 
       std::this_thread::

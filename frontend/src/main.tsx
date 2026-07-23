@@ -6,6 +6,9 @@ import {
 } from "@tanstack/react-query";
 
 import App from "./App";
+import {
+  ProductContextProvider,
+} from "./context/ProductContext";
 import { MarketDataProvider } from "./context/MarketDataContext";
 import "./index.css";
 
@@ -22,7 +25,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <MarketDataProvider>
-      <App />
+      <ProductContextProvider>
+        <App />
+      </ProductContextProvider>
     </MarketDataProvider>
     </QueryClientProvider>
   </React.StrictMode>

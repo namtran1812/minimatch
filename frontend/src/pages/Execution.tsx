@@ -128,6 +128,47 @@ export default function Execution() {
         <h1>Execution</h1>
       </div>
 
+      <div className="execution-info">
+        <div className="execution-info__section">
+          <span className="eyebrow">
+            WHAT THIS PAGE DOES
+          </span>
+
+          <p>
+            Execution models how an order is routed across available
+            venues. The smart order router evaluates price, fees,
+            latency, available liquidity, slippage constraints, and
+            venue limits before constructing child executions.
+          </p>
+        </div>
+
+        <div className="execution-info__section">
+          <span className="eyebrow">
+            HOW TO USE
+          </span>
+
+          <p>
+            Configure the parent execution request and preview the
+            proposed route first. Then configure fill probability
+            and latency assumptions and execute the route to inspect
+            simulated child fills, fees, latency, and completion.
+          </p>
+        </div>
+
+        <div className="execution-info__section">
+          <span className="eyebrow">
+            ROUTING MODEL
+          </span>
+
+          <p>
+            Lower effective cost is preferred for buys and higher
+            effective proceeds for sells. Maximum slippage and venue
+            count constrain the route, while execution simulation
+            models partial fills, rejects, and latency.
+          </p>
+        </div>
+      </div>
+
       <div className="terminal-grid">
         <div className="panel">
           <div className="panel-title">
@@ -464,42 +505,86 @@ export default function Execution() {
         </div>
       )}
 
-      <div className="panel">
+      <div className="panel execution-history-panel">
         <div className="panel-title">
-          <h2>
-            Persistent Execution History
-          </h2>
+          <div>
+            <span className="eyebrow">
+              EXECUTION BLOTTER
+            </span>
+            <h2>Persistent Execution History</h2>
+          </div>
+
+          <span>
+            {history.length} RECORDS
+          </span>
         </div>
 
-        {history.length === 0 && (
-          <div className="feedback">
-            No executions stored.
+        <div className="execution-history-table">
+          <div className="execution-history-table__header">
+            <span>ID</span>
+            <span>SYMBOL</span>
+            <span>SIDE</span>
+            <span>FILLED</span>
+            <span>AVG FILL</span>
+            <span>FEES</span>
+            <span>LATENCY</span>
+            <span>STATUS</span>
           </div>
-        )}
 
-        {history.map((item) => (
-          <div
-            className="risk-item"
-            key={item.executionId}
-          >
-            <span>
-              #{item.executionId}
-              {" · "}
-              {item.symbol.toUpperCase()}
-              {" · "}
-              {item.side}
-            </span>
+          <div className="execution-history-table__body">
+            {history.length === 0 && (
+              <div className="feedback">
+                No executions stored.
+              </div>
+            )}
 
-            <strong>
-              {item.filledQuantity}/
-              {item.requestedQuantity}
-              {" · "}
-              {item.averageFillPrice}
-              {" · "}
-              {item.totalLatencyMs} ms
-            </strong>
+            {history.map((item) => (
+              <div
+                className="execution-history-table__row"
+                key={item.executionId}
+              >
+                <span>#{item.executionId}</span>
+
+                <strong>
+                  {item.symbol.toUpperCase()}
+                </strong>
+
+                <span>
+                  {item.side.toUpperCase()}
+                </span>
+
+                <span>
+                  {item.filledQuantity}/
+                  {item.requestedQuantity}
+                </span>
+
+                <span>
+                  {item.averageFillPrice.toFixed(2)}
+                </span>
+
+                <span>
+                  {item.totalFees.toFixed(4)}
+                </span>
+
+                <span>
+                  {item.totalLatencyMs.toFixed(2)} ms
+                </span>
+
+                <strong
+                  className={
+                    item.complete
+                      ? "status-good"
+                      : "status-warn"
+                  }
+                >
+                  {item.complete
+                    ? "COMPLETE"
+                    : "PARTIAL"}
+                </strong>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </section>
   );

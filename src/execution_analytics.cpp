@@ -1,106 +1,113 @@
 #include "minimatch/execution_analytics.hpp"
 
-#include <cmath>
+#include <utility>
+#include <vector>
 
 namespace minimatch {
 
-ExecutionQuality
-ExecutionAnalytics::analyze(
-    const ParentOrder& parent,
-    const std::vector<
-        OmsExecutionReport
-    >& fills,
-    double arrival_price,
-    const std::vector<
-        ExecutionMarkout
-    >& markouts
-) const {
+ExecutionQuality ExecutionAnalytics::analyze(
+    const ParentOrder &parent, const RoutePlan &route_plan,
+    const std::vector<OmsExecutionReport> &fills, double arrival_price,
+    double market_vwap, double ending_price,
+    const std::vector<ExecutionMarkout> &markouts) const {
+  RouteRequest request;
+  request.side = parent.side;
+  request.quantity = parent.quantity;
+
+  std::vector<ExecutionFill> tca_fills;
+  tca_fills.reserve(fills.size());
+
+  for (const auto &fill : fills) {
+    tca_fills.push_back(ExecutionFill{
+        .order_id = fill.child_id,
+        .venue = fill.venue,
+        .price = fill.price,
+        .quantity = fill.quantity,
+        .fee = fill.fee,
+        .timestamp_ns = fill.timestamp_ns,
+    });
+  }
+
+  const TcaReport tca = analyze_execution(
+      request, route_plan, tca_fills, arrival_price, market_vwap, ending_price);
+
   ExecutionQuality result;
 
-  result.parent_order_id =
-      parent.id;
+  result.parent_order_id = parent.id;
+  result.symbol = parent.symbol;
+  result.side = parent.side;
 
-  result.symbol =
-      parent.symbol;
+  result.requested_quantity = tca.ordered_quantity;
 
-  result.side =
-      parent.side;
+  result.filled_quantity = tca.filled_quantity;
 
-  result.requested_quantity =
-      parent.quantity;
+  result.unfilled_quantity = tca.unfilled_quantity;
 
-  result.arrival_price =
-      arrival_price;
+  result.fill_rate = tca.fill_rate;
 
-  for (const auto& fill : fills) {
-    result.filled_quantity +=
-        fill.quantity;
+  result.arrival_price = tca.arrival_price;
 
-    result.total_notional +=
-        fill.notional;
+  result.market_vwap = tca.market_vwap;
 
-    result.total_fees +=
-        fill.fee;
-  }
+  result.ending_price = tca.ending_price;
 
-  if (
-      result.filled_quantity >
-      1e-12
-  ) {
-    result.average_fill_price =
-        result.total_notional /
-        result.filled_quantity;
-  }
+  result.average_fill_price = tca.average_fill_price;
 
-  if (
-      result.arrival_price >
-          1e-12 &&
-      result.average_fill_price >
-          1e-12
-  ) {
-    const double signed_diff =
-        parent.side ==
-                RouteSide::Buy
-            ? (
-                result
-                    .average_fill_price -
-                result
-                    .arrival_price
-              )
-            : (
-                result
-                    .arrival_price -
-                result
-                    .average_fill_price
-              );
+  result.total_notional = tca.gross_notional;
 
-    result
-        .implementation_shortfall_bps =
-        signed_diff /
-        result.arrival_price *
-        10000.0;
+  result.total_fees = tca.fees;
 
-    const double fee_bps =
-        result.total_notional >
-                1e-12
-            ? (
-                result.total_fees /
-                result.total_notional *
-                10000.0
-              )
-            : 0.0;
+  result.arrival_slippage_bps = tca.arrival_slippage_bps;
 
-    result
-        .fee_adjusted_shortfall_bps =
-        result
-            .implementation_shortfall_bps +
-        fee_bps;
-  }
+  result.vwap_slippage_bps = tca.vwap_slippage_bps;
 
-  result.markouts =
-      markouts;
+  result.realized_cost = tca.realized_cost;
+
+  result.opportunity_cost = tca.opportunity_cost;
+
+  result.implementation_shortfall = tca.implementation_shortfall;
+
+  result.implementation_shortfall_bps = tca.implementation_shortfall_bps;
+
+  // TCA implementation shortfall already includes explicit fees.
+  result.fee_adjusted_shortfall_bps = tca.implementation_shortfall_bps;
+
+  result.routing_regret = tca.routing_regret;
+
+  result.routing_regret_bps = tca.routing_regret_bps;
+
+  result.venues = tca.venues;
+
+  result.markouts = markouts;
 
   return result;
 }
 
-}  // namespace minimatch
+
+ExecutionQuality ExecutionAnalytics::analyze(
+    const ParentOrder &parent,
+    const std::vector<OmsExecutionReport> &fills,
+    double arrival_price) const {
+  RoutePlan empty_plan;
+
+  double reference_price = arrival_price;
+
+  if (reference_price <= 0.0) {
+    for (const auto &fill : fills) {
+      if (fill.price > 0.0) {
+        reference_price = fill.price;
+        break;
+      }
+    }
+  }
+
+  if (reference_price <= 0.0) {
+    reference_price = 1.0;
+  }
+
+  return analyze(parent, empty_plan, fills, reference_price, reference_price,
+                 reference_price);
+}
+
+
+} // namespace minimatch

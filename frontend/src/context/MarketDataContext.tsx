@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useContext,
@@ -8,6 +9,7 @@ import {
 
 import {
   useMarketSocket,
+  type BboHistoryPoint,
   type MarketMode,
   type MarketSnapshot,
   type SocketStatus,
@@ -23,6 +25,9 @@ interface MarketDataContextValue {
   snapshot:
     | MarketSnapshot
     | null;
+
+  bboHistory:
+    BboHistoryPoint[];
 
   status:
     SocketStatus;
@@ -56,6 +61,7 @@ export function MarketDataProvider({
 
   const {
     snapshot,
+    bboHistory,
     status,
     sendCommand,
   } =
@@ -69,12 +75,14 @@ export function MarketDataProvider({
         mode,
         setMode,
         snapshot,
+        bboHistory,
         status,
         sendCommand,
       }),
       [
         mode,
         snapshot,
+        bboHistory,
         status,
         sendCommand,
       ]

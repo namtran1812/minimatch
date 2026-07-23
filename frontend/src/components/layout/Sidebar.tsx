@@ -10,6 +10,7 @@ import {
   Network,
   ShieldCheck,
   SlidersHorizontal,
+  NotebookTabs,
 } from "lucide-react";
 
 export type Page =
@@ -24,7 +25,8 @@ export type Page =
   | "backtest"
   | "analytics"
   | "system"
-  | "operations";
+  | "operations"
+  | "journal";
 
 interface Props {
   page: Page;
@@ -48,6 +50,7 @@ const items: Array<{
   { id: "analytics", label: "Analytics", icon: <LineChart size={16} /> },
   { id: "system", label: "System", icon: <Cpu size={16} /> },
   { id: "operations", label: "Operations", icon: <Activity size={16} /> },
+  { id: "journal", label: "Journal", icon: <NotebookTabs size={16} /> },
 ];
 
 export default function Sidebar({ page, onChange }: Props) {

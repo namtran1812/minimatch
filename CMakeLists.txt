@@ -84,6 +84,7 @@ add_library(minimatch
     src/queue_model.cpp
     src/pipeline.cpp
     src/router.cpp
+    src/tca.cpp
     src/live_router_quotes.cpp
     src/router_market_data.cpp
     src/execution_algo.cpp
@@ -313,8 +314,9 @@ if(MINIMATCH_BUILD_TESTS)
     tests/stp_test.cpp
     tests/algo_recovery_test.cpp
     tests/reconciliation_test.cpp
-    tests/drop_copy_lookup_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/router_market_data_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/market_data_test.cpp tests/venue_health_test.cpp tests/latency_stats_test.cpp
-    tests/market_recorder_test.cpp tests/replay_control_test.cpp tests/coinbase_l2_test.cpp tests/binance_l2_test.cpp tests/kraken_l2_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/fix_test.cpp tests/fix_session_test.cpp tests/fix_store_test.cpp tests/fix_gateway_test.cpp tests/execution_risk_test.cpp tests/execution_store_test.cpp)
+    tests/drop_copy_lookup_test.cpp tests/advanced_test.cpp tests/system_test.cpp tests/quant_test.cpp tests/pipeline_test.cpp tests/router_test.cpp tests/tca_test.cpp
+  tests/execution_analytics_test.cpp tests/router_market_data_test.cpp tests/execution_algo_test.cpp tests/execution_replay_test.cpp tests/market_replay_test.cpp tests/market_data_test.cpp tests/venue_health_test.cpp tests/latency_stats_test.cpp
+    tests/market_recorder_test.cpp tests/replay_control_test.cpp tests/coinbase_l2_test.cpp tests/binance_l2_test.cpp tests/kraken_l2_test.cpp tests/backtest_engine_test.cpp tests/execution_engine_test.cpp tests/oms_test.cpp tests/fix_test.cpp tests/itch_test.cpp tests/fix_session_test.cpp tests/fix_store_test.cpp tests/fix_gateway_test.cpp tests/execution_risk_test.cpp tests/execution_store_test.cpp)
   
 
 target_link_libraries(

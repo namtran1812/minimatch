@@ -7,6 +7,17 @@ export interface FixSessionState {
   lastReceivedTimeNs: number;
   lastSentTimeNs: number;
   messageCount: number;
+
+  inboundCount: number;
+  outboundCount: number;
+
+  lastInboundSequence: number;
+  lastOutboundSequence: number;
+
+  resendRequestCount: number;
+  sequenceResetCount: number;
+  rejectCount: number;
+  executionReportCount: number;
 }
 
 export interface FixMessage {

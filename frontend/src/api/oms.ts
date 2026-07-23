@@ -15,16 +15,20 @@ export interface ChildOrder {
   parentId: string;
   venue: string;
   status: string;
+  price: number;
   quantity: number;
   filledQuantity: number;
-  averagePrice: number;
+  remainingQuantity: number;
 }
 
 export interface Fill {
   id: string;
   childOrderId: string;
+  parentId: string;
   price: number;
   quantity: number;
+  notional: number;
+  fee: number;
   venue: string;
   timestamp: number;
 }
@@ -39,4 +43,17 @@ export async function getChildOrders(parentId: string): Promise<ChildOrder[]> {
 
 export async function getFills(parentId: string): Promise<Fill[]> {
   return (await api.get(`/oms/parents/${parentId}/fills`)).data;
+}
+
+export async function cancelChildOrder(
+  childId: string
+): Promise<{ ok: boolean }> {
+  return (
+    await api.post(
+      "/oms/children/cancel",
+      {
+        childId,
+      }
+    )
+  ).data;
 }

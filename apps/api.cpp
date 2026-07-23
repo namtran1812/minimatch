@@ -1,4 +1,6 @@
 #include "minimatch/reconciliation.hpp"
+#include "minimatch/analytics.hpp"
+#include "minimatch/quant.hpp"
 #include "minimatch/exchange.hpp"
 #include "minimatch/fix_store.hpp"
 #include "minimatch/latency_stats.hpp"
@@ -6,6 +8,7 @@
 #include "minimatch/oms_store.hpp"
 #include "minimatch/execution_algo.hpp"
 #include "minimatch/market_replay.hpp"
+#include "minimatch/replay_control.hpp"
 #include "minimatch/backtest_engine.hpp"
 #include "minimatch/risk.hpp"
 #include "minimatch/router.hpp"
@@ -195,6 +198,7 @@ struct ApiState {
     Exchange exchange{100'000};
     RiskEngine risk;
     LatencyStats latency;
+    minimatch::ReplayController replay;
     OrderManagementSystem oms;
     minimatch::OmsStore oms_store{
         "data/oms/minimatch_oms.sqlite"
@@ -481,6 +485,8 @@ struct ApiState {
         );
 
         exchange.on_trade([this](const Trade& trade) {
+            std::lock_guard<std::mutex> lock(mutex);
+
             ++trades;
 
             trade_feed.push_front(trade);
@@ -5096,6 +5102,229 @@ handle_request(
             out.str()
         );
     }
+
+
+    // ---------------------------------------------------------
+    // Quantitative analytics
+    // ---------------------------------------------------------
+
+    if (
+        req.method() == http::verb::get &&
+        target == "/api/analytics/portfolio"
+    ) {
+        try {
+            const std::vector<double> returns{
+                0.012, -0.006, 0.009, 0.004, -0.011,
+                0.015, 0.007, -0.003, 0.010, 0.006,
+                -0.008, 0.013, 0.005, -0.004, 0.011,
+                0.008, -0.002, 0.014, -0.007, 0.009
+            };
+
+            std::vector<double> equity{1.0};
+
+            for (const auto r : returns) {
+                equity.push_back(
+                    equity.back() * (1.0 + r)
+                );
+            }
+
+            const auto metrics =
+                minimatch::calculate_metrics(
+                    returns,
+                    equity,
+                    252.0,
+                    0.0
+                );
+
+            const auto risk =
+                minimatch::historical_risk(
+                    returns,
+                    0.95
+                );
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"maxDrawdown\":"
+                << metrics.max_drawdown
+                << ",\"winRate\":"
+                << metrics.win_rate
+                << ",\"var\":"
+                << risk.value_at_risk
+                << ",\"expectedShortfall\":"
+                << risk.expected_shortfall
+                << "}";
+
+            return json_response(
+                http::status::ok,
+                out.str()
+            );
+
+        } catch (const std::exception& ex) {
+            return json_response(
+                http::status::internal_server_error,
+                std::string("{\"error\":\"") +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
+    if (
+        req.method() == http::verb::get &&
+        target == "/api/analytics/pairs"
+    ) {
+        try {
+            std::vector<double> x;
+            std::vector<double> y;
+
+            x.reserve(100);
+            y.reserve(100);
+
+            for (std::size_t i = 0; i < 100; ++i) {
+                const double xv =
+                    100.0 +
+                    static_cast<double>(i) * 0.15 +
+                    std::sin(
+                        static_cast<double>(i) * 0.2
+                    );
+
+                const double noise =
+                    0.35 *
+                    std::sin(
+                        static_cast<double>(i) * 0.7
+                    );
+
+                x.push_back(xv);
+
+                y.push_back(
+                    12.0 +
+                    1.4 * xv +
+                    noise
+                );
+            }
+
+            const auto model =
+                minimatch::fit_pairs_model(x, y);
+
+            const auto zscores =
+                minimatch::spread_zscores(
+                    x,
+                    y,
+                    model
+                );
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"beta\":"
+                << model.beta
+                << ",\"zscore\":"
+                << zscores.back()
+                << ",\"adfTStatistic\":"
+                << model.adf_t_stat
+                << ",\"stationary\":"
+                << (
+                    model.stationary
+                        ? "true"
+                        : "false"
+                )
+                << "}";
+
+            return json_response(
+                http::status::ok,
+                out.str()
+            );
+
+        } catch (const std::exception& ex) {
+            return json_response(
+                http::status::internal_server_error,
+                std::string("{\"error\":\"") +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
+
+    if (
+        req.method() == http::verb::get &&
+        target == "/api/analytics/options"
+    ) {
+        try {
+            minimatch::OptionInputs inputs{
+                100.0,
+                105.0,
+                0.04,
+                0.01,
+                0.25,
+                0.5
+            };
+
+            const auto bs =
+                minimatch::black_scholes(
+                    minimatch::OptionKind::Call,
+                    inputs
+                );
+
+            auto iv_inputs = inputs;
+            iv_inputs.volatility = 0.15;
+
+            const auto iv =
+                minimatch::implied_volatility(
+                    minimatch::OptionKind::Call,
+                    bs.price,
+                    iv_inputs
+                );
+
+            const auto mc =
+                minimatch::monte_carlo_option_price(
+                    minimatch::OptionKind::Call,
+                    inputs,
+                    100000,
+                    42
+                );
+
+            std::ostringstream out;
+
+            out
+                << "{"
+                << "\"price\":"
+                << bs.price
+                << ",\"impliedVolatility\":"
+                << iv
+                << ",\"delta\":"
+                << bs.delta
+                << ",\"gamma\":"
+                << bs.gamma
+                << ",\"vega\":"
+                << bs.vega
+                << ",\"theta\":"
+                << bs.theta
+                << ",\"rho\":"
+                << bs.rho
+                << ",\"monteCarloPrice\":"
+                << mc
+                << "}";
+
+            return json_response(
+                http::status::ok,
+                out.str()
+            );
+
+        } catch (const std::exception& ex) {
+            return json_response(
+                http::status::internal_server_error,
+                std::string("{\"error\":\"") +
+                    ex.what() +
+                    "\"}"
+            );
+        }
+    }
+
 
     if (
         req.method() ==

@@ -714,6 +714,10 @@ class LiveMarketState {
         << bbo.midpoint
         << ",\"spread\":"
         << bbo.spread
+        << ",\"locked\":"
+        << (bbo.locked ? "true" : "false")
+        << ",\"crossed\":"
+        << (bbo.crossed ? "true" : "false")
         << "},\"venues\":[";
 
     const auto venues =
@@ -766,15 +770,25 @@ class LiveMarketState {
     const auto health_states =
         health_.snapshots(now_ns());
 
-    for (std::size_t index = 0;
-         index < health_states.size();
-         ++index) {
-      if (index > 0) {
+    bool first_health = true;
+
+    for (const auto& health :
+         health_states) {
+      if (
+          std::find(
+              venues.begin(),
+              venues.end(),
+              health.venue
+          ) == venues.end()
+      ) {
+        continue;
+      }
+
+      if (!first_health) {
         output << ',';
       }
 
-      const auto& health =
-          health_states[index];
+      first_health = false;
 
       output
           << '{'

@@ -671,8 +671,7 @@ ConsolidatedMarketData::consolidated_bbo(
     const auto ask = book.best_ask();
 
     if (bid.has_value() &&
-        (!result.valid ||
-         result.bid_venue.empty() ||
+        (result.bid_venue.empty() ||
          bid->price > result.bid_price)) {
       result.bid_price = bid->price;
       result.bid_quantity = bid->quantity;
@@ -680,8 +679,7 @@ ConsolidatedMarketData::consolidated_bbo(
     }
 
     if (ask.has_value() &&
-        (!result.valid ||
-         result.ask_venue.empty() ||
+        (result.ask_venue.empty() ||
          ask->price < result.ask_price)) {
       result.ask_price = ask->price;
       result.ask_quantity = ask->quantity;
@@ -698,16 +696,21 @@ ConsolidatedMarketData::consolidated_bbo(
         result.ask_price -
         result.bid_price;
 
-    if (result.spread <= 0.0) {
+    result.locked =
+        result.spread == 0.0;
+
+    result.crossed =
+        result.spread < 0.0;
+
+    if (result.crossed) {
       result.valid = false;
       result.midpoint = 0.0;
-      return result;
+    } else {
+      result.midpoint =
+          (result.bid_price +
+           result.ask_price) /
+          2.0;
     }
-
-    result.midpoint =
-        (result.bid_price +
-         result.ask_price) /
-        2.0;
   }
 
   return result;

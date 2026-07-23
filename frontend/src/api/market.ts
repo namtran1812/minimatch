@@ -1,9 +1,7 @@
 import { api } from "./client";
 import type {
-  LatencyMetrics,
   OrderBook,
   RiskState,
-  VenueHealth,
 } from "../types/market";
 
 export async function getHealth() {
@@ -16,15 +14,7 @@ export async function getOrderBook(symbol: string): Promise<OrderBook> {
   return response.data;
 }
 
-export async function getVenueHealth(): Promise<VenueHealth[]> {
-  const response = await api.get("/venues");
-  return response.data;
-}
 
-export async function getLatencyMetrics(): Promise<LatencyMetrics> {
-  const response = await api.get("/metrics/latency");
-  return response.data;
-}
 
 export async function getRiskState(): Promise<RiskState> {
   const response = await api.get("/risk");

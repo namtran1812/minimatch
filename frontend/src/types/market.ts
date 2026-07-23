@@ -23,9 +23,23 @@ export interface Trade {
 
 export interface VenueHealth {
   venue: string;
-  status: "HEALTHY" | "DELAYED" | "STALE" | "DISCONNECTED";
-  latencyMs: number;
-  messageRate: number;
+  status:
+    | "unknown"
+    | "healthy"
+    | "delayed"
+    | "stale"
+    | "disconnected";
+  synchronized: boolean;
+  lastMessageNs: number;
+  quoteAgeNs: number;
+  messagesPerSecond: number;
+  messageCount: number;
+  snapshotCount: number;
+  updateCount: number;
+  reconnectCount: number;
+  rejectedCount: number;
+  sequenceGapCount: number;
+  checksumErrorCount: number;
 }
 
 export interface LatencyMetrics {

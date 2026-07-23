@@ -5,6 +5,10 @@ import {
   useState,
 } from "react";
 
+import type {
+  VenueHealth,
+} from "../types/market";
+
 export type MarketMode =
   | "live"
   | "replay";
@@ -32,6 +36,8 @@ export interface MarketBbo {
   askVenue: string;
   midpoint: number;
   spread: number;
+  locked: boolean;
+  crossed: boolean;
 }
 
 export interface RouteLeg {
@@ -49,27 +55,6 @@ export interface RoutePlan {
   averagePrice: number;
   estimatedFees: number;
   legs: RouteLeg[];
-}
-
-export interface VenueHealth {
-  venue: string;
-  status:
-    | "unknown"
-    | "healthy"
-    | "delayed"
-    | "stale"
-    | "disconnected";
-  synchronized: boolean;
-  lastMessageNs: number;
-  quoteAgeNs: number;
-  messagesPerSecond: number;
-  messageCount: number;
-  snapshotCount: number;
-  updateCount: number;
-  reconnectCount: number;
-  rejectedCount: number;
-  sequenceGapCount: number;
-  checksumErrorCount: number;
 }
 
 export interface LatencySnapshot {
@@ -94,6 +79,13 @@ export interface ReplayState {
   checksum: number;
   firstTimestampNs: number;
   currentTimestampNs: number;
+}
+
+export interface BboHistoryPoint {
+  sequence: number;
+  bid: number;
+  midpoint: number | null;
+  ask: number;
 }
 
 export interface MarketSnapshot {
@@ -127,6 +119,7 @@ export interface MarketSnapshot {
 export type SocketStatus =
   | "CONNECTING"
   | "CONNECTED"
+  | "STALE"
   | "DISCONNECTED"
   | "ERROR";
 
@@ -143,10 +136,19 @@ export function useMarketSocket(
       "CONNECTING"
     );
 
+  const [bboHistory, setBboHistory] =
+    useState<BboHistoryPoint[]>([]);
+
   const socketRef =
     useRef<WebSocket | null>(
       null
     );
+
+  const staleTimerRef =
+    useRef<
+      ReturnType<typeof setTimeout>
+      | null
+    >(null);
 
   useEffect(() => {
     let reconnectTimer:
@@ -167,7 +169,7 @@ export function useMarketSocket(
       const liveUrl =
         import.meta.env
           .VITE_MARKET_WS_URL
-        ?? "ws://127.0.0.1:8090";
+        ?? "ws://127.0.0.1:8089";
 
       const replayUrl =
         import.meta.env
@@ -186,6 +188,12 @@ export function useMarketSocket(
         socket;
 
       socket.onopen = () => {
+        if (
+          socketRef.current !== socket
+        ) {
+          return;
+        }
+
         setStatus(
           "CONNECTED"
         );
@@ -194,6 +202,35 @@ export function useMarketSocket(
       socket.onmessage = (
         event
       ) => {
+        if (
+          socketRef.current !== socket
+        ) {
+          return;
+        }
+
+        if (staleTimerRef.current) {
+          clearTimeout(
+            staleTimerRef.current
+          );
+        }
+
+        setStatus(
+          "CONNECTED"
+        );
+
+        staleTimerRef.current =
+          setTimeout(() => {
+            if (
+              socketRef.current !== socket
+            ) {
+              return;
+            }
+
+            setStatus(
+              "STALE"
+            );
+          }, 5000);
+
         try {
           const data =
             JSON.parse(
@@ -209,6 +246,39 @@ export function useMarketSocket(
               "replay_l2_snapshot"
           ) {
             setSnapshot(data);
+
+            if (
+              Number.isFinite(
+                data.bbo.bidPrice
+              ) &&
+              data.bbo.bidPrice > 0 &&
+              Number.isFinite(
+                data.bbo.askPrice
+              ) &&
+              data.bbo.askPrice > 0
+            ) {
+              setBboHistory(
+                (current) => [
+                  ...current.slice(-119),
+                  {
+                    sequence:
+                      current.length > 0
+                        ? current[
+                            current.length - 1
+                          ].sequence + 1
+                        : 1,
+                    bid:
+                      data.bbo.bidPrice,
+                    midpoint:
+                      data.bbo.valid
+                        ? data.bbo.midpoint
+                        : null,
+                    ask:
+                      data.bbo.askPrice,
+                  },
+                ]
+              );
+            }
           }
         } catch (error) {
           console.error(
@@ -219,12 +289,24 @@ export function useMarketSocket(
       };
 
       socket.onerror = () => {
+        if (
+          socketRef.current !== socket
+        ) {
+          return;
+        }
+
         setStatus(
           "ERROR"
         );
       };
 
       socket.onclose = () => {
+        if (
+          socketRef.current !== socket
+        ) {
+          return;
+        }
+
         socketRef.current =
           null;
 
@@ -244,8 +326,6 @@ export function useMarketSocket(
       };
     }
 
-    setSnapshot(null);
-
     connect();
 
     return () => {
@@ -256,6 +336,14 @@ export function useMarketSocket(
       ) {
         clearTimeout(
           reconnectTimer
+        );
+      }
+
+      if (
+        staleTimerRef.current
+      ) {
+        clearTimeout(
+          staleTimerRef.current
         );
       }
 
@@ -295,8 +383,27 @@ export function useMarketSocket(
       []
     );
 
+  const snapshotMatchesMode =
+    snapshot !== null &&
+    (
+      (
+        mode === "live" &&
+        snapshot.type !==
+          "replay_l2_snapshot"
+      ) ||
+      (
+        mode === "replay" &&
+        snapshot.type ===
+          "replay_l2_snapshot"
+      )
+    );
+
   return {
-    snapshot,
+    snapshot:
+      snapshotMatchesMode
+        ? snapshot
+        : null,
+    bboHistory,
     status,
     sendCommand,
   };

@@ -23,3 +23,24 @@ minimatch_fix.sqlite
 # Runtime market-data recordings
 data/recordings/*.bin
 *.market.bin
+build/
+build-asan/
+.dev-logs/
+benchmark_results/
+logs/*.log
+data/algo/
+data/drop_copy/
+data/market/
+data/oms/
+data/settings/
+data/recordings/*.mmdata
+.env
+.env.*
+!.env.example
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+frontend/node_modules/
+frontend/dist/
+.DS_Store

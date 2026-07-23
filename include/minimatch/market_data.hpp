@@ -76,6 +76,9 @@ struct BestBidOffer {
 
   double midpoint{0.0};
   double spread{0.0};
+
+  bool locked{false};
+  bool crossed{false};
 };
 
 class Level2Book {
