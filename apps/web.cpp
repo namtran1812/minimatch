@@ -1787,8 +1787,25 @@ void session(tcp::socket socket, DashboardState& state, const std::string& front
 
 int main(int argc, char** argv) {
   try {
-    const unsigned short port = argc > 1 ? static_cast<unsigned short>(std::stoul(argv[1])) : 8080;
-    const std::string frontend_dir = argc > 2 ? argv[2] : "frontend";
+    unsigned short port = 8080;
+
+    if (argc > 1) {
+      port =
+          static_cast<unsigned short>(
+              std::stoul(argv[1])
+          );
+    } else if (const char* env_port =
+                   std::getenv("PORT")) {
+      port =
+          static_cast<unsigned short>(
+              std::stoul(env_port)
+          );
+    }
+
+    const std::string frontend_dir =
+        argc > 2
+            ? argv[2]
+            : "frontend";
     asio::io_context io;
     tcp::acceptor acceptor{io, {tcp::v4(), port}};
     DashboardState state;
