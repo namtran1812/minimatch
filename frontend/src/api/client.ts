@@ -1,14 +1,13 @@
 import axios from "axios";
 
-export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8081/api",
-  timeout: 5000,
-});
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ??
+  (
+    import.meta.env.DEV
+      ? "http://127.0.0.1:8080/api"
+      : undefined
+  );
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error("MiniMatch API error:", error);
-    return Promise.reject(error);
-  }
-);
+export const api = axios.create({
+  baseURL: apiBaseUrl,
+});

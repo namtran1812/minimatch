@@ -169,17 +169,32 @@ export function useMarketSocket(
       const liveUrl =
         import.meta.env
           .VITE_MARKET_WS_URL
-        ?? "ws://127.0.0.1:8089";
+        ?? (
+          import.meta.env.DEV
+            ? "ws://127.0.0.1:8089"
+            : undefined
+        );
 
       const replayUrl =
         import.meta.env
           .VITE_REPLAY_WS_URL
-        ?? "ws://127.0.0.1:8091";
+        ?? (
+          import.meta.env.DEV
+            ? "ws://127.0.0.1:8091"
+            : undefined
+        );
 
       const url =
         mode === "replay"
           ? replayUrl
           : liveUrl;
+
+      if (!url) {
+        setStatus(
+          "DISCONNECTED"
+        );
+        return;
+      }
 
       const socket =
         new WebSocket(url);

@@ -46,3 +46,7 @@ frontend/dist/
 .DS_Store
 .vercel
 .env*
+
+# Node dependencies
+node_modules/
+services/public-assistant/node_modules/

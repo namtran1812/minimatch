@@ -9,41 +9,36 @@ export interface AssistantRequest {
   page: string;
   question: string;
   history: AssistantMessage[];
-
-  context?: {
-    marketStreamStatus: string;
-    marketSnapshot: unknown;
-    systemStats?: unknown;
-    portfolio?: unknown;
-    portfolioRisk?: unknown;
-    positions?: unknown;
-    stpStatus?: unknown;
-    circuitBreaker?: unknown;
-
-    omsParents?: unknown;
-    selectedParentId?: string | null;
-    omsChildren?: unknown;
-    omsFills?: unknown;
-    executionQuality?: unknown;
-    reconciliation?: unknown;
-  };
+  context?: Record<string, unknown>;
 }
 
 export interface AssistantResponse {
   answer: string;
 }
 
+const assistantBaseUrl =
+  import.meta.env
+    .VITE_ASSISTANT_API_URL ??
+  (
+    import.meta.env.DEV
+      ? "http://127.0.0.1:8090/api"
+      : undefined
+  );
+
 const assistantApi =
   axios.create({
-    baseURL:
-      import.meta.env
-        .VITE_ASSISTANT_API_URL ??
-      "http://127.0.0.1:8090/api",
+    baseURL: assistantBaseUrl,
   });
 
 export async function askAssistant(
   request: AssistantRequest
 ): Promise<AssistantResponse> {
+  if (!assistantBaseUrl) {
+    throw new Error(
+      "Assistant service is not configured."
+    );
+  }
+
   return (
     await assistantApi.post(
       "/assistant",

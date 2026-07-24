@@ -1,0 +1,9 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "minimatch-assistant",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-23",
+  "ai": {
+    "binding": "AI"
+  }
+}
