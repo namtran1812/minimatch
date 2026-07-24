@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { asArray } from "./normalize";
 
 export interface FixSessionState {
   sessionId: string;
@@ -39,7 +40,10 @@ export async function getFixSession():
 
 export async function getFixMessages():
   Promise<FixMessage[]> {
-  return (
-    await api.get("/fix/messages")
-  ).data;
+  const response =
+    await api.get("/fix/messages");
+
+  return asArray<FixMessage>(
+    response.data
+  );
 }

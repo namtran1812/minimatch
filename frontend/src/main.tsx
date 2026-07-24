@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 
 import App from "./App";
+import AppErrorBoundary from "./components/system/AppErrorBoundary";
 import {
   ProductContextProvider,
 } from "./context/ProductContext";
@@ -25,9 +26,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <MarketDataProvider>
-      <ProductContextProvider>
-        <App />
-      </ProductContextProvider>
+      <AppErrorBoundary>
+        <ProductContextProvider>
+          <App />
+        </ProductContextProvider>
+      </AppErrorBoundary>
     </MarketDataProvider>
     </QueryClientProvider>
   </React.StrictMode>

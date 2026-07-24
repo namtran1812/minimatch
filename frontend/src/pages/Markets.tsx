@@ -163,8 +163,23 @@ export default function Markets({
           left.price - right.price
       );
 
+  const marketVenues =
+    Array.isArray(snapshot?.venues)
+      ? snapshot.venues
+      : [];
+
+  const venueHealth =
+    Array.isArray(snapshot?.venueHealth)
+      ? snapshot.venueHealth
+      : [];
+
+  const marketLatency =
+    Array.isArray(snapshot?.latency)
+      ? snapshot.latency
+      : [];
+
   const venueLiquidity =
-    (snapshot?.venues ?? []).map(
+    marketVenues.map(
       (venue) => ({
         venue: venue.venue,
         bidLiquidity:
@@ -384,7 +399,7 @@ export default function Markets({
           </strong>
         </div>
 
-        {(snapshot?.venueHealth ?? []).map((venue) => (
+        {venueHealth.map((venue) => (
           <div key={venue.venue}>
             <span>{venue.venue}</span>
             <strong
@@ -419,7 +434,7 @@ export default function Markets({
       </div>
 
       <div className="markets-latency-strip">
-        {(snapshot?.latency ?? []).slice(0, 4).map((item) => {
+        {marketLatency.slice(0, 4).map((item) => {
           const p50 = item.p50Ns / 1_000_000;
           const p95 = item.p95Ns / 1_000_000;
           const p99 = item.p99Ns / 1_000_000;
@@ -490,7 +505,7 @@ export default function Markets({
 
       <div className="markets-workspace">
         <div className="markets-books">
-          {snapshot?.venues.map(
+          {marketVenues.map(
           (venue) => (
             <div
               className="panel"
@@ -592,7 +607,7 @@ export default function Markets({
                     BIDS
                   </span>
 
-                  {venue.bids.map(
+                  {(Array.isArray(venue.bids) ? venue.bids : []).map(
                     (
                       level,
                       index
@@ -633,7 +648,7 @@ export default function Markets({
                     ASKS
                   </span>
 
-                  {venue.asks.map(
+                  {(Array.isArray(venue.asks) ? venue.asks : []).map(
                     (
                       level,
                       index
@@ -849,7 +864,7 @@ function RoutePanel({
             </strong>
           </div>
 
-          {route.legs.map(
+          {(Array.isArray(route.legs) ? route.legs : []).map(
             (leg, index) => (
               <div
                 className="risk-item"

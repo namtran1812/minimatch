@@ -105,11 +105,16 @@ export default function Trading({
     snapshot?.bbo;
 
 
-  const { data: reports = [] } = useQuery({
+  const { data: reportsData } = useQuery({
     queryKey: ["reports"],
     queryFn: getReports,
     refetchInterval: 1000,
   });
+
+  const reports =
+    Array.isArray(reportsData)
+      ? reportsData
+      : [];
 
 
   const { data: risk } = useQuery({
@@ -181,6 +186,11 @@ export default function Trading({
   const globallyHalted =
     systemStatus?.globallyHalted ??
     false;
+
+  const routeLegs =
+    Array.isArray(routePreview?.legs)
+      ? routePreview.legs
+      : [];
 
   const estimatedNotional =
     routePreview?.estimatedNotional ??
@@ -635,7 +645,7 @@ export default function Trading({
             </div>
 
             <div className="trading-route-legs">
-              {(routePreview?.legs ?? []).map(
+              {routeLegs.map(
                 (leg, index) => (
                   <div
                     className="tape-row"
@@ -649,13 +659,15 @@ export default function Trading({
                       @ {leg.price}
                     </span>
                     <span>
-                      FEE {leg.estimatedFee.toFixed(4)}
+                      FEE {Number(
+                        leg.estimatedFee ?? 0
+                      ).toFixed(4)}
                     </span>
                   </div>
                 )
               )}
 
-              {(routePreview?.legs.length ?? 0) === 0 && (
+              {routeLegs.length === 0 && (
                 <div className="feedback">
                   No executable route for the current order.
                 </div>

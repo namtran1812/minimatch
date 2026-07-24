@@ -30,8 +30,14 @@ function formatNumber(
 }
 
 function formatLatency(
-  ns: number
+  value: number | null | undefined
 ) {
+  const ns = Number(value ?? 0);
+
+  if (!Number.isFinite(ns)) {
+    return "—";
+  }
+
   if (ns >= 1_000_000) {
     return `${(
       ns / 1_000_000

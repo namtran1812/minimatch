@@ -220,7 +220,7 @@ export default function Analytics() {
 
             <strong>
               {pairs
-                ? pairs.beta.toFixed(4)
+                ? Number(pairs.beta ?? 0).toFixed(4)
                 : "—"}
             </strong>
           </div>
@@ -230,7 +230,7 @@ export default function Analytics() {
 
             <strong>
               {pairs
-                ? pairs.zscore.toFixed(4)
+                ? Number(pairs.zscore ?? 0).toFixed(4)
                 : "—"}
             </strong>
           </div>
@@ -240,7 +240,7 @@ export default function Analytics() {
 
             <strong>
               {pairs
-                ? pairs.adfTStatistic.toFixed(4)
+                ? Number(pairs.adfTStatistic ?? 0).toFixed(4)
                 : "—"}
             </strong>
           </div>
@@ -268,7 +268,7 @@ export default function Analytics() {
 
             <strong>
               {options
-                ? options.price.toFixed(4)
+                ? Number(options.price ?? 0).toFixed(4)
                 : "—"}
             </strong>
           </div>
@@ -278,7 +278,7 @@ export default function Analytics() {
 
             <strong>
               {options
-                ? options.monteCarloPrice.toFixed(4)
+                ? Number(options.monteCarloPrice ?? 0).toFixed(4)
                 : "—"}
             </strong>
           </div>
@@ -301,7 +301,7 @@ export default function Analytics() {
               <span>DELTA</span>
               <strong>
                 {options
-                  ? options.delta.toFixed(4)
+                  ? Number(options.delta ?? 0).toFixed(4)
                   : "—"}
               </strong>
             </div>
@@ -310,7 +310,7 @@ export default function Analytics() {
               <span>GAMMA</span>
               <strong>
                 {options
-                  ? options.gamma.toFixed(4)
+                  ? Number(options.gamma ?? 0).toFixed(4)
                   : "—"}
               </strong>
             </div>
@@ -319,7 +319,7 @@ export default function Analytics() {
               <span>VEGA</span>
               <strong>
                 {options
-                  ? options.vega.toFixed(4)
+                  ? Number(options.vega ?? 0).toFixed(4)
                   : "—"}
               </strong>
             </div>
@@ -376,7 +376,7 @@ export default function Analytics() {
               <span>BLACK-SCHOLES</span>
 
               <strong>
-                {options.price.toFixed(4)}
+                {Number(options.price ?? 0).toFixed(4)}
               </strong>
             </div>
 
@@ -384,7 +384,7 @@ export default function Analytics() {
               <span>MONTE CARLO</span>
 
               <strong>
-                {options.monteCarloPrice.toFixed(4)}
+                {Number(options.monteCarloPrice ?? 0).toFixed(4)}
               </strong>
             </div>
 

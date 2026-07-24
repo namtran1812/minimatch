@@ -279,7 +279,7 @@ export default function Replay() {
               </span>
 
               <strong>
-                {progress.toFixed(1)}%
+                {Number(progress ?? 0).toFixed(1)}%
               </strong>
 
               <span className="metric-detail">
@@ -395,7 +395,7 @@ export default function Replay() {
                 </span>
 
                 <strong>
-                  {displayedProgress.toFixed(
+                  {Number(displayedProgress ?? 0).toFixed(
                     1
                   )}
                   %

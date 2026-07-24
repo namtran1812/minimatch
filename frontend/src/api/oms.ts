@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { asArray } from "./normalize";
 
 export interface ParentOrder {
   id: string;
@@ -34,15 +35,34 @@ export interface Fill {
 }
 
 export async function getParentOrders(): Promise<ParentOrder[]> {
-  return (await api.get("/oms/parents")).data;
+  const response =
+    await api.get("/oms/parents");
+
+  return asArray<ParentOrder>(
+    response.data
+  );
 }
 
 export async function getChildOrders(parentId: string): Promise<ChildOrder[]> {
-  return (await api.get(`/oms/parents/${parentId}/children`)).data;
+  const response =
+    await api.get(
+      `/oms/parents/${parentId}/children`
+    );
+
+  return asArray<ChildOrder>(
+    response.data
+  );
 }
 
 export async function getFills(parentId: string): Promise<Fill[]> {
-  return (await api.get(`/oms/parents/${parentId}/fills`)).data;
+  const response =
+    await api.get(
+      `/oms/parents/${parentId}/fills`
+    );
+
+  return asArray<Fill>(
+    response.data
+  );
 }
 
 export async function cancelChildOrder(

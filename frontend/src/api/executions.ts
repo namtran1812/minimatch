@@ -1,4 +1,5 @@
 import { api } from "./client";
+import { asArray } from "./normalize";
 
 export interface RouteLeg {
   venue: string;
@@ -95,9 +96,12 @@ export async function createExecution(
 
 export async function getExecutions():
   Promise<RoutedExecution[]> {
-  return (
-    await api.get("/executions")
-  ).data;
+  const response =
+    await api.get("/executions");
+
+  return asArray<RoutedExecution>(
+    response.data
+  );
 }
 
 export async function getExecution(

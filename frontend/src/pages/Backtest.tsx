@@ -401,7 +401,7 @@ export default function Backtest() {
 
           <strong>
             {result
-              ? `${result.implementationShortfallBps.toFixed(2)} bps`
+              ? `${Number(result.implementationShortfallBps ?? 0).toFixed(2)} bps`
               : "—"}
           </strong>
 
@@ -417,7 +417,7 @@ export default function Backtest() {
 
           <strong>
             {result
-              ? `${result.vwapSlippageBps.toFixed(2)} bps`
+              ? `${Number(result.vwapSlippageBps ?? 0).toFixed(2)} bps`
               : "—"}
           </strong>
 

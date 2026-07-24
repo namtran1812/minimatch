@@ -39,7 +39,10 @@ export default function Overview() {
     refetchInterval: 2000,
   });
 
-  const venues = snapshot?.venueHealth ?? [];
+  const venues =
+    Array.isArray(snapshot?.venueHealth)
+      ? snapshot.venueHealth
+      : [];
 
   const healthyVenues = venues.filter(
     (venue) =>
@@ -49,7 +52,10 @@ export default function Overview() {
 
   const messageRate = venues.reduce(
     (sum, venue) =>
-      sum + venue.messagesPerSecond,
+      sum +
+      Number(
+        venue.messagesPerSecond ?? 0
+      ),
     0
   );
 
@@ -386,7 +392,9 @@ export default function Overview() {
             <span>CONCENTRATION</span>
             <strong>
               {portfolio
-                ? `${portfolio.largestConcentrationPercent.toFixed(2)}%`
+                ? `${Number(
+                    portfolio.largestConcentrationPercent ?? 0
+                  ).toFixed(2)}%`
                 : "—"}
             </strong>
           </div>
@@ -514,14 +522,18 @@ export default function Overview() {
 
                 <span>
                   {(
-                    venue.quoteAgeNs /
+                    Number(
+                      venue.quoteAgeNs ?? 0
+                    ) /
                     1_000_000
                   ).toFixed(2)}
                   {" ms"}
                 </span>
 
                 <strong>
-                  {venue.messagesPerSecond.toFixed(2)}
+                  {Number(
+                    venue.messagesPerSecond ?? 0
+                  ).toFixed(2)}
                   {"/s"}
                 </strong>
               </div>

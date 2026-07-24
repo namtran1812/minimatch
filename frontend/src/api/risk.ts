@@ -1,4 +1,11 @@
 import { api } from "./client";
+import {
+  asArray,
+  asBoolean,
+  asNumber,
+  asObject,
+  asString,
+} from "./normalize";
 
 export interface PortfolioSummary {
   grossExposure: number;
@@ -46,23 +53,143 @@ export interface Position {
 
 export async function getPortfolio():
   Promise<PortfolioSummary> {
-  return (
-    await api.get("/portfolio")
-  ).data;
+  const response =
+    await api.get("/portfolio");
+
+  const raw =
+    asObject(response.data);
+
+  const nested =
+    Object.keys(
+      asObject(raw.portfolio)
+    ).length > 0
+      ? asObject(raw.portfolio)
+      : raw;
+
+  return {
+    grossExposure:
+      asNumber(nested.grossExposure),
+
+    netExposure:
+      asNumber(nested.netExposure),
+
+    realizedPnl:
+      asNumber(nested.realizedPnl),
+
+    unrealizedPnl:
+      asNumber(nested.unrealizedPnl),
+
+    totalPnl:
+      asNumber(nested.totalPnl),
+
+    positionCount:
+      asNumber(nested.positionCount),
+
+    largestPositionSymbol:
+      asString(
+        nested.largestPositionSymbol
+      ),
+
+    largestPositionExposure:
+      asNumber(
+        nested.largestPositionExposure
+      ),
+
+    largestConcentrationPercent:
+      asNumber(
+        nested.largestConcentrationPercent
+      ),
+  };
 }
 
 export async function getPortfolioRisk():
   Promise<PortfolioRisk> {
-  return (
-    await api.get("/portfolio/risk")
-  ).data;
+  const response =
+    await api.get("/portfolio/risk");
+
+  const raw =
+    asObject(response.data);
+
+  const nested =
+    Object.keys(
+      asObject(raw.risk)
+    ).length > 0
+      ? asObject(raw.risk)
+      : raw;
+
+  const limits =
+    asObject(nested.limits);
+
+  return {
+    breached:
+      asBoolean(nested.breached),
+
+    grossExposureBreached:
+      asBoolean(
+        nested.grossExposureBreached
+      ),
+
+    netExposureBreached:
+      asBoolean(
+        nested.netExposureBreached
+      ),
+
+    concentrationBreached:
+      asBoolean(
+        nested.concentrationBreached
+      ),
+
+    dailyLossBreached:
+      asBoolean(
+        nested.dailyLossBreached
+      ),
+
+    grossExposure:
+      asNumber(nested.grossExposure),
+
+    netExposure:
+      asNumber(nested.netExposure),
+
+    totalPnl:
+      asNumber(nested.totalPnl),
+
+    largestConcentrationPercent:
+      asNumber(
+        nested.largestConcentrationPercent
+      ),
+
+    limits: {
+      maxGrossExposure:
+        asNumber(
+          limits.maxGrossExposure
+        ),
+
+      maxNetExposure:
+        asNumber(
+          limits.maxNetExposure
+        ),
+
+      maxConcentrationPercent:
+        asNumber(
+          limits.maxConcentrationPercent
+        ),
+
+      maxDailyLoss:
+        asNumber(
+          limits.maxDailyLoss
+        ),
+    },
+  };
 }
 
 export async function getPositions():
   Promise<Position[]> {
-  return (
-    await api.get("/positions")
-  ).data;
+  const response =
+    await api.get("/positions");
+
+  return asArray<Position>(
+    response.data
+  );
 }
 
 export async function updatePortfolioRiskLimits(

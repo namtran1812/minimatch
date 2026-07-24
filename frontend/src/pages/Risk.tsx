@@ -239,26 +239,22 @@ export default function Risk({
 
   const effectiveMaxGrossExposure =
     maxGrossExposure ??
-    portfolioRisk?.limits
-      .maxGrossExposure ??
+    portfolioRisk?.limits?.maxGrossExposure ??
     0;
 
   const effectiveMaxNetExposure =
     maxNetExposure ??
-    portfolioRisk?.limits
-      .maxNetExposure ??
+    portfolioRisk?.limits?.maxNetExposure ??
     0;
 
   const effectiveMaxConcentration =
     maxConcentrationPercent ??
-    portfolioRisk?.limits
-      .maxConcentrationPercent ??
+    portfolioRisk?.limits?.maxConcentrationPercent ??
     0;
 
   const effectiveMaxDailyLoss =
     maxDailyLoss ??
-    portfolioRisk?.limits
-      .maxDailyLoss ??
+    portfolioRisk?.limits?.maxDailyLoss ??
     0;
 
   async function handleApplyStp() {
@@ -563,8 +559,7 @@ export default function Risk({
 
   const grossUtilization =
     portfolioRisk &&
-    portfolioRisk.limits
-      .maxGrossExposure > 0
+    portfolioRisk.limits?.maxGrossExposure > 0
       ? Math.abs(
           portfolioRisk.grossExposure
         ) /
@@ -575,8 +570,7 @@ export default function Risk({
 
   const netUtilization =
     portfolioRisk &&
-    portfolioRisk.limits
-      .maxNetExposure > 0
+    portfolioRisk.limits?.maxNetExposure > 0
       ? Math.abs(
           portfolioRisk.netExposure
         ) /
@@ -587,8 +581,7 @@ export default function Risk({
 
   const concentrationUtilization =
     portfolioRisk &&
-    portfolioRisk.limits
-      .maxConcentrationPercent > 0
+    portfolioRisk.limits?.maxConcentrationPercent > 0
       ? portfolioRisk
           .largestConcentrationPercent /
         portfolioRisk.limits
@@ -598,8 +591,7 @@ export default function Risk({
 
   const dailyLossUtilization =
     portfolioRisk &&
-    portfolioRisk.limits
-      .maxDailyLoss > 0
+    portfolioRisk.limits?.maxDailyLoss > 0
       ? Math.max(
           0,
           -portfolioRisk.totalPnl
@@ -865,7 +857,7 @@ export default function Risk({
 
           <strong>
             {portfolio
-              ? `${portfolio.largestConcentrationPercent.toFixed(2)}%`
+              ? `${Number(portfolio.largestConcentrationPercent ?? 0).toFixed(2)}%`
               : "—"}
           </strong>
         </div>
@@ -913,7 +905,7 @@ export default function Risk({
                           : "risk-utilization--safe"
                     }
                   >
-                    {value.toFixed(1)}%
+                    {Number(value ?? 0).toFixed(1)}%
                   </strong>
                 </div>
 
@@ -951,11 +943,11 @@ export default function Risk({
             }
             maxGrossExposure={
               portfolioRisk.limits
-                .maxGrossExposure
+                ?.maxGrossExposure ?? 0
             }
             maxNetExposure={
               portfolioRisk.limits
-                .maxNetExposure
+                ?.maxNetExposure ?? 0
             }
           />
 
@@ -1252,7 +1244,7 @@ export default function Risk({
               <span>CURRENT MOVE</span>
               <strong>
                 {circuitBreaker
-                  ? `${circuitBreaker.movePercent.toFixed(3)}%`
+                  ? `${Number(circuitBreaker.movePercent ?? 0).toFixed(3)}%`
                   : "—"}
               </strong>
             </div>

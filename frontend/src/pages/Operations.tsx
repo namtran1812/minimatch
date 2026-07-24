@@ -72,10 +72,14 @@ export default function Operations() {
   });
 
   const venues =
-    snapshot?.venueHealth ?? [];
+    Array.isArray(snapshot?.venueHealth)
+      ? snapshot.venueHealth
+      : [];
 
   const latency =
-    snapshot?.latency ?? [];
+    Array.isArray(snapshot?.latency)
+      ? snapshot.latency
+      : [];
 
   const healthyCount =
     venues.filter(
@@ -89,7 +93,9 @@ export default function Operations() {
     venues.reduce(
       (sum, venue) =>
         sum +
-        venue.messagesPerSecond,
+        Number(
+          venue.messagesPerSecond ?? 0
+        ),
       0
     );
 
@@ -382,7 +388,9 @@ export default function Operations() {
                   <strong>
                     {formatNumber(
                       nsToMs(
-                        venue.quoteAgeNs
+                        Number(
+                          venue.quoteAgeNs ?? 0
+                        )
                       )
                     )} ms
                   </strong>
