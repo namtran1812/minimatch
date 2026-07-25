@@ -1289,12 +1289,20 @@ void handle_dashboard_client(
 
 int main(int argc, char** argv) {
   try {
-    const unsigned short port =
-        argc > 1
-            ? static_cast<unsigned short>(
-                  std::stoul(argv[1])
-              )
-            : 8089;
+    unsigned short port = 8089;
+
+    if (argc > 1) {
+      port =
+          static_cast<unsigned short>(
+              std::stoul(argv[1])
+          );
+    } else if (const char* env_port =
+                   std::getenv("PORT")) {
+      port =
+          static_cast<unsigned short>(
+              std::stoul(env_port)
+          );
+    }
 
     const std::string product_id =
         argc > 2
