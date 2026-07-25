@@ -1363,6 +1363,13 @@ http::response<http::string_body> handle_request(DashboardState& state,
       );
     }
 
+    if (req.method() == http::verb::get && path == "/api/live") {
+      return response(
+          http::status::ok,
+          "{\"status\":\"ok\"}"
+      );
+    }
+
     if (req.method() == http::verb::get && path == "/api/health") {
       const auto query = parse_query(target);
 
