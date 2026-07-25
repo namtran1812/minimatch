@@ -7007,33 +7007,55 @@ int main() {
         while (true) {
             tcp::socket socket(io);
 
-            acceptor.accept(socket);
+            beast::error_code ec;
+            acceptor.accept(socket, ec);
+
+            if (ec) {
+                std::cerr
+                    << "Accept error: "
+                    << ec.message()
+                    << "\\n";
+                continue;
+            }
 
             beast::flat_buffer buffer;
+            http::request<http::string_body> req;
 
-            http::request<
-                http::string_body
-            > req;
+            http::read(socket, buffer, req, ec);
 
-            http::read(
-                socket,
-                buffer,
-                req
-            );
+            if (ec == http::error::end_of_stream) {
+                socket.shutdown(
+                    tcp::socket::shutdown_both,
+                    ec
+                );
+                continue;
+            }
 
-            auto res =
-                handle_request(req);
+            if (ec) {
+                std::cerr
+                    << "HTTP read error: "
+                    << ec.message()
+                    << "\\n";
+                socket.shutdown(
+                    tcp::socket::shutdown_both,
+                    ec
+                );
+                continue;
+            }
 
-            http::write(
-                socket,
-                res
-            );
+            auto res = handle_request(req);
 
-            beast::error_code ec;
+            http::write(socket, res, ec);
+
+            if (ec) {
+                std::cerr
+                    << "HTTP write error: "
+                    << ec.message()
+                    << "\\n";
+            }
 
             socket.shutdown(
-                tcp::socket::
-                    shutdown_send,
+                tcp::socket::shutdown_send,
                 ec
             );
         }
