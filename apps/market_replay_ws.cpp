@@ -567,7 +567,15 @@ void handle_client(
           )
   );
 
-  stream.accept();
+  try {
+    stream.accept();
+  } catch (const boost::system::system_error& error) {
+    std::cerr
+        << "Replay WebSocket handshake rejected: "
+        << error.what()
+        << '\n';
+    return;
+  }
 
   auto controller =
       std::make_shared<
