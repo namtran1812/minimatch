@@ -365,6 +365,8 @@ target_link_libraries(
     minimatch_drop_copy_ws
     PRIVATE
     minimatch
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 
 add_test(

@@ -1,4 +1,6 @@
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/beast/ssl.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/websocket.hpp>
 
@@ -11,6 +13,8 @@
 #include <vector>
 
 namespace asio = boost::asio;
+namespace ssl = asio::ssl;
+namespace ssl = asio::ssl;
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace websocket = beast::websocket;
@@ -29,126 +33,121 @@ struct TradeEvent {
   std::string json;
 };
 
-std::string fetch_drop_copy(
+std::string fetch_api(
     const std::string& host,
-    const std::string& port
+    const std::string& port,
+    const std::string& target
 ) {
   asio::io_context io;
-
   tcp::resolver resolver(io);
 
-  beast::tcp_stream stream(io);
-
   const auto endpoints =
-      resolver.resolve(
-          host,
-          port
-      );
+      resolver.resolve(host, port);
 
-  stream.connect(
-      endpoints
-  );
-
-  http::request<
-      http::empty_body
-  > request{
+  http::request<http::empty_body> request{
       http::verb::get,
-      "/api/drop-copy",
+      target,
       11
   };
 
-  request.set(
-      http::field::host,
-      host
-  );
-
+  request.set(http::field::host, host);
   request.set(
       http::field::user_agent,
       "minimatch-drop-copy-ws"
   );
 
-  http::write(
-      stream,
-      request
-  );
-
   beast::flat_buffer buffer;
+  http::response<http::string_body> response;
 
-  http::response<
-      http::string_body
-  > response;
+  const bool use_tls =
+      port == "443" ||
+      host != "127.0.0.1";
 
-  http::read(
-      stream,
-      buffer,
-      response
-  );
+  if (use_tls) {
+    ssl::context context(
+        ssl::context::tls_client
+    );
 
-  beast::error_code ec;
+    context.set_default_verify_paths();
+    context.set_verify_mode(
+        ssl::verify_peer
+    );
 
-  stream.socket().shutdown(
-      tcp::socket::
-          shutdown_both,
-      ec
-  );
+    beast::ssl_stream<
+        beast::tcp_stream
+    > stream(io, context);
+
+    if (!SSL_set_tlsext_host_name(
+            stream.native_handle(),
+            host.c_str()
+        )) {
+      throw beast::system_error(
+          static_cast<int>(
+              ::ERR_get_error()
+          ),
+          asio::error::get_ssl_category()
+      );
+    }
+
+    beast::get_lowest_layer(stream)
+        .connect(endpoints);
+
+    stream.handshake(
+        ssl::stream_base::client
+    );
+
+    http::write(stream, request);
+    http::read(stream, buffer, response);
+
+    beast::error_code ec;
+    stream.shutdown(ec);
+  } else {
+    beast::tcp_stream stream(io);
+
+    stream.connect(endpoints);
+    http::write(stream, request);
+    http::read(stream, buffer, response);
+
+    beast::error_code ec;
+    stream.socket().shutdown(
+        tcp::socket::shutdown_both,
+        ec
+    );
+  }
+
+  if (response.result_int() < 200 ||
+      response.result_int() >= 300) {
+    throw std::runtime_error(
+        "MiniMatch API returned HTTP " +
+        std::to_string(
+            response.result_int()
+        )
+    );
+  }
 
   return response.body();
+}
+
+std::string fetch_drop_copy(
+    const std::string& host,
+    const std::string& port
+) {
+  return fetch_api(
+      host,
+      port,
+      "/api/drop-copy"
+  );
 }
 
 std::string fetch_trades(
     const std::string& host,
     const std::string& port
 ) {
-  asio::io_context io;
-
-  tcp::resolver resolver(io);
-  beast::tcp_stream stream(io);
-
-  const auto endpoints =
-      resolver.resolve(host, port);
-
-  stream.connect(endpoints);
-
-  http::request<
-      http::empty_body
-  > request{
-      http::verb::get,
-      "/api/trades",
-      11
-  };
-
-  request.set(
-      http::field::host,
-      host
+  return fetch_api(
+      host,
+      port,
+      "/api/trades"
   );
-
-  request.set(
-      http::field::user_agent,
-      "minimatch-drop-copy-ws"
-  );
-
-  http::write(stream, request);
-
-  beast::flat_buffer buffer;
-
-  http::response<
-      http::string_body
-  > response;
-
-  http::read(
-      stream,
-      buffer,
-      response
-  );
-
-  beast::error_code ec;
-
-  stream.socket().shutdown(
-      tcp::socket::shutdown_both,
-      ec
-  );
-
-  return response.body();
 }
 
 std::vector<TradeEvent>
@@ -288,6 +287,16 @@ parse_events(
 void run_session(
     tcp::socket socket
 ) {
+  const std::string api_host =
+      std::getenv("MINIMATCH_API_HOST")
+          ? std::getenv("MINIMATCH_API_HOST")
+          : "127.0.0.1";
+
+  const std::string api_port =
+      std::getenv("MINIMATCH_API_PORT")
+          ? std::getenv("MINIMATCH_API_PORT")
+          : "8081";
+
   websocket::stream<
       tcp::socket
   > ws(
@@ -380,8 +389,8 @@ void run_session(
     try {
       const auto body =
           fetch_drop_copy(
-              "127.0.0.1",
-              "8081"
+              api_host,
+              api_port
           );
 
       const auto events =
@@ -417,8 +426,8 @@ void run_session(
 
       const auto trade_body =
           fetch_trades(
-              "127.0.0.1",
-              "8081"
+              api_host,
+              api_port
           );
 
       const auto trades =
@@ -487,16 +496,18 @@ int main(
     char** argv
 ) {
   try {
-    const unsigned short port =
-        argc > 1
-            ? static_cast<
-                  unsigned short
-              >(
-                  std::stoul(
-                      argv[1]
-                  )
-              )
-            : 8092;
+    unsigned short port = 8092;
+
+    if (argc > 1) {
+      port = static_cast<unsigned short>(
+          std::stoul(argv[1])
+      );
+    } else if (const char* env_port =
+                   std::getenv("PORT")) {
+      port = static_cast<unsigned short>(
+          std::stoul(env_port)
+      );
+    }
 
     asio::io_context io;
 
@@ -510,7 +521,7 @@ int main(
 
     std::cout
         << "MiniMatch drop-copy WebSocket "
-        << "listening on ws://127.0.0.1:"
+        << "listening on ws://0.0.0.0:"
         << port
         << "\n";
 
