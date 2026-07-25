@@ -1219,6 +1219,20 @@ http::response<http::string_body> response(http::status status, std::string body
   res.set(http::field::server, "MiniMatch-Web");
   res.set(http::field::content_type, content_type);
   res.set(http::field::cache_control, "no-store");
+
+  // Public MiniMatch frontend.
+  res.set(
+      http::field::access_control_allow_origin,
+      "https://minimatch-six.vercel.app"
+  );
+  res.set(
+      http::field::access_control_allow_methods,
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  res.set(
+      http::field::access_control_allow_headers,
+      "Content-Type, Authorization"
+  );
   res.body() = std::move(body);
   res.prepare_payload();
   return res;
@@ -1323,6 +1337,13 @@ http::response<http::string_body> handle_request(DashboardState& state,
                                                   const std::string& frontend_dir) {
   const std::string target(req.target());
   const std::string path = target.substr(0, target.find('?'));
+
+  if (req.method() == http::verb::options) {
+    return response(
+        http::status::no_content,
+        ""
+    );
+  }
 
   try {
     std::lock_guard<std::mutex> lock(state.mutex);
