@@ -287,6 +287,7 @@ parse_events(
 void run_session(
     tcp::socket socket
 ) {
+  try {
   const std::string api_host =
       std::getenv("MINIMATCH_API_HOST")
           ? std::getenv("MINIMATCH_API_HOST")
@@ -487,6 +488,12 @@ void run_session(
 
   std::cerr
       << "Drop-copy client disconnected\n";
+  } catch (const std::exception& error) {
+    std::cerr
+        << "Drop-copy session rejected: "
+        << error.what()
+        << "\n";
+  }
 }
 
 }  // namespace
