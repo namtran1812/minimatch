@@ -6966,22 +6966,25 @@ int main() {
     try {
         asio::io_context io;
 
-        unsigned short port =
-            8081;
+        unsigned short port = 8081;
 
         if (
+            const char* configured =
+                std::getenv("PORT")
+        ) {
+            port =
+                static_cast<unsigned short>(
+                    std::stoul(configured)
+                );
+        } else if (
             const char* configured =
                 std::getenv(
                     "MINIMATCH_API_PORT"
                 )
         ) {
             port =
-                static_cast<
-                    unsigned short
-                >(
-                    std::stoul(
-                        configured
-                    )
+                static_cast<unsigned short>(
+                    std::stoul(configured)
                 );
         }
 
@@ -6989,7 +6992,7 @@ int main() {
             io,
             {
                 asio::ip::make_address(
-                    "127.0.0.1"
+                    "0.0.0.0"
                 ),
                 port
             }
@@ -6997,7 +7000,7 @@ int main() {
 
         std::cout
             << "MiniMatch API listening on "
-            << "http://127.0.0.1:"
+            << "http://0.0.0.0:"
             << port
             << "\n";
 
