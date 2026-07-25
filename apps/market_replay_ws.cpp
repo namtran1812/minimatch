@@ -858,22 +858,37 @@ void handle_client(
 
 int main(int argc, char** argv) {
   try {
-    if (argc < 3) {
+    unsigned short port = 8091;
+
+    if (argc > 1) {
+      port =
+          static_cast<unsigned short>(
+              std::stoul(argv[1])
+          );
+    } else if (const char* env_port =
+                   std::getenv("PORT")) {
+      port =
+          static_cast<unsigned short>(
+              std::stoul(env_port)
+          );
+    }
+
+    std::string path;
+
+    if (argc > 2) {
+      path = argv[2];
+    } else if (const char* env_path =
+                   std::getenv("REPLAY_RECORDING_PATH")) {
+      path = env_path;
+    }
+
+    if (path.empty()) {
       std::cerr
-          << "Usage: "
-          << argv[0]
-          << " <port> <recording.bin>"
-          << " [symbol] [speed]\n";
+          << "Replay recording path is required via argv[2] "
+          << "or REPLAY_RECORDING_PATH\n";
 
       return EXIT_FAILURE;
     }
-
-    const auto port =
-        static_cast<unsigned short>(
-            std::stoul(argv[1])
-        );
-
-    const std::string path = argv[2];
 
     const std::string symbol =
         argc > 3
