@@ -11156,3 +11156,35 @@ body,
 .journal-entry__content p {
   line-height: 1.55;
 }
+
+/* =========================================================
+   TRADING — RIGHT EDGE SPACING
+   ========================================================= */
+
+.trading-workspace,
+.trading-grid,
+.trading-layout,
+.trading-info + .terminal-grid,
+.page:has(.trading-heading) .terminal-grid {
+  padding-right: 14px !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep the rightmost card away from viewport edge */
+.page:has(.trading-heading)
+  .terminal-grid
+  > .panel:last-child {
+  margin-right: 0 !important;
+}
+
+/* Slightly rebalance the 3-column workspace */
+.page:has(.trading-heading)
+  .terminal-grid {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1.55fr)
+    minmax(260px, 0.82fr) !important;
+
+  gap: 12px !important;
+}
+
