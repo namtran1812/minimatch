@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import { useEffect } from "react";
 import {
   useMarketData,
@@ -199,83 +200,52 @@ export default function Markets({
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          CONSOLIDATED MARKET DATA
-        </span>
-
-        <h1>
-          {snapshot?.symbol
-            ?? "BTCUSD"}
-        </h1>
-
-        <div className="markets-source-row">
-          <div className={`stream-status stream-status--${status.toLowerCase()}`}>
-            <span className="stream-status__pixel" />
-            MARKET STREAM: {status}
-          </div>
-
-          <div className="markets-source-toggle">
-            <button
-              onClick={() => setMode("live")}
-              disabled={mode === "live"}
+      <PageHeader
+        eyebrow="CONSOLIDATED MARKET DATA"
+        title={snapshot?.symbol ?? "BTCUSD"}
+        actions={
+          <div className="mm-header-status">
+            <div
+              className={`stream-status stream-status--${status.toLowerCase()}`}
             >
-              LIVE
-            </button>
+              <span className="stream-status__pixel" />
+              MARKET STREAM: {status}
+            </div>
 
-            <button
-              onClick={() => setMode("replay")}
-              disabled={mode === "replay"}
-            >
-              REPLAY
-            </button>
+            <div className="markets-source-toggle">
+              <button
+                onClick={() => setMode("live")}
+                disabled={mode === "live"}
+              >
+                LIVE
+              </button>
+
+              <button
+                onClick={() => setMode("replay")}
+                disabled={mode === "replay"}
+              >
+                REPLAY
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Markets consolidates live Level 2 order books across participating venues into a single view of BTC-USD. It shows the best bid and ask, market state, venue liquidity, latency, order-book depth, routing previews, and executed trades.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Start with the BBO and market state, then use the depth and venue-liquidity charts to understand where liquidity is available. Inspect individual venue books for price levels and use BUY / SELL route previews to see how a 0.1 BTC order would be distributed across venues after fees and latency costs.",
+          },
+          {
+            label: "MARKET STATES",
+            content: "NORMAL means bid is below ask. LOCKED means bid equals ask. CROSSED means the best bid is above the best ask across venues; the consolidated midpoint is intentionally unavailable until the market becomes valid again.",
+          },
+        ]}
+      />
 
-      <div className="markets-info">
-        <div className="markets-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Markets consolidates live Level 2 order books across
-            participating venues into a single view of BTC-USD.
-            It shows the best bid and ask, market state, venue
-            liquidity, latency, order-book depth, routing previews,
-            and executed trades.
-          </p>
-        </div>
-
-        <div className="markets-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Start with the BBO and market state, then use the depth
-            and venue-liquidity charts to understand where liquidity
-            is available. Inspect individual venue books for price
-            levels and use BUY / SELL route previews to see how a
-            0.1 BTC order would be distributed across venues after
-            fees and latency costs.
-          </p>
-        </div>
-
-        <div className="markets-info__section">
-          <span className="eyebrow">
-            MARKET STATES
-          </span>
-
-          <p>
-            NORMAL means bid is below ask. LOCKED means bid equals
-            ask. CROSSED means the best bid is above the best ask
-            across venues; the consolidated midpoint is intentionally
-            unavailable until the market becomes valid again.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="markets-ticker">
         <div className="markets-ticker__item">
@@ -503,7 +473,13 @@ export default function Markets({
 
 
 
-      <div className="markets-workspace">
+      <div
+        className={`markets-workspace ${
+          marketVenues.length === 0
+            ? "markets-workspace--empty"
+            : ""
+        }`}
+      >
         <div className="markets-books">
           {marketVenues.map(
           (venue) => (

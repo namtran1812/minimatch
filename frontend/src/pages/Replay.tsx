@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import {
   useState,
 } from "react";
@@ -133,54 +134,34 @@ export default function Replay() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          DETERMINISTIC REPLAY
-        </span>
+      <PageHeader
+        eyebrow={
+          <>
+            DETERMINISTIC REPLAY
+          </>
+        }
+        title={
+          <>
+            Replay
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Replay reconstructs recorded MiniMatch market state deterministically from the event stream, allowing historical exchange behavior to be inspected record by record.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Enter replay mode, control playback speed, pause or restart processing, and drag the timeline to seek to a specific point in the recorded event stream.",
+          },
+          {
+            label: "DETERMINISM",
+            content: "The replay engine exposes its generation, state checksum, rejected-record count, and current event position so reconstructed state can be verified across runs.",
+          },
+        ]}
+      />
 
-        <h1>Replay</h1>
-      </div>
-
-      <div className="replay-info">
-        <div className="replay-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Replay reconstructs recorded MiniMatch
-            market state deterministically from the
-            event stream, allowing historical exchange
-            behavior to be inspected record by record.
-          </p>
-        </div>
-
-        <div className="replay-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Enter replay mode, control playback speed,
-            pause or restart processing, and drag the
-            timeline to seek to a specific point in the
-            recorded event stream.
-          </p>
-        </div>
-
-        <div className="replay-info__section">
-          <span className="eyebrow">
-            DETERMINISM
-          </span>
-
-          <p>
-            The replay engine exposes its generation,
-            state checksum, rejected-record count, and
-            current event position so reconstructed
-            state can be verified across runs.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="replay-status-strip">
         <div>

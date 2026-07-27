@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import { useState } from "react";
 import {
   useQuery,
@@ -603,53 +604,34 @@ export default function Risk({
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          REAL-TIME RISK
-        </span>
+      <PageHeader
+        eyebrow={
+          <>
+            REAL-TIME RISK
+          </>
+        }
+        title={
+          <>
+            Risk
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Risk monitors client and firm-wide exposure, positions, profit and loss, concentration, trading limits, and automated protection mechanisms across MiniMatch.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Start with portfolio health and limit utilization. Inspect live positions and client exposure, then use operator controls only when adjusting protection rules or responding to abnormal trading conditions.",
+          },
+          {
+            label: "RISK CONTROLS",
+            content: "STP prevents self-trading. Circuit breakers respond to abnormal price moves. Symbol halts isolate instruments, price bands constrain acceptable prices, and portfolio limits can automatically halt trading when breached.",
+          },
+        ]}
+      />
 
-        <h1>Risk</h1>
-      </div>
-
-      <div className="risk-info">
-        <div className="risk-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Risk monitors client and firm-wide exposure, positions,
-            profit and loss, concentration, trading limits, and
-            automated protection mechanisms across MiniMatch.
-          </p>
-        </div>
-
-        <div className="risk-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Start with portfolio health and limit utilization.
-            Inspect live positions and client exposure, then use
-            operator controls only when adjusting protection rules
-            or responding to abnormal trading conditions.
-          </p>
-        </div>
-
-        <div className="risk-info__section">
-          <span className="eyebrow">
-            RISK CONTROLS
-          </span>
-
-          <p>
-            STP prevents self-trading. Circuit breakers respond to
-            abnormal price moves. Symbol halts isolate instruments,
-            price bands constrain acceptable prices, and portfolio
-            limits can automatically halt trading when breached.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="risk-status-strip">
         <div>

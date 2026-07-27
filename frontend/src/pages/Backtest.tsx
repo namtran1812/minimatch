@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -69,50 +70,34 @@ export default function Backtest() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">HISTORICAL EXECUTION</span>
-        <h1>Backtest</h1>
-      </div>
+      <PageHeader
+        eyebrow={
+          <>
+            HISTORICAL EXECUTION
+          </>
+        }
+        title={
+          <>
+            Backtest
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Backtest runs MiniMatch execution algorithms against recorded market data and measures how the resulting fills compare with arrival price and historical market VWAP.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Choose a symbol, side, algorithm, quantity, schedule settings, and fees. Run the simulation, then inspect fills, slippage, execution cost, and child-order behavior.",
+          },
+          {
+            label: "MODEL ASSUMPTIONS",
+            content: "The run uses recorded replay market data. VWAP and POV currently use an equal synthetic volume profile across execution slices.",
+          },
+        ]}
+      />
 
-      <div className="backtest-info">
-        <div className="backtest-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Backtest runs MiniMatch execution algorithms
-            against recorded market data and measures how
-            the resulting fills compare with arrival price
-            and historical market VWAP.
-          </p>
-        </div>
-
-        <div className="backtest-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Choose a symbol, side, algorithm, quantity,
-            schedule settings, and fees. Run the simulation,
-            then inspect fills, slippage, execution cost,
-            and child-order behavior.
-          </p>
-        </div>
-
-        <div className="backtest-info__section">
-          <span className="eyebrow">
-            MODEL ASSUMPTIONS
-          </span>
-
-          <p>
-            The run uses recorded replay market data.
-            VWAP and POV currently use an equal synthetic
-            volume profile across execution slices.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="backtest-status-strip">
         <div>

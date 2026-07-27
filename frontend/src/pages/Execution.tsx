@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -120,63 +121,43 @@ export default function Execution() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          SMART ORDER ROUTER
-        </span>
+      <PageHeader
+        eyebrow={
+          <>
+            SMART ORDER ROUTER
+          </>
+        }
+        title={
+          <>
+            Execution
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Execution models how an order is routed across available venues. The smart order router evaluates price, fees, latency, available liquidity, slippage constraints, and venue limits before constructing child executions.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Configure the parent execution request and preview the proposed route first. Then configure fill probability and latency assumptions and execute the route to inspect simulated child fills, fees, latency, and completion.",
+          },
+          {
+            label: "ROUTING MODEL",
+            content: "Lower effective cost is preferred for buys and higher effective proceeds for sells. Maximum slippage and venue count constrain the route, while execution simulation models partial fills, rejects, and latency.",
+          },
+        ]}
+      />
 
-        <h1>Execution</h1>
-      </div>
+      
 
-      <div className="execution-info">
-        <div className="execution-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Execution models how an order is routed across available
-            venues. The smart order router evaluates price, fees,
-            latency, available liquidity, slippage constraints, and
-            venue limits before constructing child executions.
-          </p>
-        </div>
-
-        <div className="execution-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Configure the parent execution request and preview the
-            proposed route first. Then configure fill probability
-            and latency assumptions and execute the route to inspect
-            simulated child fills, fees, latency, and completion.
-          </p>
-        </div>
-
-        <div className="execution-info__section">
-          <span className="eyebrow">
-            ROUTING MODEL
-          </span>
-
-          <p>
-            Lower effective cost is preferred for buys and higher
-            effective proceeds for sells. Maximum slippage and venue
-            count constrain the route, while execution simulation
-            models partial fills, rejects, and latency.
-          </p>
-        </div>
-      </div>
-
-      <div className="terminal-grid">
+      <div className="terminal-grid execution-workspace">
         <div className="panel">
           <div className="panel-title">
             <h2>Route Configuration</h2>
           </div>
 
-          <label>
-            SYMBOL
+          <label className="execution-field">
+            <span>SYMBOL</span>
             <input
               value={symbol}
               onChange={(e) =>
@@ -185,8 +166,8 @@ export default function Execution() {
             />
           </label>
 
-          <label>
-            SIDE
+          <label className="execution-field">
+            <span>SIDE</span>
             <select
               value={side}
               onChange={(e) =>
@@ -207,8 +188,8 @@ export default function Execution() {
             </select>
           </label>
 
-          <label>
-            QUANTITY
+          <label className="execution-field">
+            <span>QUANTITY</span>
             <input
               type="number"
               step="0.01"
@@ -221,8 +202,8 @@ export default function Execution() {
             />
           </label>
 
-          <label>
-            MAX SLIPPAGE (BPS)
+          <label className="execution-field">
+            <span>MAX SLIPPAGE (BPS)</span>
             <input
               type="number"
               value={maxSlippageBps}
@@ -234,8 +215,8 @@ export default function Execution() {
             />
           </label>
 
-          <label>
-            MAX VENUES
+          <label className="execution-field">
+            <span>MAX VENUES</span>
             <input
               type="number"
               value={maxVenueCount}
@@ -263,8 +244,8 @@ export default function Execution() {
             </h2>
           </div>
 
-          <label>
-            FILL RATIO
+          <label className="execution-field">
+            <span>FILL RATIO</span>
             <input
               type="number"
               step="0.1"
@@ -279,8 +260,8 @@ export default function Execution() {
             />
           </label>
 
-          <label>
-            REJECTION PROBABILITY
+          <label className="execution-field">
+            <span>REJECTION PROBABILITY</span>
             <input
               type="number"
               step="0.1"
@@ -297,8 +278,8 @@ export default function Execution() {
             />
           </label>
 
-          <label>
-            BASE LATENCY (MS)
+          <label className="execution-field">
+            <span>BASE LATENCY (MS)</span>
             <input
               type="number"
               value={baseLatencyMs}
@@ -310,8 +291,8 @@ export default function Execution() {
             />
           </label>
 
-          <label>
-            LATENCY JITTER (MS)
+          <label className="execution-field">
+            <span>LATENCY JITTER (MS)</span>
             <input
               type="number"
               value={latencyJitterMs}
@@ -323,8 +304,8 @@ export default function Execution() {
             />
           </label>
 
-          <label>
-            RANDOM SEED
+          <label className="execution-field">
+            <span>RANDOM SEED</span>
             <input
               type="number"
               value={seed}

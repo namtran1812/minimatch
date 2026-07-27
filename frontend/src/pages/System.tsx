@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import {
   useEffect,
   useState,
@@ -187,56 +188,34 @@ export default function System() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          ENGINE INTERNALS
-        </span>
+      <PageHeader
+        eyebrow={
+          <>
+            ENGINE INTERNALS
+          </>
+        }
+        title={
+          <>
+            System
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "System exposes the internal state of the MiniMatch matching engine, including order throughput, acceptance and rejection counts, active orders, execution reports, latency, and deterministic state hash.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Use the order counters to verify engine activity, inspect latency percentiles for performance degradation, and compare the state hash when validating deterministic engine behavior across runs.",
+          },
+          {
+            label: "ENGINE SEMANTICS",
+            content: "Submitted orders may be accepted or rejected. Accepted orders can remain active or generate trades and execution reports. P50, P95, and P99 describe order-submit latency.",
+          },
+        ]}
+      />
 
-        <h1>System</h1>
-      </div>
-
-      <div className="system-info">
-        <div className="system-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            System exposes the internal state of the
-            MiniMatch matching engine, including order
-            throughput, acceptance and rejection counts,
-            active orders, execution reports, latency,
-            and deterministic state hash.
-          </p>
-        </div>
-
-        <div className="system-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Use the order counters to verify engine
-            activity, inspect latency percentiles for
-            performance degradation, and compare the
-            state hash when validating deterministic
-            engine behavior across runs.
-          </p>
-        </div>
-
-        <div className="system-info__section">
-          <span className="eyebrow">
-            ENGINE SEMANTICS
-          </span>
-
-          <p>
-            Submitted orders may be accepted or rejected.
-            Accepted orders can remain active or generate
-            trades and execution reports. P50, P95, and
-            P99 describe order-submit latency.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="system-status-strip">
         <div>

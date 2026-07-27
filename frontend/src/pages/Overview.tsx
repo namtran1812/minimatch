@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import PageHeader from "../components/layout/PageHeader";
 import { getHealth } from "../api/market";
 import { getSystemStats } from "../api/system";
 import {
@@ -73,56 +74,24 @@ export default function Overview() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          SYSTEM OVERVIEW
-        </span>
-
-        <h1>MiniMatch Control Plane</h1>
-
-        <div className="feedback">
-          MARKET STREAM: {status}
-        </div>
-      </div>
-
-      <div className="overview-info">
-        <div className="overview-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Overview summarizes the most important live
-            MiniMatch state across matching, market data,
-            latency, venue health, and trading activity.
-          </p>
-        </div>
-
-        <div className="overview-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Use this page as the control-plane landing view.
-            Confirm engine and market-data health first, then
-            drill into Trading, Risk, Operations, or System
-            when a metric needs deeper investigation.
-          </p>
-        </div>
-
-        <div className="overview-info__section">
-          <span className="eyebrow">
-            LIVE SOURCES
-          </span>
-
-          <p>
-            Engine counters come from the system API while
-            venue health and throughput are driven by the
-            shared live market-data stream.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="SYSTEM OVERVIEW"
+        title="MiniMatch Control Plane"
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Overview summarizes the most important live MiniMatch state across matching, market data, latency, venue health, and trading activity.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Use this page as the control-plane landing view. Confirm engine and market-data health first, then drill into Trading, Risk, Operations, or System when a metric needs deeper investigation.",
+          },
+          {
+            label: "LIVE SOURCES",
+            content: "Engine counters come from the system API while venue health and throughput are driven by the shared live market-data stream.",
+          },
+        ]}
+      />
 
       <div className="overview-status-strip">
         <div>

@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -206,56 +207,34 @@ export default function FIX() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          FIX 4.4 CONNECTIVITY
-        </span>
+      <PageHeader
+        eyebrow={
+          <>
+            FIX 4.4 CONNECTIVITY
+          </>
+        }
+        title={
+          <>
+            FIX
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "FIX monitors the protocol session used by MiniMatch for electronic order and execution messaging. It exposes sequence state, traffic, execution reports, rejects, and recovery events.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Start with session health and sequence numbers, then inspect protocol diagnostics for rejects, resend requests, or sequence resets. The message stream provides the underlying FIX traffic in chronological protocol order.",
+          },
+          {
+            label: "PROTOCOL HEALTH",
+            content: "FIX sessions maintain monotonically increasing inbound and outbound sequence numbers. Resend requests and sequence resets indicate recovery activity, while rejects identify invalid or unsupported protocol messages.",
+          },
+        ]}
+      />
 
-        <h1>FIX</h1>
-      </div>
-
-      <div className="fix-info">
-        <div className="fix-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            FIX monitors the protocol session used by
-            MiniMatch for electronic order and execution
-            messaging. It exposes sequence state, traffic,
-            execution reports, rejects, and recovery events.
-          </p>
-        </div>
-
-        <div className="fix-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Start with session health and sequence numbers,
-            then inspect protocol diagnostics for rejects,
-            resend requests, or sequence resets. The message
-            stream provides the underlying FIX traffic in
-            chronological protocol order.
-          </p>
-        </div>
-
-        <div className="fix-info__section">
-          <span className="eyebrow">
-            PROTOCOL HEALTH
-          </span>
-
-          <p>
-            FIX sessions maintain monotonically increasing
-            inbound and outbound sequence numbers. Resend
-            requests and sequence resets indicate recovery
-            activity, while rejects identify invalid or
-            unsupported protocol messages.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="fix-status-strip">
         <div>

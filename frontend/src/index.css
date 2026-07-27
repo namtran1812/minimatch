@@ -143,30 +143,8 @@ main {
   margin-bottom: 10px;
 }
 
-.metric-card,
-.panel {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(19, 25, 27, 0.96),
-      rgba(12, 16, 18, 0.96)
-    );
-  border: 1px solid #1e292c;
-  border-radius: 11px;
-}
-
-.metric-card {
-  padding: 18px 20px;
-}
-
 .metric-card > div {
   margin-top: 9px;
-}
-
-.metric-card strong {
-  font-family: var(--font-pixel);
-  font-size: 23px;
-  font-weight: 500;
 }
 
 .metric-unit {
@@ -194,25 +172,6 @@ main {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.panel {
-  padding: 17px;
-}
-
-.panel-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  color: #778386;
-}
-
-.panel-title h2 {
-  margin: 5px 0 0;
-  color: #dfe5e5;
-  font-size: 14px;
-  font-weight: 500;
 }
 
 .book-header,
@@ -579,16 +538,6 @@ main {
 .main-content {
   padding: 22px;
   overflow-x: hidden;
-}
-
-.page-heading {
-  margin-bottom: 20px;
-}
-
-.page-heading h1 {
-  margin: 5px 0 0;
-  font-size: 24px;
-  font-weight: 500;
 }
 
 .stream-status {
@@ -1147,10 +1096,6 @@ main {
 html,
 body,
 #root,
-button,
-input,
-select,
-textarea,
 option {
   font-family: var(--font-pixel);
 }
@@ -1161,13 +1106,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-
 h1,
 h2,
 h3,
@@ -1176,7 +1114,6 @@ h5,
 h6,
 strong,
 span,
-label,
 p,
 div,
 table,
@@ -1189,7 +1126,6 @@ td {
 }
 
 /* Dense terminal numbers */
-.metric-card strong,
 .book-row,
 .book-header,
 .tape-row,
@@ -1202,11 +1138,6 @@ td {
 }
 
 /* Pixel controls */
-button,
-select,
-input {
-  border-radius: 0;
-}
 
 
 /* =========================================================
@@ -1222,9 +1153,6 @@ input {
 html,
 body,
 #root,
-input,
-select,
-textarea,
 option,
 table,
 thead,
@@ -1235,8 +1163,7 @@ td,
 p,
 div,
 span,
-strong,
-label {
+strong {
   font-family: var(--font-ui);
 }
 
@@ -1255,13 +1182,11 @@ h6 {
 .stream-status,
 .recorder-status,
 .venue-status,
-.sidebar nav button,
-button {
+.sidebar nav button {
   font-family: var(--font-pixel);
 }
 
 /* Data should be highly readable */
-.metric-card strong,
 .book-row,
 .book-header,
 .trade-tape-row,
@@ -1273,12 +1198,6 @@ button {
 }
 
 /* Keep the retro hard-edge control treatment */
-button,
-select,
-input,
-textarea {
-  border-radius: 0;
-}
 
 /* =========================================================
    MINIMATCH — REFINED PIXEL TYPOGRAPHY
@@ -1298,12 +1217,7 @@ textarea {
 html,
 body,
 #root,
-button,
-input,
-select,
-textarea,
 option,
-label,
 span,
 strong,
 p,
@@ -1336,20 +1250,8 @@ body {
 }
 
 /* Large headings: pixelated but polished */
-.page-heading h1 {
-  font-family: var(--font-pixel);
-  font-size: 30px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
 
 /* Panel headings */
-.panel-title h2 {
-  font-family: var(--font-pixel);
-  font-size: 17px;
-  font-weight: 500;
-  letter-spacing: 0.015em;
-}
 
 /* Navigation */
 .sidebar {
@@ -1397,7 +1299,6 @@ body {
 }
 
 /* Metrics */
-.metric-card strong,
 .markets-ticker__item > strong {
   font-family: var(--font-pixel);
   font-weight: 500;
@@ -1405,21 +1306,8 @@ body {
 }
 
 /* Forms */
-input,
-select,
-textarea {
-  font-family: var(--font-pixel);
-  font-size: 13px;
-  letter-spacing: 0;
-}
 
 /* Buttons stay pixelated without looking arcade-like */
-button {
-  font-family: var(--font-pixel);
-  font-weight: 500;
-  letter-spacing: 0.025em;
-  border-radius: 2px;
-}
 
 /* Data panels */
 .risk-item,
@@ -1462,22 +1350,6 @@ button {
 
 .main-content {
   padding: 18px;
-}
-
-.page-heading {
-  margin-bottom: 16px;
-}
-
-.metric-card {
-  padding: 15px 17px;
-}
-
-.panel {
-  padding: 15px;
-}
-
-.panel-title {
-  margin-bottom: 13px;
 }
 
 /* Markets source switcher */
@@ -1589,22 +1461,8 @@ body {
 }
 
 /* Remove the soft SaaS look */
-.panel,
-.metric-card {
-  background: var(--mm-surface);
-  border: 1px solid var(--mm-border);
-  border-radius: 3px;
-  box-shadow: none;
-}
 
 /* Compact professional panels */
-.panel {
-  padding: 12px;
-}
-
-.metric-card {
-  padding: 12px 14px;
-}
 
 .metrics {
   gap: 8px;
@@ -1612,38 +1470,8 @@ body {
 }
 
 /* Thin professional panel headers */
-.panel-title {
-  min-height: 22px;
-  margin: 0 0 10px;
-  padding-bottom: 8px;
-
-  border-bottom: 1px solid var(--mm-border);
-
-  color: var(--mm-text-soft);
-}
-
-.panel-title h2 {
-  margin: 0;
-
-  color: var(--mm-text);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
 
 /* Page headings should not dominate the terminal */
-.page-heading {
-  margin-bottom: 14px;
-}
-
-.page-heading h1 {
-  margin: 4px 0 0;
-
-  color: #e2e8e8;
-  font-size: 25px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
 
 .eyebrow {
   color: var(--mm-text-dim);
@@ -1653,11 +1481,6 @@ body {
 }
 
 /* Data hierarchy */
-.metric-card strong {
-  color: #e0e7e7;
-  font-size: 19px;
-  font-weight: 500;
-}
 
 .metric-unit {
   color: var(--mm-text-dim);
@@ -1706,50 +1529,8 @@ body {
 }
 
 /* Forms */
-input,
-select,
-textarea {
-  min-height: 31px;
-
-  padding: 5px 8px;
-
-  border: 1px solid var(--mm-border);
-  border-radius: 2px;
-
-  background: #080d0f;
-  color: var(--mm-text);
-
-  outline: none;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: #45645b;
-}
 
 /* Buttons */
-button {
-  min-height: 30px;
-
-  border: 1px solid var(--mm-border-strong);
-  border-radius: 2px;
-
-  background: #0a1012;
-  color: #9aa5a7;
-
-  box-shadow: none;
-}
-
-button:hover:not(:disabled) {
-  border-color: #425255;
-  background: #101719;
-  color: #e0e6e6;
-}
-
-button:disabled {
-  opacity: 0.8;
-}
 
 /* Tables / tape */
 .book-row,
@@ -1912,25 +1693,12 @@ button:disabled {
 
 /* Professional chart shell */
 
-.chart-panel {
-  min-height: 250px;
-}
-
-.chart-panel__body {
-  width: 100%;
-  height: 200px;
-}
-
 .chart-panel .recharts-tooltip-wrapper {
   outline: none;
 }
 
 .chart-panel .recharts-cartesian-grid line {
   stroke-opacity: 0.8;
-}
-
-.chart-panel__body--depth {
-  height: 230px;
 }
 
 .markets-chart-grid {
@@ -2041,29 +1809,7 @@ button:disabled {
   color: var(--mm-text-dim) !important;
 }
 
-.bbo-history-chart {
-  margin-bottom: 8px;
-}
-
-.bbo-history-chart__body {
-  height: 260px;
-}
-
 /* Stable chart sizing */
-.chart-panel {
-  height: 300px;
-  min-height: 300px;
-  max-height: 300px;
-  overflow: hidden;
-}
-
-.chart-panel__body,
-.chart-panel__body--depth,
-.bbo-history-chart__body {
-  height: 235px;
-  min-height: 235px;
-  max-height: 235px;
-}
 
 .markets-chart-grid {
   align-items: stretch;
@@ -2196,8 +1942,7 @@ button:disabled {
 }
 
 /* Chart cards */
-.markets-chart-grid .chart-panel,
-.bbo-history-chart {
+.markets-chart-grid .chart-panel {
   height: 300px;
   min-height: 300px;
   max-height: 300px;
@@ -2205,13 +1950,6 @@ button:disabled {
 }
 
 /* Keep chart internals stable */
-.chart-panel__body,
-.chart-panel__body--depth,
-.bbo-history-chart__body {
-  height: 230px;
-  min-height: 230px;
-  max-height: 230px;
-}
 
 /* Prevent content from stretching grid children */
 .markets-workspace > *,
@@ -2369,47 +2107,6 @@ button:disabled {
   color: var(--mm-yellow) !important;
 }
 
-/* Markets page guide */
-.markets-info {
-  display: grid;
-  grid-template-columns:
-    1.2fr
-    1.2fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.markets-info__section {
-  min-width: 0;
-  padding: 12px 14px;
-
-  border-right: 1px solid var(--mm-border);
-}
-
-.markets-info__section:last-child {
-  border-right: 0;
-}
-
-.markets-info__section .eyebrow {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--mm-green);
-}
-
-.markets-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: 10px;
-  line-height: 1.65;
-  letter-spacing: 0.01em;
-}
-
 @media (max-width: 1100px) {
   .markets-info {
     grid-template-columns: 1fr;
@@ -2423,68 +2120,6 @@ button:disabled {
   .markets-info__section:last-child {
     border-bottom: 0;
   }
-}
-
-/* =========================================================
-   TRADING PAGE
-   ========================================================= */
-
-.trading-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.trading-info__section {
-  min-width: 0;
-  padding: 12px 14px;
-
-  border-right: 1px solid var(--mm-border);
-}
-
-.trading-info__section:last-child {
-  border-right: 0;
-}
-
-.trading-info__section .eyebrow {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--mm-green);
-}
-
-.trading-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: 10px;
-  line-height: 1.65;
-}
-
-/* Trading forms fill the row evenly */
-.trading-info + .terminal-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 10px;
-  align-items: stretch;
-  margin-bottom: 10px;
-}
-
-.trading-info + .terminal-grid > .panel {
-  height: 440px;
-  min-height: 440px;
-  max-height: 440px;
-
-  overflow: hidden;
 }
 
 /* Forms stay compact and consistent */
@@ -2510,24 +2145,6 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
-/* Execution reports behave like a terminal table */
-.trading-info
-  ~ .panel:last-child {
-  max-height: 440px;
-  overflow: hidden;
-}
-
-.trading-info
-  ~ .panel:last-child
-  .tape-row {
-  grid-template-columns:
-    0.6fr
-    1fr
-    1.3fr
-    0.8fr
-    1fr;
-}
-
 @media (max-width: 1100px) {
   .trading-info {
     grid-template-columns: 1fr;
@@ -2545,14 +2162,6 @@ button:disabled {
   .trading-info + .terminal-grid {
     grid-template-columns: 1fr;
   }
-}
-
-/* Trading live pre-trade panel */
-.trading-info + .terminal-grid {
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(0, 1fr)
-    minmax(0, 0.85fr);
 }
 
 .trading-pretrade-panel {
@@ -2608,56 +2217,6 @@ button:disabled {
   }
 }
 
-/* =========================================================
-   EXECUTION PAGE
-   ========================================================= */
-
-.execution-info {
-  display: grid;
-  grid-template-columns: 1.1fr 1.1fr 1fr;
-  margin-bottom: 10px;
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.execution-info__section {
-  min-width: 0;
-  padding: 12px 14px;
-  border-right: 1px solid var(--mm-border);
-}
-
-.execution-info__section:last-child {
-  border-right: 0;
-}
-
-.execution-info__section .eyebrow {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--mm-green);
-}
-
-.execution-info__section p {
-  margin: 0;
-  color: var(--mm-text-soft);
-  font-size: 10px;
-  line-height: 1.65;
-}
-
-.execution-info + .terminal-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  align-items: stretch;
-  margin-bottom: 10px;
-}
-
-.execution-info + .terminal-grid > .panel {
-  min-height: 390px;
-  height: 390px;
-  max-height: 390px;
-  overflow: hidden;
-}
-
 @media (max-width: 1100px) {
   .execution-info {
     grid-template-columns: 1fr;
@@ -2682,79 +2241,6 @@ button:disabled {
    ========================================================= */
 
 /* Main page title */
-.page-heading h1 {
-  font-size: 28px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-/* Section / panel titles */
-.execution-info ~ .terminal-grid .panel-title h2,
-.execution-info ~ .panel .panel-title h2 {
-  font-size: 12px;
-  line-height: 1.3;
-  letter-spacing: 0.04em;
-}
-
-/* Terminal labels */
-.execution-info ~ .terminal-grid label,
-.execution-info ~ .panel label {
-  font-size: 9px;
-  line-height: 1.4;
-  letter-spacing: 0.06em;
-}
-
-/* Inputs and selects */
-.execution-info ~ .terminal-grid input,
-.execution-info ~ .terminal-grid select {
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-/* Buttons */
-.execution-info ~ .terminal-grid button {
-  font-size: 9px;
-  line-height: 1;
-  letter-spacing: 0.06em;
-}
-
-/* Information text */
-.execution-info__section p {
-  font-size: 10px;
-  line-height: 1.65;
-}
-
-/* Small terminal headings */
-.execution-info .eyebrow,
-.execution-info ~ .terminal-grid .eyebrow,
-.execution-info ~ .panel .eyebrow {
-  font-size: 8px;
-  line-height: 1.3;
-  letter-spacing: 0.08em;
-}
-
-/* Main metric values */
-.execution-info ~ .panel .metric-card strong {
-  font-size: 16px;
-  line-height: 1.2;
-}
-
-/* Route legs / execution rows */
-.execution-info ~ .panel .risk-item {
-  font-size: 10px;
-  line-height: 1.45;
-}
-
-.execution-info ~ .panel .risk-item strong {
-  font-size: 10px;
-  line-height: 1.45;
-}
-
-/* Status message */
-.execution-info ~ .terminal-grid .feedback {
-  font-size: 9px;
-  line-height: 1.4;
-}
 
 /* =========================================================
    MINIMATCH — GLOBAL TYPOGRAPHY SYSTEM
@@ -2771,18 +2257,8 @@ button:disabled {
 }
 
 /* Page titles */
-.page-heading h1 {
-  font-size: var(--text-page-title);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
 
 /* Panel titles */
-.panel-title h2 {
-  font-size: var(--text-panel-title);
-  line-height: 1.3;
-  letter-spacing: 0.04em;
-}
 
 /* Small metadata / terminal headings */
 .eyebrow,
@@ -2797,26 +2273,10 @@ button:disabled {
 }
 
 /* Form labels */
-label {
-  font-size: var(--text-control);
-  line-height: 1.4;
-  letter-spacing: 0.055em;
-}
 
 /* Inputs */
-input,
-select,
-textarea {
-  font-size: var(--text-input);
-  line-height: 1.4;
-}
 
 /* Buttons */
-button {
-  font-size: var(--text-control);
-  line-height: 1;
-  letter-spacing: 0.05em;
-}
 
 /* Standard readable content */
 p,
@@ -2831,24 +2291,11 @@ p,
 }
 
 /* Large dashboard numbers */
-.metric-card strong {
-  font-size: var(--text-metric);
-  line-height: 1.2;
-  letter-spacing: 0;
-}
 
 /* BBO / major market values */
 .markets-ticker__item > strong {
   font-size: var(--text-metric);
   line-height: 1.15;
-}
-
-/* Explanatory page guides */
-.markets-info__section p,
-.trading-info__section p,
-.execution-info__section p {
-  font-size: var(--text-body);
-  line-height: 1.65;
 }
 
 /* Dense data stays compact but readable */
@@ -3005,76 +2452,6 @@ p,
 /* =========================================================
    TRADING — PROFESSIONAL TERMINAL LAYOUT
    ========================================================= */
-
-.trading-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.trading-heading__status {
-  display: grid;
-  grid-template-columns:
-    repeat(3, minmax(95px, 1fr));
-
-  border-left: 1px solid var(--mm-border);
-}
-
-.trading-heading__status > div {
-  padding: 2px 16px 4px;
-  border-right: 1px solid var(--mm-border);
-}
-
-.trading-heading__status span {
-  display: block;
-  margin-bottom: 5px;
-
-  color: var(--mm-text-dim);
-  font-size: var(--text-meta);
-  letter-spacing: 0.07em;
-}
-
-.trading-heading__status strong {
-  font-size: var(--text-body);
-  font-weight: 500;
-}
-
-/* Primary 3-column workstation */
-.trading-info + .terminal-grid {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1.05fr)
-    minmax(0, 1.15fr)
-    minmax(0, 1fr);
-
-  gap: 10px;
-  align-items: stretch;
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.trading-info + .terminal-grid > .panel {
-  height: 470px;
-  min-height: 470px;
-  max-height: 470px;
-
-  padding: 14px;
-
-  overflow: hidden;
-}
-
-/* Consistent panel title treatment */
-.trading-info
-  + .terminal-grid
-  .panel-title {
-  min-height: 34px;
-
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-
-  border-bottom: 1px solid var(--mm-border);
-}
 
 /* New order ticket */
 .order-form {
@@ -3268,9 +2645,6 @@ p,
 
 /* Responsive */
 @media (max-width: 1250px) {
-  .trading-heading {
-    flex-direction: column;
-  }
 
   .trading-info + .terminal-grid {
     grid-template-columns:
@@ -3283,18 +2657,8 @@ p,
 }
 
 @media (max-width: 850px) {
-  .trading-heading__status,
   .trading-info + .terminal-grid {
     grid-template-columns: 1fr;
-  }
-
-  .trading-heading__status {
-    width: 100%;
-    border-left: 0;
-  }
-
-  .trading-heading__status > div {
-    border-bottom: 1px solid var(--mm-border);
   }
 
   .trading-info + .terminal-grid > .panel,
@@ -3354,182 +2718,6 @@ p,
 }
 
 /* Compact status badges inside Trading header */
-.trading-heading__status .status-badge {
-  min-height: 0;
-  height: auto;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  gap: 6px;
-
-  font-size: 10px;
-  line-height: 1.2;
-}
-
-.trading-heading__status .status-badge__pixel {
-  width: 6px;
-  height: 6px;
-}
-
-.trading-heading__status > div {
-  min-width: 145px;
-  padding: 4px 22px;
-}
-
-.trading-heading__status span:first-child {
-  margin-bottom: 8px;
-}
-
-/* =========================================================
-   EXECUTION — PROFESSIONAL WORKSTATION LAYOUT
-   ========================================================= */
-
-.execution-info + .terminal-grid {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 10px;
-  align-items: stretch;
-  margin-bottom: 10px;
-}
-
-.execution-info + .terminal-grid > .panel {
-  height: auto;
-  min-height: 0;
-  max-height: none;
-
-  padding: 14px;
-  overflow: visible;
-}
-
-.execution-info + .terminal-grid .panel-title {
-  min-height: 34px;
-  padding-bottom: 10px;
-  margin-bottom: 12px;
-
-  border-bottom: 1px solid var(--mm-border);
-}
-
-/* Turn the raw labels into a real form grid */
-.execution-info + .terminal-grid > .panel {
-  display: grid;
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  column-gap: 12px;
-  row-gap: 10px;
-
-  align-content: start;
-}
-
-.execution-info + .terminal-grid .panel-title {
-  grid-column: 1 / -1;
-}
-
-.execution-info + .terminal-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  min-width: 0;
-}
-
-.execution-info + .terminal-grid input,
-.execution-info + .terminal-grid select {
-  width: 100%;
-  height: 38px;
-
-  box-sizing: border-box;
-  padding: 0 10px;
-}
-
-.execution-info + .terminal-grid button {
-  height: 38px;
-  align-self: end;
-}
-
-.execution-info + .terminal-grid .feedback {
-  grid-column: 1 / -1;
-
-  margin-top: 2px;
-  padding: 9px 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-/* Route preview action gets emphasis */
-.execution-info + .terminal-grid button {
-  border-color: #315348;
-  color: #61e6bb;
-}
-
-.execution-info + .terminal-grid button:hover {
-  background: #10201b;
-}
-
-/* Execution history */
-.execution-info ~ .panel:last-child {
-  padding: 14px;
-}
-
-.execution-info ~ .panel:last-child .panel-title {
-  padding-bottom: 10px;
-  margin-bottom: 0;
-
-  border-bottom: 1px solid var(--mm-border);
-}
-
-.execution-info ~ .panel:last-child .risk-item {
-  display: grid;
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(0, 1fr);
-
-  min-height: 38px;
-  padding: 0 8px;
-
-  border-bottom: 1px solid #172124;
-}
-
-.execution-info ~ .panel:last-child .risk-item:hover {
-  background: #0d1416;
-}
-
-.execution-info ~ .panel:last-child .risk-item > span {
-  color: var(--mm-text-soft);
-}
-
-.execution-info ~ .panel:last-child .risk-item > strong {
-  text-align: right;
-  font-weight: 500;
-}
-
-/* Route Preview + Latest Execution */
-.execution-info ~ .panel .metrics {
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.execution-info ~ .panel .metric-card {
-  padding: 12px 14px;
-}
-
-.execution-info ~ .panel .metric-card strong {
-  font-size: 17px;
-}
-
-.execution-info ~ .panel .risk-item {
-  min-height: 34px;
-  padding: 7px 8px;
-}
 
 /* =========================================================
    EXECUTION — HISTORY BLOTTER
@@ -3602,37 +2790,6 @@ p,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* OMS guide */
-.oms-info {
-  display: grid;
-  grid-template-columns: 1.1fr 1.1fr 1fr;
-  margin-bottom: 10px;
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.oms-info__section {
-  padding: 12px 14px;
-  border-right: 1px solid var(--mm-border);
-}
-
-.oms-info__section:last-child {
-  border-right: 0;
-}
-
-.oms-info__section .eyebrow {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--mm-green);
-}
-
-.oms-info__section p {
-  margin: 0;
-  color: var(--mm-text-soft);
-  font-size: var(--text-body);
-  line-height: 1.65;
 }
 
 /* OMS analytics */
@@ -4410,52 +3567,6 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   RISK — CONSISTENT PAGE STRUCTURE
-   ========================================================= */
-
-.risk-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.risk-info__section {
-  min-width: 0;
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.risk-info__section:last-child {
-  border-right: 0;
-}
-
-.risk-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.risk-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 /* Consistent vertical rhythm */
 .page > .metrics,
 .page > .risk-visualization-grid,
@@ -4536,19 +3647,6 @@ button.oms-table__row {
   box-sizing: border-box;
 
   overflow: hidden;
-}
-
-/* Consistent form controls */
-.risk-control-panel input,
-.risk-control-panel select,
-.risk-limits-panel input,
-.risk-info ~ .panel input,
-.risk-info ~ .panel select {
-  min-height: 38px;
-
-  padding: 0 10px;
-
-  box-sizing: border-box;
 }
 
 /* Portfolio limits clean horizontal block */
@@ -4747,14 +3845,6 @@ button.oms-table__row {
     min-height: 0;
     max-height: none;
   }
-}
-
-/* =========================================================
-   RISK — FINAL PROFESSIONAL POLISH
-   ========================================================= */
-
-.risk-info {
-  margin-bottom: 12px;
 }
 
 .risk-section-heading {
@@ -5142,52 +4232,6 @@ button.oms-table__row {
    RISK — FINAL MONITORING LAYER
    ========================================================= */
 
-.risk-status-strip {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.risk-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 9px 12px;
-
-  border-right: 1px solid var(--mm-border);
-}
-
-.risk-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.risk-status-strip > div > span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
-.risk-status-strip .status-badge {
-  min-height: 0;
-  height: auto;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  font-size: 9px;
-}
-
 
 /* ---------- Utilization ---------- */
 
@@ -5274,92 +4318,16 @@ button.oms-table__row {
 
 
 @media (max-width: 1000px) {
-  .risk-status-strip,
   .risk-utilization-grid {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
   }
-
-  .risk-status-strip > div:nth-child(2) {
-    border-right: 0;
-  }
 }
 
 @media (max-width: 650px) {
-  .risk-status-strip,
   .risk-utilization-grid {
     grid-template-columns: 1fr;
   }
-
-  .risk-status-strip > div {
-    border-right: 0;
-    border-bottom:
-      1px solid var(--mm-border);
-  }
-
-  .risk-status-strip > div:last-child {
-    border-bottom: 0;
-  }
-}
-
-/* =========================================================
-   FIX WORKSTATION
-   ========================================================= */
-
-.fix-info {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border: 1px solid #202b2e;
-  margin-bottom: 10px;
-}
-
-.fix-info__section {
-  min-height: 118px;
-  padding: 16px;
-  border-right: 1px solid #202b2e;
-}
-
-.fix-info__section:last-child {
-  border-right: 0;
-}
-
-.fix-info__section p {
-  margin: 10px 0 0;
-  color: #8b989a;
-  font-size: 11px;
-  line-height: 1.7;
-}
-
-.fix-status-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border: 1px solid #202b2e;
-  margin-bottom: 10px;
-}
-
-.fix-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 38px;
-  padding: 0 14px;
-  border-right: 1px solid #202b2e;
-}
-
-.fix-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.fix-status-strip span {
-  color: #667174;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-
-.fix-status-strip strong {
-  font-size: 9px;
-  letter-spacing: 0.08em;
 }
 
 .fix-state--good {
@@ -5478,10 +4446,6 @@ button.oms-table__row {
     border-bottom: 0;
   }
 
-  .fix-status-strip {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .fix-message-row {
     grid-template-columns:
       55px
@@ -5532,140 +4496,15 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   FIX — CONSISTENT TERMINAL LAYOUT
-   ========================================================= */
-
-/* Match Risk / OMS information guide */
-.fix-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.fix-info__section {
-  min-width: 0;
-
-  min-height: 0;
-
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.fix-info__section:last-child {
-  border-right: 0;
-}
-
-.fix-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.fix-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 
 /* ---------------------------------------------------------
    Status strip — same sizing as Risk
    --------------------------------------------------------- */
 
-.fix-status-strip {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.fix-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  min-height: 38px;
-
-  box-sizing: border-box;
-
-  padding: 8px 12px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.fix-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.fix-status-strip > div > span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
 
 /* ---------------------------------------------------------
    KPI cards
    --------------------------------------------------------- */
-
-.fix-status-strip + .metrics {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 8px;
-
-  margin-bottom: 10px;
-}
-
-.fix-status-strip
-  + .metrics
-  .metric-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  height: 88px;
-  min-height: 88px;
-  max-height: 88px;
-
-  box-sizing: border-box;
-
-  padding: 12px 14px;
-
-  overflow: hidden;
-}
-
-.fix-status-strip
-  + .metrics
-  .metric-card strong {
-  font-size: 17px;
-}
 
 
 /* ---------------------------------------------------------
@@ -5876,22 +4715,10 @@ button.oms-table__row {
     grid-template-columns: 1fr;
   }
 
-  .fix-status-strip {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
   .fix-session-grid > .panel {
     height: auto;
     min-height: 0;
     max-height: none;
-  }
-}
-
-@media (max-width: 700px) {
-  .fix-status-strip,
-  .fix-status-strip + .metrics {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -5985,89 +4812,8 @@ button.oms-table__row {
    OMS — TRADING-STYLE TOP HEADER
    ========================================================= */
 
-.oms-page-heading {
-  display: grid;
-  grid-template-columns:
-    minmax(260px, 1fr)
-    minmax(760px, auto);
-
-  align-items: stretch;
-
-  min-height: 96px;
-
-  margin-bottom: 10px;
-}
-
-.oms-page-heading__title {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  min-width: 0;
-}
-
-.oms-page-heading__title h1 {
-  margin: 8px 0 0;
-}
-
 
 /* ---------- Header stats ---------- */
-
-.oms-header-stats {
-  display: grid;
-
-  grid-template-columns:
-    repeat(5, minmax(125px, 1fr));
-
-  align-self: stretch;
-
-  border-left:
-    1px solid var(--mm-border);
-}
-
-.oms-header-stat {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  min-width: 0;
-
-  padding: 0 18px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.oms-header-stat span {
-  display: block;
-
-  margin-bottom: 12px;
-
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  line-height: 1;
-
-  letter-spacing: 0.08em;
-
-  white-space: nowrap;
-}
-
-.oms-header-stat strong {
-  display: block;
-
-  color: var(--mm-green);
-
-  font-size: 12px;
-  line-height: 1;
-
-  font-weight: 500;
-
-  white-space: nowrap;
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 
 /* ---------- Remove old KPI strip layout ---------- */
@@ -6079,196 +4825,11 @@ button.oms-table__row {
 
 /* ---------- Responsive ---------- */
 
-@media (max-width: 1350px) {
-  .oms-page-heading {
-    grid-template-columns:
-      minmax(220px, 0.75fr)
-      minmax(650px, 1.25fr);
-  }
-
-  .oms-header-stat {
-    padding: 0 12px;
-  }
-
-  .oms-header-stat span {
-    font-size: 7px;
-  }
-}
-
-@media (max-width: 1150px) {
-  .oms-page-heading {
-    grid-template-columns: 1fr;
-
-    min-height: 0;
-  }
-
-  .oms-page-heading__title {
-    min-height: 82px;
-  }
-
-  .oms-header-stats {
-    border-top:
-      1px solid var(--mm-border);
-
-    border-left:
-      1px solid var(--mm-border);
-  }
-
-  .oms-header-stat {
-    min-height: 62px;
-  }
-}
-
-@media (max-width: 800px) {
-  .oms-header-stats {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* =========================================================
-   FIX — FINAL CONSISTENCY PASS
-   Header intentionally unchanged
-   ========================================================= */
-
-/* ---------- Information guide ---------- */
-
-.fix-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.fix-info__section {
-  min-width: 0;
-  min-height: 0;
-
-  padding: 12px 14px;
-
-  border-right: 1px solid var(--mm-border);
-}
-
-.fix-info__section:last-child {
-  border-right: 0;
-}
-
-.fix-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.fix-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 
 /* ---------- Compact status strip ---------- */
 
-.fix-status-strip {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.fix-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right: 1px solid var(--mm-border);
-}
-
-.fix-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.fix-status-strip > div > span {
-  margin: 0;
-
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-
-  white-space: nowrap;
-}
-
-.fix-status-strip .status-badge {
-  min-height: 0;
-  height: auto;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  font-size: 9px;
-}
-
 
 /* ---------- KPI row ---------- */
-
-.fix-status-strip + .metrics {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  gap: 8px;
-
-  margin-bottom: 10px;
-}
-
-.fix-status-strip + .metrics .metric-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  height: 88px;
-  min-height: 88px;
-  max-height: 88px;
-
-  box-sizing: border-box;
-
-  padding: 12px 14px;
-
-  overflow: hidden;
-}
-
-.fix-status-strip + .metrics .metric-card .eyebrow {
-  font-size: 8px;
-  letter-spacing: 0.09em;
-}
-
-.fix-status-strip + .metrics .metric-card strong {
-  font-size: 17px;
-  font-weight: 500;
-}
 
 
 /* ---------- Session / diagnostics ---------- */
@@ -6444,12 +5005,6 @@ button.oms-table__row {
     grid-template-columns: 1fr;
   }
 
-  .fix-status-strip,
-  .fix-status-strip + .metrics {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
   .fix-session-grid > .panel {
     height: auto;
     min-height: 0;
@@ -6457,98 +5012,8 @@ button.oms-table__row {
   }
 }
 
-@media (max-width: 700px) {
-  .fix-status-strip,
-  .fix-status-strip + .metrics {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* =========================================================
-   REPLAY — PROFESSIONAL WORKSTATION
-   ========================================================= */
-
-.replay-info {
-  display: grid;
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.replay-info__section {
-  min-width: 0;
-
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.replay-info__section:last-child {
-  border-right: 0;
-}
-
-.replay-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.replay-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 
 /* ---------- Operational status ---------- */
-
-.replay-status-strip {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.replay-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.replay-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.replay-status-strip > div > span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
 
 
 /* ---------- Offline ---------- */
@@ -6748,17 +5213,9 @@ button.oms-table__row {
   .replay-state-grid {
     grid-template-columns: 1fr;
   }
-
-  .replay-status-strip {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 700px) {
-  .replay-status-strip {
-    grid-template-columns: 1fr;
-  }
 
   .replay-transport {
     align-items: stretch;
@@ -6831,104 +5288,8 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   REPLAY — FINAL CONSISTENCY PASS
-   ========================================================= */
-
-/* ---------- Information guide ---------- */
-
-.replay-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.replay-info__section {
-  min-width: 0;
-
-  padding: 12px 14px;
-
-  border-right: 1px solid var(--mm-border);
-}
-
-.replay-info__section:last-child {
-  border-right: 0;
-}
-
-.replay-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.replay-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 
 /* ---------- Compact status strip ---------- */
-
-.replay-status-strip {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.replay-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right: 1px solid var(--mm-border);
-}
-
-.replay-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.replay-status-strip > div > span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
-.replay-status-strip .status-badge {
-  min-height: 0;
-  height: auto;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  font-size: 9px;
-}
 
 
 /* ---------- KPI row ---------- */
@@ -7254,7 +5615,6 @@ button.oms-table__row {
     grid-template-columns: 1fr;
   }
 
-  .replay-status-strip,
   .replay-metrics {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
@@ -7284,109 +5644,13 @@ button.oms-table__row {
 }
 
 @media (max-width: 700px) {
-  .replay-status-strip,
   .replay-metrics {
     grid-template-columns: 1fr;
   }
 }
 
-/* =========================================================
-   OPERATIONS — MARKET DATA CONSOLE
-   ========================================================= */
-
-.operations-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr 1.1fr 1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.operations-info__section {
-  min-width: 0;
-
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.operations-info__section:last-child {
-  border-right: 0;
-}
-
-.operations-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.operations-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 
 /* ---------- Status ---------- */
-
-.operations-status-strip {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.operations-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.operations-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.operations-status-strip > div > span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
-.operations-status-strip .status-badge {
-  min-height: 0;
-  height: auto;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  font-size: 9px;
-}
 
 
 /* ---------- KPIs ---------- */
@@ -7631,7 +5895,6 @@ button.oms-table__row {
     grid-template-columns: 1fr;
   }
 
-  .operations-status-strip,
   .operations-metrics {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
@@ -7639,7 +5902,6 @@ button.oms-table__row {
 }
 
 @media (max-width: 650px) {
-  .operations-status-strip,
   .operations-metrics {
     grid-template-columns: 1fr;
   }
@@ -7864,98 +6126,8 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   SYSTEM — ENGINE TELEMETRY
-   ========================================================= */
-
-.system-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.system-info__section {
-  min-width: 0;
-
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.system-info__section:last-child {
-  border-right: 0;
-}
-
-.system-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.system-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 
 /* ---------- Status ---------- */
-
-.system-status-strip {
-  display: grid;
-
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.system-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.system-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.system-status-strip > div > span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
-.system-status-strip > div > strong {
-  font-size: var(--text-body);
-  font-weight: 500;
-}
 
 
 /* ---------- KPI cards ---------- */
@@ -8109,7 +6281,6 @@ button.oms-table__row {
     grid-template-columns: 1fr;
   }
 
-  .system-status-strip,
   .system-metrics,
   .system-latency-metrics {
     grid-template-columns:
@@ -8118,63 +6289,14 @@ button.oms-table__row {
 }
 
 @media (max-width: 650px) {
-  .system-status-strip,
   .system-metrics,
   .system-latency-metrics {
     grid-template-columns: 1fr;
   }
 }
 
-/* =========================================================
-   SYSTEM — PROFESSIONAL POLISH
-   ========================================================= */
-
-.system-info {
-  gap: 10px;
-  border: 0;
-  background: transparent;
-}
-
-.system-info__section {
-  position: relative;
-
-  min-height: 118px;
-
-  padding: 14px 16px;
-
-  border: 1px solid var(--mm-border);
-
-  background:
-    linear-gradient(
-      180deg,
-      rgba(16, 25, 28, 0.72),
-      rgba(8, 13, 15, 0.96)
-    );
-}
-
-.system-info__section:last-child {
-  border-right:
-    1px solid var(--mm-border);
-}
-
 
 /* ---------- Status ---------- */
-
-.system-status-strip {
-  min-height: 46px;
-}
-
-.system-status-strip > div {
-  padding: 0 14px;
-}
-
-.system-status-strip > div > span {
-  font-size: 8px;
-}
-
-.system-status-strip > div > strong {
-  font-size: 11px;
-}
 
 
 /* ---------- KPI cards ---------- */
@@ -8291,53 +6413,6 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   BACKTEST — INFO GUIDE
-   ========================================================= */
-
-.backtest-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.backtest-info__section {
-  min-width: 0;
-
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.backtest-info__section:last-child {
-  border-right: 0;
-}
-
-.backtest-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.backtest-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 @media (max-width: 1000px) {
   .backtest-info {
     grid-template-columns: 1fr;
@@ -8357,62 +6432,6 @@ button.oms-table__row {
 /* =========================================================
    BACKTEST — STATUS STRIP
    ========================================================= */
-
-.backtest-status-strip {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.backtest-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.backtest-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.backtest-status-strip span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
-.backtest-status-strip strong {
-  overflow: hidden;
-
-  color: var(--mm-green);
-
-  font-size: var(--text-body);
-  font-weight: 500;
-
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 800px) {
-  .backtest-status-strip {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
 
 /* =========================================================
    BACKTEST — PRIMARY WORKSPACE
@@ -8799,35 +6818,7 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   BACKTEST — FINAL CONSISTENCY PASS
-   ========================================================= */
-
-/* Consistent vertical rhythm */
-.backtest-info,
-.backtest-status-strip,
-.backtest-workspace,
-.backtest-metrics,
-.backtest-chart-grid {
-  margin-bottom: 10px;
-}
-
-/* Information guide matches newer pages */
-.backtest-info {
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-}
-
 /* Status strip */
-.backtest-status-strip {
-  min-height: 40px;
-}
-
-.backtest-status-strip > div {
-  padding: 0 12px;
-}
 
 /* Primary workspace */
 .backtest-workspace {
@@ -8927,7 +6918,6 @@ button.oms-table__row {
 }
 
 /* Keep long values from breaking layout */
-.backtest-status-strip strong,
 .backtest-summary-panel strong,
 .backtest-quality-row strong,
 .backtest-table-row strong {
@@ -8955,48 +6945,10 @@ button.oms-table__row {
 }
 
 @media (max-width: 700px) {
-  .backtest-status-strip,
   .backtest-metrics,
   .backtest-config-fields {
     grid-template-columns: 1fr;
   }
-}
-
-/* =========================================================
-   ANALYTICS — INFORMATION GUIDE
-   ========================================================= */
-
-.analytics-info {
-  display: grid;
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.analytics-info__section {
-  min-width: 0;
-
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.analytics-info__section:last-child {
-  border-right: 0;
-}
-
-.analytics-info__section p {
-  margin: 7px 0 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.55;
 }
 
 @media (max-width: 900px) {
@@ -9018,65 +6970,6 @@ button.oms-table__row {
 /* =========================================================
    ANALYTICS — STATUS STRIP
    ========================================================= */
-
-.analytics-status-strip {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.analytics-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.analytics-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.analytics-status-strip span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
-.analytics-status-strip strong {
-  color: var(--mm-green);
-
-  font-size: var(--text-body);
-  font-weight: 500;
-
-  white-space: nowrap;
-}
-
-@media (max-width: 800px) {
-  .analytics-status-strip {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 500px) {
-  .analytics-status-strip {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* =========================================================
    ANALYTICS — PORTFOLIO KPIS
@@ -9375,35 +7268,7 @@ button.oms-table__row {
   max-height: 230px;
 }
 
-/* =========================================================
-   ANALYTICS — FINAL CONSISTENCY PASS
-   ========================================================= */
-
-.analytics-info,
-.analytics-status-strip,
-.analytics-metrics,
-.analytics-model-grid,
-.analytics-pairs-visualization,
-.analytics-visualization-grid {
-  margin-bottom: 10px;
-}
-
-/* Info guide */
-.analytics-info {
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-}
-
 /* Status strip */
-.analytics-status-strip {
-  min-height: 40px;
-}
-
-.analytics-status-strip > div {
-  padding: 0 12px;
-}
 
 /* KPI cards */
 .analytics-metrics {
@@ -9508,7 +7373,6 @@ button.oms-table__row {
 }
 
 /* Prevent long values breaking layout */
-.analytics-status-strip strong,
 .analytics-detail-row strong,
 .analytics-options-greeks strong,
 .analytics-validation-value strong {
@@ -9533,7 +7397,6 @@ button.oms-table__row {
 }
 
 @media (max-width: 700px) {
-  .analytics-status-strip,
   .analytics-metrics {
     grid-template-columns: 1fr;
   }
@@ -9677,53 +7540,6 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   OVERVIEW — INFORMATION GUIDE
-   ========================================================= */
-
-.overview-info {
-  display: grid;
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.overview-info__section {
-  min-width: 0;
-
-  padding: 12px 14px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.overview-info__section:last-child {
-  border-right: 0;
-}
-
-.overview-info__section .eyebrow {
-  display: block;
-
-  margin-bottom: 7px;
-
-  color: var(--mm-green);
-}
-
-.overview-info__section p {
-  margin: 0;
-
-  color: var(--mm-text-soft);
-
-  font-size: var(--text-body);
-  line-height: 1.65;
-}
-
 @media (max-width: 900px) {
   .overview-info {
     grid-template-columns: 1fr;
@@ -9745,72 +7561,12 @@ button.oms-table__row {
    OVERVIEW — STATUS STRIP
    ========================================================= */
 
-.overview-status-strip {
-  display: grid;
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
-
-  min-height: 40px;
-  margin-bottom: 10px;
-
-  border: 1px solid var(--mm-border);
-  background: #080d0f;
-}
-
-.overview-status-strip > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 12px;
-  min-width: 0;
-
-  padding: 0 12px;
-
-  border-right:
-    1px solid var(--mm-border);
-}
-
-.overview-status-strip > div:last-child {
-  border-right: 0;
-}
-
-.overview-status-strip span {
-  color: var(--mm-text-dim);
-
-  font-size: var(--text-meta);
-  letter-spacing: 0.08em;
-}
-
-.overview-status-strip strong {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.07em;
-
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .overview-state--good {
   color: var(--mm-green);
 }
 
 .overview-state--warn {
   color: #e4c66a;
-}
-
-@media (max-width: 800px) {
-  .overview-status-strip {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 500px) {
-  .overview-status-strip {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* =========================================================
@@ -10108,35 +7864,7 @@ button.oms-table__row {
   }
 }
 
-/* =========================================================
-   OVERVIEW — FINAL CONSISTENCY PASS
-   ========================================================= */
-
-.overview-info,
-.overview-status-strip,
-.overview-metrics,
-.overview-chart-grid,
-.overview-health-grid,
-.overview-operations-panel {
-  margin-bottom: 10px;
-}
-
-/* Keep all top-level Overview sections aligned */
-.overview-info {
-  grid-template-columns:
-    1.1fr
-    1.1fr
-    1fr;
-}
-
 /* Status strip */
-.overview-status-strip {
-  min-height: 40px;
-}
-
-.overview-status-strip > div {
-  padding: 0 12px;
-}
 
 /* KPI cards */
 .overview-metrics {
@@ -10214,7 +7942,6 @@ button.oms-table__row {
 }
 
 /* Prevent long values from breaking layout */
-.overview-status-strip strong,
 .overview-health-row strong,
 .overview-operations-grid strong,
 .overview-venue-row strong {
@@ -10237,133 +7964,78 @@ button.oms-table__row {
 }
 
 @media (max-width: 700px) {
-  .overview-status-strip,
   .overview-metrics {
     grid-template-columns: 1fr;
   }
 }
 
 /* =========================================================
-   ENGINEERING JOURNAL
+   ENGINEERING JOURNAL — CANONICAL RECORD SYSTEM
    ========================================================= */
 
 .journal-index {
-  border-top: 1px solid var(--mm-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  width: 100%;
+
+  border: 0;
 }
-
-.journal-entry {
-  display: grid;
-  grid-template-columns:
-    64px
-    minmax(0, 1fr)
-    30px;
-
-  gap: 18px;
-
-  align-items: center;
-
-  min-height: 112px;
-
-  padding: 14px 4px;
-
-  border-bottom: 1px solid var(--mm-border);
-
-  transition:
-    background 120ms ease,
-    padding 120ms ease;
-}
-
-.journal-entry:hover {
-  padding-left: 12px;
-
-  background: #0a1012;
-}
-
-.journal-entry__number {
-  color: var(--mm-text-dim);
-
-  font-size: 10px;
-  letter-spacing: 0.1em;
-}
-
-.journal-entry__content {
-  min-width: 0;
-}
-
-.journal-entry__content h2 {
-  margin: 5px 0 7px;
-
-  font-size: 16px;
-  font-weight: 500;
-
-  letter-spacing: 0.015em;
-}
-
-.journal-entry__content p {
-  max-width: 780px;
-
-  margin: 0;
-
-  color: var(--mm-text-dim);
-
-  font-size: 10px;
-  line-height: 1.65;
-}
-
-.journal-entry__arrow {
-  color: var(--mm-text-dim);
-
-  font-size: 15px;
-
-  transition:
-    color 120ms ease,
-    transform 120ms ease;
-}
-
-.journal-entry:hover
-  .journal-entry__arrow {
-  color: var(--mm-green);
-
-  transform: translateX(3px);
-}
-
-@media (max-width: 650px) {
-  .journal-entry {
-    grid-template-columns:
-      40px
-      minmax(0, 1fr);
-
-    min-height: 100px;
-  }
-
-  .journal-entry__arrow {
-    display: none;
-  }
-}
-
-/* =========================================================
-   ENGINEERING JOURNAL — EXPANDED REFLECTION
-   ========================================================= */
 
 .journal-entry {
   display: block;
-  padding: 0;
+
+  width: 100%;
+
+  background: rgba(2, 12, 9, 0.76);
+
+  border:
+    1px solid rgba(82, 215, 166, 0.16);
+
+  border-radius: var(--mm-radius);
+
+  overflow: hidden;
+
+  box-shadow: none;
+
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.journal-entry:hover {
+  background: rgba(3, 15, 11, 0.80);
+
+  border-color:
+    rgba(82, 215, 166, 0.24);
+}
+
+.journal-entry--expanded {
+  background: rgba(2, 12, 9, 0.82);
+
+  border-color:
+    rgba(82, 215, 166, 0.24);
 }
 
 .journal-entry__trigger {
   display: grid;
-  grid-template-columns:
-    64px
-    minmax(0, 1fr)
-    30px;
 
-  gap: 18px;
+  grid-template-columns:
+    44px
+    minmax(0, 1fr)
+    24px;
+
+  gap: 14px;
+
   align-items: center;
 
   width: 100%;
-  min-height: 112px;
+  min-height: 82px;
 
-  padding: 14px 4px;
+  box-sizing: border-box;
+
+  padding: 14px 16px;
 
   border: 0;
   background: transparent;
@@ -10375,85 +8047,209 @@ button.oms-table__row {
 }
 
 .journal-entry__trigger:hover {
-  background: #0a1012;
+  background:
+    rgba(89, 255, 190, 0.025);
 }
 
 .journal-entry--expanded
   .journal-entry__trigger {
-  background: #0a1012;
+  background:
+    rgba(89, 255, 190, 0.018);
+
+  border-bottom:
+    1px solid rgba(82, 215, 166, 0.11);
+}
+
+.journal-entry__number {
+  color: rgba(135, 160, 148, 0.68);
+
+  font-size: 9px;
+  line-height: 1;
+
+  letter-spacing: 0.12em;
+}
+
+.journal-entry__content {
+  min-width: 0;
+}
+
+.journal-entry__content .eyebrow {
+  display: block;
+
+  margin: 0 0 6px;
+
+  color: rgba(121, 182, 153, 0.72);
+
+  font-size: 8px;
+
+  letter-spacing: 0.12em;
+}
+
+.journal-entry__content h2 {
+  margin: 0 0 6px;
+
+  color: rgba(237, 252, 244, 0.96);
+
+  font-size: 14px;
+  font-weight: 500;
+
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+}
+
+.journal-entry__content p {
+  max-width: 900px;
+
+  margin: 0;
+
+  color: rgba(191, 209, 200, 0.78);
+
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.journal-entry__arrow {
+  justify-self: end;
+
+  color: rgba(141, 170, 156, 0.64);
+
+  font-size: 14px;
+  line-height: 1;
+
+  transition:
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.journal-entry:hover
+  .journal-entry__arrow {
+  color: var(--mm-accent);
 }
 
 .journal-entry--expanded
   .journal-entry__arrow {
-  color: var(--mm-green);
+  color: var(--mm-accent);
+
+  transform: rotate(180deg);
 }
+
+
+/* Expanded content stays inside the same record */
 
 .journal-reflection {
   display: grid;
+
   grid-template-columns:
     repeat(2, minmax(0, 1fr));
 
   gap: 0;
 
-  margin: 0 64px 18px;
+  margin: 0;
 
-  border:
-    1px solid var(--mm-border);
+  padding: 0 16px 16px 74px;
 
-  background: #080d0f;
+  background: transparent;
+
+  border: 0;
 }
 
 .journal-reflection > div {
-  min-height: 150px;
-
-  padding: 16px;
+  min-height: 118px;
 
   box-sizing: border-box;
 
+  padding: 15px 18px;
+
+  background: transparent;
+
+  border: 0;
+  border-top:
+    1px solid rgba(82, 215, 166, 0.09);
+}
+
+.journal-reflection > div:nth-child(odd) {
+  padding-left: 0;
+
   border-right:
-    1px solid var(--mm-border);
-
-  border-bottom:
-    1px solid var(--mm-border);
+    1px solid rgba(82, 215, 166, 0.09);
 }
 
-.journal-reflection > div:nth-child(2n) {
-  border-right: 0;
-}
-
-.journal-reflection > div:nth-last-child(-n + 2) {
-  border-bottom: 0;
+.journal-reflection > div:nth-child(even) {
+  padding-right: 0;
 }
 
 .journal-reflection .eyebrow {
-  color: var(--mm-green);
+  display: block;
+
+  margin: 0;
+
+  color: rgba(120, 185, 154, 0.72);
+
+  font-size: 8px;
+  letter-spacing: 0.12em;
 }
 
 .journal-reflection p {
   margin: 9px 0 0;
 
-  color: var(--mm-text-soft);
+  max-width: 64ch;
 
-  font-size: 11px;
-  line-height: 1.75;
+  color: rgba(213, 226, 219, 0.84);
+
+  font-size: 10px;
+  line-height: 1.65;
 }
 
+
+/* Responsive */
+
 @media (max-width: 800px) {
+  .journal-entry__trigger {
+    grid-template-columns:
+      34px
+      minmax(0, 1fr)
+      20px;
+
+    min-height: 76px;
+
+    padding: 12px 14px;
+  }
+
   .journal-reflection {
     grid-template-columns: 1fr;
 
-    margin-left: 40px;
-    margin-right: 0;
+    padding:
+      0
+      14px
+      14px
+      48px;
   }
 
   .journal-reflection > div {
-    border-right: 0;
-    border-bottom:
-      1px solid var(--mm-border);
+    min-height: 0;
+
+    padding: 14px 0;
+
+    border-right: 0 !important;
+
+    border-top:
+      1px solid rgba(82, 215, 166, 0.09);
+  }
+}
+
+@media (max-width: 600px) {
+  .journal-entry__number {
+    display: none;
   }
 
-  .journal-reflection > div:last-child {
-    border-bottom: 0;
+  .journal-entry__trigger {
+    grid-template-columns:
+      minmax(0, 1fr)
+      20px;
+  }
+
+  .journal-reflection {
+    padding-left: 14px;
   }
 }
 
@@ -10915,3 +8711,2432 @@ body {
   position: relative;
   z-index: 2;
 }
+
+/* =========================================================
+
+/* =========================================================
+   MINIMATCH — UNIFIED TERMINAL THEME
+   ========================================================= */
+
+:root {
+  --mm-bg: rgba(3, 9, 8, 0.82);
+  --mm-bg-raised: rgba(4, 12, 10, 0.86);
+  --mm-bg-input: rgba(2, 8, 7, 0.90);
+
+  --mm-border: rgba(103, 215, 169, 0.14);
+  --mm-border-active: rgba(103, 232, 181, 0.34);
+  --mm-divider: rgba(103, 215, 169, 0.10);
+
+  --mm-text: rgba(242, 249, 245, 0.96);
+  --mm-text-secondary: rgba(192, 207, 200, 0.88);
+  --mm-text-muted: rgba(126, 151, 139, 0.82);
+
+  --mm-accent: #66e8b4;
+  --mm-warning: #dfc45d;
+  --mm-danger: #ec7180;
+
+  --mm-radius: 4px;
+}
+
+
+/* =========================================================
+   VIDEO BACKGROUND
+   ========================================================= */
+
+.video-background {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  background: #010503;
+}
+
+/* blurred copy fills unused aspect-ratio space */
+.video-background-fill {
+  position: absolute;
+  inset: -5%;
+  width: 110%;
+  height: 110%;
+  object-fit: cover;
+  filter:
+    blur(30px)
+    brightness(0.40)
+    saturate(0.85);
+  transform: scale(1.06);
+}
+
+/* actual frame remains uncropped */
+.video-background-main {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter:
+    brightness(0.72)
+    saturate(0.78);
+}
+
+/* extremely subtle edge treatment */
+.video-background-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse at center,
+      transparent 48%,
+      rgba(0, 5, 3, 0.18) 100%
+    );
+}
+
+
+/* =========================================================
+   APP CANVAS
+   ========================================================= */
+
+html,
+body,
+#root,
+.app-shell,
+.main-content,
+.page {
+  background: transparent !important;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+}
+
+.main-content {
+  padding: 24px 26px 42px !important;
+}
+
+
+/* =========================================================
+   PAGE IDENTITY — NEVER A CARD
+   ========================================================= */
+
+.main-content > h1 {
+  margin: 4px 0 0 !important;
+
+  color: var(--mm-text) !important;
+
+  font-weight: 600 !important;
+
+  text-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.85) !important;
+}
+
+
+/* =========================================================
+   EYEBROWS / SMALL LABELS
+   ========================================================= */
+
+.eyebrow,
+.metric-label,
+.panel-label,
+.card-label,
+.section-label,
+.field-label {
+  color: var(--mm-text-muted) !important;
+
+  letter-spacing: 0.10em !important;
+
+  text-shadow: none !important;
+}
+
+
+/* =========================================================
+   FEEDBACK / CONNECTION BAR
+   ========================================================= */
+
+.feedback {
+  background: rgba(2, 8, 7, 0.74) !important;
+
+  border:
+    1px solid var(--mm-border) !important;
+
+  border-radius: var(--mm-radius) !important;
+
+  box-shadow: none !important;
+
+  backdrop-filter: blur(7px) !important;
+
+  color: var(--mm-text-secondary) !important;
+}
+
+
+/* =========================================================
+   ALL STATUS STRIPS
+   ========================================================= */
+
+[class$="-status-strip"],
+[class*="-status-strip "] {
+  min-height: 42px !important;
+
+  background: var(--mm-bg) !important;
+
+  border:
+    1px solid var(--mm-border) !important;
+
+  border-radius: var(--mm-radius) !important;
+
+  box-shadow: none !important;
+
+  backdrop-filter: blur(9px) !important;
+
+  margin-bottom: 14px !important;
+}
+
+[class$="-status-strip"] > *,
+[class*="-status-strip "] > * {
+  background: transparent !important;
+
+  border-color:
+    var(--mm-divider) !important;
+
+  box-shadow: none !important;
+}
+
+
+/* =========================================================
+   REAL DASHBOARD SURFACES
+   ========================================================= */
+
+.card,
+[class$="-panel"],
+[class$="-card"] {
+  background: var(--mm-bg) !important;
+
+  border:
+    1px solid var(--mm-border) !important;
+
+  border-radius: var(--mm-radius) !important;
+
+  backdrop-filter:
+    blur(10px)
+    saturate(103%) !important;
+
+  -webkit-backdrop-filter:
+    blur(10px)
+    saturate(103%) !important;
+
+  box-shadow:
+    0 7px 20px rgba(0, 0, 0, 0.18) !important;
+}
+
+
+/* remove decorative washes from prior component styles */
+
+.panel::before,
+.panel::after,
+.card::before,
+.card::after,
+.metric-card::before,
+.metric-card::after {
+  opacity: 0 !important;
+}
+
+
+/* =========================================================
+   METRICS
+   ========================================================= */
+
+.metrics,
+[class*="-metrics"] {
+  gap: 12px !important;
+}
+
+.metrics > * {
+  min-height: 92px !important;
+  padding: 15px 16px !important;
+}
+
+.metric-card .value,
+.metric-card [class*="value"] {
+  color: var(--mm-text) !important;
+}
+
+
+/* =========================================================
+   PANEL TITLES
+   ========================================================= */
+
+.card-title {
+  margin: 0 0 12px !important;
+  padding: 0 0 10px !important;
+
+  border-bottom:
+    1px solid var(--mm-divider) !important;
+
+  color: var(--mm-text) !important;
+
+  text-shadow: none !important;
+}
+
+
+/* =========================================================
+   BODY TEXT
+   ========================================================= */
+
+.main-content p,
+.main-content td,
+.main-content .description,
+.main-content .helper-text {
+  color: var(--mm-text-secondary) !important;
+}
+
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
+
+.main-content input,
+.main-content select,
+.main-content textarea {
+  background: var(--mm-bg-input) !important;
+
+  color: var(--mm-text) !important;
+
+  border:
+    1px solid var(--mm-border) !important;
+
+  border-radius: var(--mm-radius) !important;
+
+  box-shadow:
+    inset 0 1px 4px rgba(0, 0, 0, 0.28) !important;
+}
+
+.main-content input:focus,
+.main-content select:focus,
+.main-content textarea:focus {
+  outline: none !important;
+
+  border-color:
+    var(--mm-border-active) !important;
+
+  box-shadow: none !important;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.main-content button {
+  background: rgba(5, 20, 15, 0.88) !important;
+
+  color: var(--mm-accent) !important;
+
+  border:
+    1px solid rgba(103, 232, 181, 0.23) !important;
+
+  border-radius: var(--mm-radius) !important;
+
+  box-shadow: none !important;
+
+  text-shadow: none !important;
+}
+
+.main-content button:hover {
+  background: rgba(8, 30, 22, 0.90) !important;
+
+  border-color:
+    var(--mm-border-active) !important;
+}
+
+
+/* =========================================================
+   TABLES
+   ========================================================= */
+
+.main-content table,
+.main-content thead,
+.main-content tbody,
+.main-content tr,
+.main-content th,
+.main-content td {
+  background: transparent !important;
+}
+
+.main-content th,
+.main-content [class*="table__header"],
+.main-content [class*="row--header"] {
+  color: var(--mm-text-muted) !important;
+}
+
+.main-content tr {
+  border-color:
+    var(--mm-divider) !important;
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar {
+  background:
+    rgba(1, 7, 6, 0.90) !important;
+
+  border-right:
+    1px solid var(--mm-divider) !important;
+
+  backdrop-filter:
+    blur(14px)
+    saturate(102%) !important;
+
+  -webkit-backdrop-filter:
+    blur(14px)
+    saturate(102%) !important;
+
+  box-shadow: none !important;
+
+  padding: 20px 11px 26px !important;
+}
+
+
+/* navigation rhythm */
+
+.sidebar nav,
+.sidebar-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+}
+
+
+/* normal navigation = no box */
+
+.sidebar a,
+.sidebar button,
+.sidebar .nav-item,
+.sidebar .sidebar-item {
+  min-height: 44px !important;
+
+  padding: 0 13px !important;
+
+  background: transparent !important;
+
+  color:
+    rgba(190, 206, 198, 0.87) !important;
+
+  border:
+    1px solid transparent !important;
+
+  border-radius:
+    var(--mm-radius) !important;
+
+  box-shadow: none !important;
+
+  text-shadow: none !important;
+}
+
+
+/* hover */
+
+.sidebar a:hover,
+.sidebar button:hover,
+.sidebar .nav-item:hover,
+.sidebar .sidebar-item:hover {
+  background:
+    rgba(102, 232, 180, 0.045) !important;
+
+  border-color:
+    rgba(102, 232, 180, 0.08) !important;
+
+  color: var(--mm-text) !important;
+}
+
+
+/* active navigation only */
+
+.sidebar .active,
+.sidebar [aria-current="page"] {
+  background:
+    rgba(102, 232, 180, 0.085) !important;
+
+  color:
+    var(--mm-accent) !important;
+
+  border-color:
+    rgba(102, 232, 180, 0.15) !important;
+
+  box-shadow:
+    inset 2px 0 0 var(--mm-accent) !important;
+}
+
+
+/* =========================================================
+   SEMANTIC COLOR ONLY
+   ========================================================= */
+
+.status-active,
+.status-safe {
+  color: var(--mm-accent) !important;
+}
+
+.status-warning,
+.status-offline {
+  color: var(--mm-warning) !important;
+}
+
+.status-error,
+.status-danger {
+  color: var(--mm-danger) !important;
+}
+
+
+/* =========================================================
+   NO RANDOM GLOWS
+   ========================================================= */
+
+.main-content *,
+.sidebar * {
+  text-shadow: none;
+}
+
+
+/* =========================================================
+   MINIMATCH — CONSISTENT PAGE HEADER
+   ========================================================= */
+
+/*
+ * Every page gets the same structure:
+ *
+ * EYEBROW
+ * PAGE TITLE
+ * optional controls/status
+ *
+ * No card/glass box around the page identity.
+ */
+
+
+/* ---------- Title ---------- */
+
+
+/* ---------- Eyebrow ---------- */
+
+
+/* =========================================================
+   HEADER CONTROLS / STATUS
+   Small elements only — never a full-width dashboard card.
+   ========================================================= */
+
+
+/* =========================================================
+   DASHBOARD START
+   Status strips mark the transition from page header to data.
+   ========================================================= */
+
+.main-content [class$="-status-strip"],
+.main-content [class*="-status-strip "] {
+  margin-top: 0 !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE HEADER
+   ========================================================= */
+
+
+/* =========================================================
+   MINIMATCH — CANONICAL PAGE HEADER
+   ========================================================= */
+
+.mm-page-header {
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.mm-page-header__top {
+  min-height: 58px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 0 4px 12px;
+  border-bottom: 1px solid rgba(89, 255, 190, 0.16);
+}
+
+.mm-page-header__identity {
+  min-width: 0;
+}
+
+.mm-page-header__identity .eyebrow {
+  display: block;
+  margin: 0 0 7px;
+  color: rgba(141, 211, 181, 0.72) !important;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  line-height: 1;
+}
+
+.mm-page-header__identity h1 {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: rgba(240, 255, 247, 0.96) !important;
+  font-size: clamp(24px, 2vw, 31px) !important;
+  line-height: 1.05 !important;
+  font-weight: 500 !important;
+  text-shadow:
+    0 0 12px rgba(98, 255, 192, 0.10),
+    0 2px 5px rgba(0, 0, 0, 0.9);
+}
+
+.mm-page-header__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mm-page-header__meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0;
+  background: rgba(2, 12, 8, 0.15);
+  border-bottom: 1px solid rgba(89, 255, 190, 0.10);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.mm-page-header__meta > * {
+  min-width: 0;
+  padding: 15px 18px 16px;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.mm-page-header__meta > * + * {
+  border-left: 1px solid rgba(89, 255, 190, 0.09) !important;
+}
+
+.mm-page-header__meta .eyebrow {
+  display: block;
+  margin-bottom: 9px;
+  color: rgba(116, 218, 174, 0.72) !important;
+  font-size: 8px;
+  letter-spacing: 0.13em;
+}
+
+.mm-page-header__meta p {
+  margin: 0 !important;
+  max-width: 54ch;
+  color: rgba(224, 237, 230, 0.82) !important;
+  font-size: 12px;
+  line-height: 1.65;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 900px) {
+  .mm-page-header__top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mm-page-header__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .mm-page-header__meta > * + * {
+    border-left: 0 !important;
+    border-top: 1px solid rgba(89, 255, 190, 0.09) !important;
+  }
+}
+
+
+/* =========================================================
+   MINIMATCH — CANONICAL HEADER ACTIONS
+   Keep all page-specific header controls on one visual system.
+   ========================================================= */
+
+.mm-page-header__actions {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.mm-header-status,
+.mm-header-stats {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 18px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.mm-header-stats > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 5px !important;
+
+  min-width: 78px;
+  padding: 0 0 0 14px !important;
+
+  background: transparent !important;
+  border: 0 !important;
+  border-left: 1px solid rgba(93, 255, 192, 0.12) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.mm-header-stats > div:first-child {
+  border-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+.mm-header-stats > div > span {
+  color: rgba(151, 190, 170, 0.68) !important;
+  font-size: 8px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.12em !important;
+  white-space: nowrap;
+}
+
+.mm-header-stats > div > strong {
+  color: rgba(235, 255, 244, 0.94) !important;
+  font-size: 12px !important;
+  line-height: 1.1 !important;
+  font-weight: 500 !important;
+}
+
+.mm-header-stats--oms {
+  gap: 14px !important;
+}
+
+.mm-header-stats--oms > div {
+  min-width: 68px;
+}
+
+/* Page-specific legacy heading rules must not influence
+   the new canonical header. */
+
+.mm-page-header .markets-source-row {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Responsive header behavior */
+
+@media (max-width: 1100px) {
+  .mm-page-header__top {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .mm-page-header__actions {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+
+  .mm-header-stats,
+  .mm-header-status {
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+
+/* ===== MARKETS EMPTY STATE ===== */
+
+.markets-workspace--empty {
+  display: block !important;
+  min-height: 0 !important;
+}
+
+.markets-workspace--empty .markets-books {
+  display: none !important;
+}
+
+.markets-workspace--empty .markets-tape {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.markets-workspace--empty .trade-tape-panel {
+  width: 100% !important;
+  min-height: 220px !important;
+  height: auto !important;
+}
+
+.markets-workspace--empty .trade-tape {
+  min-height: 130px !important;
+  height: auto !important;
+}
+
+.markets-workspace,
+.markets-books,
+.markets-tape {
+  align-self: start;
+}
+
+.markets-routes {
+  margin-top: 14px !important;
+}
+
+
+
+/* =========================================================
+   EXECUTION — CANONICAL WORKSPACE
+   ========================================================= */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Route Configuration has 5 fields:
+   keep MAX VENUES on the left and give the action its own row. */
+
+
+
+
+
+/* Simulation has 5 fields as well.
+   Keep the seed on the left and action on the right. */
+
+
+
+@media (max-width: 1100px) {
+  .execution-workspace {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .execution-workspace > .panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .execution-workspace > .panel > * {
+    grid-column: 1 !important;
+  }
+}
+
+/* =========================================================
+   EXECUTION — FINAL FORM LAYOUT
+   ========================================================= */
+
+/* Two equal workstation panels */
+.page .execution-workspace {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+
+/* Each panel gets an explicit two-column control grid */
+.page .execution-workspace > .panel {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-flow: row !important;
+  gap: 12px !important;
+
+  align-content: start !important;
+
+  min-width: 0 !important;
+  min-height: 260px !important;
+
+  padding: 16px !important;
+
+  background: rgba(2, 12, 9, 0.76) !important;
+  border: 1px solid rgba(82, 215, 166, 0.18) !important;
+}
+
+/* Header occupies full width */
+.page .execution-workspace > .panel > .panel-title {
+  grid-column: 1 / -1 !important;
+
+  display: block !important;
+
+  margin: 0 !important;
+  padding: 0 0 12px !important;
+
+  border-bottom: 1px solid rgba(82, 215, 166, 0.16) !important;
+}
+
+/* CRITICAL: label text must sit ABOVE input */
+.page .execution-workspace > .panel > label {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto 38px !important;
+
+  align-items: stretch !important;
+  justify-items: stretch !important;
+
+  gap: 7px !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  white-space: normal !important;
+
+  color: rgba(157, 195, 177, 0.78) !important;
+  font-size: 8px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.09em !important;
+}
+
+/* Inputs */
+.page .execution-workspace > .panel > label > input,
+.page .execution-workspace > .panel > label > select {
+  display: block !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 38px !important;
+
+  box-sizing: border-box !important;
+
+  margin: 0 !important;
+  padding: 0 11px !important;
+
+  font-size: 11px !important;
+
+  color: rgba(240, 255, 247, 0.96) !important;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 19, 14, 0.74),
+      rgba(2, 11, 8, 0.74)
+    ) !important;
+
+  border: 1px solid rgba(74, 190, 145, 0.24) !important;
+  border-radius: 3px !important;
+}
+
+/* Input focus */
+.page .execution-workspace input:focus,
+.page .execution-workspace select:focus {
+  outline: none !important;
+  border-color: rgba(88, 235, 181, 0.58) !important;
+  box-shadow: 0 0 0 1px rgba(88, 235, 181, 0.08) !important;
+}
+
+/* Buttons */
+.page .execution-workspace > .panel > button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  width: 100% !important;
+  height: 38px !important;
+
+  box-sizing: border-box !important;
+
+  margin: 0 !important;
+  padding: 0 14px !important;
+
+  align-self: end !important;
+
+  color: #65e8b7 !important;
+  background: rgba(7, 28, 20, 0.72) !important;
+  border: 1px solid rgba(88, 235, 181, 0.32) !important;
+  border-radius: 3px !important;
+}
+
+/*
+ * Route Configuration:
+ *
+ * SYMBOL       SIDE
+ * QUANTITY     SLIPPAGE
+ * MAX VENUES   [empty]
+ * PREVIEW ROUTE full width
+ * READY full width
+ */
+.page .execution-workspace > .panel:first-child > button {
+  grid-column: 1 / -1 !important;
+}
+
+.page .execution-workspace > .panel:first-child > .feedback {
+  grid-column: 1 / -1 !important;
+}
+
+/*
+ * Execution Simulation:
+ *
+ * FILL RATIO    REJECTION
+ * BASE LATENCY  JITTER
+ * RANDOM SEED   EXECUTE
+ */
+.page .execution-workspace > .panel:nth-child(2) > button {
+  grid-column: auto !important;
+}
+
+/* Status surface */
+.page .execution-workspace .feedback {
+  width: 100% !important;
+  box-sizing: border-box !important;
+
+  margin: 0 !important;
+  padding: 10px 11px !important;
+
+  color: rgba(198, 218, 208, 0.80) !important;
+  background: rgba(1, 9, 7, 0.52) !important;
+  border: 1px solid rgba(74, 190, 145, 0.16) !important;
+  border-radius: 3px !important;
+}
+
+/* History should visually belong to the same workstation */
+.page .execution-workspace + .panel {
+  margin-top: 12px !important;
+
+  padding: 16px !important;
+
+  background: rgba(2, 12, 9, 0.76) !important;
+  border: 1px solid rgba(82, 215, 166, 0.18) !important;
+}
+
+/* Responsive */
+@media (max-width: 1050px) {
+  .page .execution-workspace {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 650px) {
+  .page .execution-workspace > .panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .page .execution-workspace > .panel > * {
+    grid-column: 1 !important;
+  }
+}
+
+/* =========================================================
+   EXECUTION — SPACING + PROPORTION POLISH
+   ========================================================= */
+
+/* Give the working area more breathing room */
+.page .execution-workspace {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+  margin-top: 14px !important;
+}
+
+/* Both execution cards should have the same visual weight */
+.page .execution-workspace > .panel {
+  min-width: 0 !important;
+  min-height: 300px !important;
+  padding: 18px 20px !important;
+  background: rgba(1, 12, 9, 0.78) !important;
+}
+
+/* Consistent panel headings */
+.page .execution-workspace .panel-title {
+  min-height: 34px !important;
+  margin-bottom: 18px !important;
+  padding-bottom: 12px !important;
+}
+
+/* Forms: real 2-column layout instead of compressed inline fields */
+.page .execution-workspace .terminal-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 14px 16px !important;
+  align-items: end !important;
+}
+
+/* Each field becomes a clean vertical unit */
+.page .execution-workspace label {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 7px !important;
+  min-width: 0 !important;
+  line-height: 1.25 !important;
+}
+
+/* Controls fill their grid cell */
+.page .execution-workspace input,
+.page .execution-workspace select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 38px !important;
+  box-sizing: border-box !important;
+}
+
+/* Buttons get a consistent control height */
+.page .execution-workspace button {
+  min-height: 38px !important;
+}
+
+/* Feedback/status should span the card */
+.page .execution-workspace .feedback {
+  grid-column: 1 / -1 !important;
+  min-height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 12px !important;
+}
+
+/* History belongs visually to the workspace */
+.page .execution-history,
+.page .execution-history-panel,
+.page .execution-blotter {
+  margin-top: 14px !important;
+  min-height: 190px !important;
+  padding: 18px 20px !important;
+  background: rgba(1, 12, 9, 0.78) !important;
+}
+
+/* Don't let giant empty panels dominate the screen */
+.page .execution-history table,
+.page .execution-history-panel table {
+  width: 100% !important;
+}
+
+/* Responsive without changing desktop composition */
+@media (max-width: 1050px) {
+  .page .execution-workspace {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   EXECUTION FIELD COMPONENT
+   ========================================================= */
+
+.page .execution-workspace .execution-field {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+
+  gap: 7px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.page .execution-workspace .execution-field > span {
+  display: block !important;
+
+  color: rgba(145, 186, 166, 0.76) !important;
+
+  font-size: 8px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.10em !important;
+
+  white-space: nowrap !important;
+}
+
+.page .execution-workspace .execution-field > input,
+.page .execution-workspace .execution-field > select {
+  display: block !important;
+
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 38px !important;
+
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+
+/* =========================================================
+   MINIMATCH — SHARED MARKET HISTORY GEOMETRY
+   Keep the same chart visually identical across pages.
+   ========================================================= */
+
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) .market-chart,
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) .chart-panel {
+  min-height: 340px !important;
+  height: 340px !important;
+}
+
+/* Shared panel header rhythm */
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) :where(.panel-title, .chart-header) {
+  min-height: 58px !important;
+  padding: 16px 18px 12px !important;
+  margin: 0 !important;
+}
+
+/* Plot gets identical internal geometry */
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) :where(.chart, .chart-container, .recharts-responsive-container) {
+  min-height: 250px !important;
+}
+
+/* Do not let page-specific rules stretch this chart */
+.overview-chart-grid {
+  align-items: start !important;
+}
+
+
+/* =========================================================
+   MINIMATCH — SHARED MARKET HISTORY GEOMETRY
+   Keep the same chart visually identical across pages.
+   ========================================================= */
+
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) .market-chart,
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) .chart-panel {
+  min-height: 340px !important;
+  height: 340px !important;
+}
+
+/* Shared panel header rhythm */
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) :where(.panel-title, .chart-header) {
+  min-height: 58px !important;
+  padding: 16px 18px 12px !important;
+  margin: 0 !important;
+}
+
+/* Plot gets identical internal geometry */
+:where(
+  .overview-chart-grid,
+  .markets-chart-grid,
+  .markets-primary-grid
+) :where(.chart, .chart-container, .recharts-responsive-container) {
+  min-height: 250px !important;
+}
+
+/* Do not let page-specific rules stretch this chart */
+.overview-chart-grid {
+  align-items: start !important;
+}
+
+
+/* =========================================================
+   MINIMATCH — CANONICAL BBO HISTORY
+   BboHistoryChart owns its internal geometry.
+   Parent pages control width/layout only.
+   ========================================================= */
+
+/* Same header on Overview and Markets */
+.bbo-history-chart > .panel-title {
+  flex: 0 0 auto !important;
+
+  min-height: 48px !important;
+  height: auto !important;
+
+  margin: 0 !important;
+  padding: 0 0 12px !important;
+
+  border-bottom: 1px solid var(--mm-border) !important;
+
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+}
+
+.bbo-history-chart > .panel-title h2 {
+  margin: 3px 0 0 !important;
+}
+
+.bbo-history-chart > .panel-title > span {
+  margin: 0 !important;
+  align-self: flex-start !important;
+}
+
+/* Chart consumes remaining card height */
+
+/* Parent containers decide placement, never chart internals */
+.overview-chart-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+.markets-visualization-grid {
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(0, 1fr)
+    minmax(0, 1fr) !important;
+
+  gap: 10px !important;
+  align-items: start !important;
+}
+
+/* Neutralize generic chart rules for this component */
+.overview-chart-grid > .bbo-history-chart,
+.markets-chart-grid > .bbo-history-chart,
+.markets-primary-grid > .bbo-history-chart,
+.markets-visualization-grid > .bbo-history-chart {
+  width: 100% !important;
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+@media (max-width: 1200px) {
+  .markets-visualization-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   MINIMATCH — GLOBAL CHART CONSISTENCY
+   Shared chart components own their internal geometry.
+   Parent pages control width only.
+   ========================================================= */
+
+/* ---------- Shared chart card ---------- */
+
+.chart-panel {
+  box-sizing: border-box !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  width: 100% !important;
+
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+
+  padding: 14px !important;
+
+  overflow: hidden !important;
+}
+
+
+/* ---------- Shared chart header ---------- */
+
+.chart-panel > .panel-title {
+  flex: 0 0 auto !important;
+
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+
+  min-height: 48px !important;
+
+  margin: 0 !important;
+  padding: 0 0 12px !important;
+
+  border-bottom:
+    1px solid var(--mm-border) !important;
+}
+
+.chart-panel > .panel-title h2 {
+  margin: 3px 0 0 !important;
+}
+
+.chart-panel > .panel-title .eyebrow {
+  margin: 0 !important;
+}
+
+
+/* ---------- Shared chart body ---------- */
+
+.chart-panel__body,
+.chart-panel__body--depth,
+.bbo-history-chart__body {
+  flex: 1 1 auto !important;
+
+  width: 100% !important;
+
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+
+  margin: 0 !important;
+  padding: 10px 0 0 !important;
+
+  overflow: hidden !important;
+}
+
+
+/* ---------- BBO history ---------- */
+
+.bbo-history-chart {
+  width: 100% !important;
+
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+
+  margin: 0 !important;
+}
+
+
+/* =========================================================
+   PAGE GRIDS
+   Only width/layout differs between pages.
+   ========================================================= */
+
+/* Overview: chart occupies full row */
+.overview-chart-grid {
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, 1fr) !important;
+
+  gap: 10px !important;
+
+  width: 100% !important;
+
+  align-items: start !important;
+}
+
+
+/* Markets: three charts share one row */
+.markets-visualization-grid {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(0, 1fr)
+    minmax(0, 1fr) !important;
+
+  gap: 10px !important;
+
+  width: 100% !important;
+
+  align-items: start !important;
+}
+
+
+/* OMS */
+.oms-visualization-grid > .chart-panel {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+
+/* FIX */
+.fix-chart-grid > .chart-panel {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+
+/* Replay */
+.replay-chart-grid > .chart-panel {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+
+/* Operations */
+.operations-chart-grid > .chart-panel {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+
+/* System */
+.system-chart-grid > .chart-panel {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+
+/* Backtest */
+.backtest-chart-grid > .chart-panel {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1200px) {
+  .markets-visualization-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* =========================================================
+   MINIMATCH — FLOATING SIDEBAR RAIL
+   ========================================================= */
+
+:root {
+  --mm-sidebar-width: 184px;
+  --mm-sidebar-gap: 14px;
+  --mm-sidebar-top: 14px;
+  --mm-sidebar-bottom: 14px;
+}
+
+
+/* App should no longer reserve a full-width left column */
+.app-shell {
+  position: relative !important;
+
+  display: block !important;
+
+  min-height: 100vh !important;
+
+  background: transparent !important;
+}
+
+
+/* ---------------------------------------------------------
+   Floating rail
+   --------------------------------------------------------- */
+
+.sidebar {
+  position: fixed !important;
+
+  top: var(--mm-sidebar-top) !important;
+  left: var(--mm-sidebar-gap) !important;
+  bottom: var(--mm-sidebar-bottom) !important;
+
+  width: var(--mm-sidebar-width) !important;
+  height: auto !important;
+  min-height: 0 !important;
+
+  box-sizing: border-box !important;
+
+  padding: 14px 10px !important;
+
+  background:
+    rgba(2, 10, 8, 0.78) !important;
+
+  border:
+    1px solid rgba(92, 220, 170, 0.14) !important;
+
+  border-radius: 10px !important;
+
+  backdrop-filter:
+    blur(14px)
+    saturate(105%) !important;
+
+  -webkit-backdrop-filter:
+    blur(14px)
+    saturate(105%) !important;
+
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, 0.26) !important;
+
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+
+  z-index: 50 !important;
+}
+
+
+/* ---------------------------------------------------------
+   Brand
+   --------------------------------------------------------- */
+
+.sidebar-brand {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 10px !important;
+
+  margin: 0 0 16px !important;
+  padding: 4px 5px 13px !important;
+
+  border-bottom:
+    1px solid rgba(92, 220, 170, 0.10) !important;
+}
+
+
+.sidebar-logo {
+  flex: 0 0 auto !important;
+
+  width: 30px !important;
+  height: 30px !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 5px !important;
+
+  font-size: 10px !important;
+}
+
+
+.sidebar-brand strong {
+  display: block !important;
+
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
+
+
+.sidebar-brand span {
+  display: block !important;
+
+  margin-top: 3px !important;
+
+  font-size: 7px !important;
+  line-height: 1.2 !important;
+
+  white-space: nowrap !important;
+}
+
+
+/* ---------------------------------------------------------
+   Navigation
+   --------------------------------------------------------- */
+
+.sidebar nav {
+  display: flex !important;
+  flex-direction: column !important;
+
+  gap: 4px !important;
+
+  width: 100% !important;
+}
+
+
+.sidebar nav button {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 10px !important;
+
+  width: 100% !important;
+  min-height: 39px !important;
+
+  box-sizing: border-box !important;
+
+  margin: 0 !important;
+  padding: 0 10px !important;
+
+  background: transparent !important;
+
+  border:
+    1px solid transparent !important;
+
+  border-radius: 5px !important;
+
+  color:
+    rgba(188, 208, 198, 0.84) !important;
+
+  box-shadow: none !important;
+
+  text-align: left !important;
+}
+
+
+.sidebar nav button svg {
+  flex: 0 0 auto !important;
+
+  opacity: 0.78 !important;
+}
+
+
+.sidebar nav button:hover {
+  background:
+    rgba(102, 232, 180, 0.055) !important;
+
+  border-color:
+    rgba(102, 232, 180, 0.10) !important;
+
+  color:
+    rgba(238, 250, 244, 0.96) !important;
+}
+
+
+.sidebar nav button.active {
+  background:
+    rgba(102, 232, 180, 0.085) !important;
+
+  border-color:
+    rgba(102, 232, 180, 0.18) !important;
+
+  color:
+    var(--mm-accent) !important;
+
+  box-shadow:
+    inset 2px 0 0 var(--mm-accent) !important;
+}
+
+
+/* ---------------------------------------------------------
+   Main content now flows beside floating rail
+   --------------------------------------------------------- */
+
+.main-content {
+  width: auto !important;
+  min-width: 0 !important;
+
+  margin-left:
+    calc(
+      var(--mm-sidebar-width) +
+      var(--mm-sidebar-gap) * 2
+    ) !important;
+
+  padding:
+    22px
+    24px
+    40px
+    10px !important;
+
+  box-sizing: border-box !important;
+
+  background: transparent !important;
+}
+
+
+/* ---------------------------------------------------------
+   Let video/background remain visible around rail
+   --------------------------------------------------------- */
+
+.sidebar::before,
+.sidebar::after {
+  display: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   Responsive
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  :root {
+    --mm-sidebar-width: 166px;
+    --mm-sidebar-gap: 10px;
+  }
+
+  .main-content {
+    margin-left:
+      calc(
+        var(--mm-sidebar-width) +
+        var(--mm-sidebar-gap) * 2
+      ) !important;
+
+    padding-right: 16px !important;
+  }
+}
+
+
+/* =========================================================
+   MINIMATCH — COMPACT FLOATING SIDEBAR
+   ========================================================= */
+
+.sidebar {
+  top: 16px !important;
+  bottom: auto !important;
+
+  height: auto !important;
+  max-height: calc(100vh - 32px) !important;
+
+  padding: 14px 10px 12px !important;
+
+  overflow-y: auto !important;
+}
+
+.sidebar nav {
+  gap: 2px !important;
+}
+
+.sidebar nav button {
+  min-height: 36px !important;
+  padding: 0 9px !important;
+}
+
+.sidebar-brand {
+  margin-bottom: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+
+/* =========================================================
+   MINIMATCH — FINAL DESIGN SYSTEM
+   All shared visual decisions belong below this line.
+   ========================================================= */
+
+:root {
+  --mm-surface: rgba(2, 12, 9, 0.88);
+  --mm-surface-soft: rgba(3, 15, 11, 0.72);
+  --mm-border: rgba(88, 210, 164, 0.18);
+  --mm-border-strong: rgba(88, 220, 170, 0.28);
+
+  --mm-radius: 5px;
+
+  --mm-space-1: 6px;
+  --mm-space-2: 10px;
+  --mm-space-3: 14px;
+  --mm-space-4: 20px;
+  --mm-space-5: 28px;
+}
+
+
+/* ---------- PAGE RHYTHM ---------- */
+
+.page {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.page > * + * {
+  margin-top: 16px;
+}
+
+
+/* PageHeader owns the top of every page. */
+.page-header {
+  margin-bottom: 0 !important;
+}
+
+
+/* ---------- SHARED DASHBOARD SURFACES ---------- */
+
+.main-content :where(
+  .panel,
+  .metric-card,
+  .chart-panel
+) {
+  box-sizing: border-box !important;
+
+  background: var(--mm-surface) !important;
+
+  border:
+    1px solid var(--mm-border) !important;
+
+  border-radius: var(--mm-radius) !important;
+
+  box-shadow: none !important;
+
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+
+/* ---------- PANEL HEADERS ---------- */
+
+.main-content .panel-title {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+
+  gap: 16px !important;
+
+  margin: 0 0 14px !important;
+  padding: 0 0 12px !important;
+
+  border-bottom:
+    1px solid rgba(88, 210, 164, 0.13) !important;
+}
+
+.main-content .panel-title h2 {
+  margin: 0 !important;
+
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+
+  letter-spacing: 0.02em !important;
+}
+
+
+/* ---------- EYEBROWS ---------- */
+
+.main-content .eyebrow {
+  font-size: 8px !important;
+  line-height: 1.2 !important;
+
+  letter-spacing: 0.14em !important;
+
+  color: rgba(130, 190, 163, 0.72) !important;
+}
+
+
+/* ---------- FORM SYSTEM ---------- */
+
+.main-content label {
+  color: rgba(154, 184, 170, 0.82) !important;
+
+  font-size: 9px !important;
+  letter-spacing: 0.06em !important;
+}
+
+.main-content :where(
+  input,
+  select,
+  textarea
+) {
+  box-sizing: border-box !important;
+
+  min-height: 34px !important;
+
+  background:
+    rgba(1, 8, 6, 0.88) !important;
+
+  border:
+    1px solid rgba(88, 210, 164, 0.20) !important;
+
+  border-radius: 4px !important;
+
+  color: var(--mm-text) !important;
+
+  box-shadow: none !important;
+}
+
+.main-content :where(
+  input,
+  select,
+  textarea
+):focus {
+  outline: none !important;
+
+  border-color:
+    rgba(88, 230, 175, 0.45) !important;
+
+  box-shadow:
+    0 0 0 1px rgba(88, 230, 175, 0.08) !important;
+}
+
+
+/* ---------- BUTTON SYSTEM ---------- */
+
+.main-content button:not(.sidebar button) {
+  border-radius: 4px !important;
+
+  box-shadow: none !important;
+}
+
+
+/* ---------- STATUS STRIPS ---------- */
+
+.main-content :where(
+  [class$="-status-strip"],
+  [class*="-status-strip "]
+) {
+  background:
+    rgba(2, 10, 8, 0.84) !important;
+
+  border:
+    1px solid var(--mm-border) !important;
+
+  border-radius: var(--mm-radius) !important;
+
+  box-shadow: none !important;
+}
+
+
+/* ---------- CHARTS ---------- */
+
+.main-content .chart-panel {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.main-content .chart-panel__body,
+.main-content .chart-panel__body--depth,
+.main-content .bbo-history-chart__body {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+
+/* ---------- TABLES ---------- */
+
+.main-content table {
+  width: 100% !important;
+
+  border-collapse: collapse !important;
+}
+
+.main-content th {
+  color: rgba(128, 168, 150, 0.72) !important;
+
+  font-size: 8px !important;
+  font-weight: 400 !important;
+
+  letter-spacing: 0.1em !important;
+}
+
+
+/* ---------- REMOVE DECORATIVE NOISE ---------- */
+
+.main-content :where(
+  .panel,
+  .metric-card,
+  .chart-panel
+)::before,
+.main-content :where(
+  .panel,
+  .metric-card,
+  .chart-panel
+)::after {
+  display: none !important;
+}
+
+
+/* ---------- MOBILE ---------- */
+
+@media (max-width: 900px) {
+  .page > * + * {
+    margin-top: 12px;
+  }
+}
+
+/* =========================================================
+   MINIMATCH — CANONICAL STATUS STRIP
+   ========================================================= */
+
+.main-content :where(
+  .overview-status-strip,
+  .risk-status-strip,
+  .fix-status-strip,
+  .replay-status-strip,
+  .operations-status-strip,
+  .system-status-strip,
+  .backtest-status-strip,
+  .analytics-status-strip
+) {
+  display: grid !important;
+  grid-template-columns:
+    repeat(auto-fit, minmax(130px, 1fr)) !important;
+
+  width: 100% !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  background:
+    rgba(2, 10, 8, 0.84) !important;
+
+  border:
+    1px solid var(--mm-border) !important;
+
+  border-radius:
+    var(--mm-radius) !important;
+
+  overflow: hidden !important;
+
+  box-shadow: none !important;
+}
+
+.main-content :where(
+  .overview-status-strip,
+  .risk-status-strip,
+  .fix-status-strip,
+  .replay-status-strip,
+  .operations-status-strip,
+  .system-status-strip,
+  .backtest-status-strip,
+  .analytics-status-strip
+) > div {
+  min-width: 0 !important;
+  min-height: 52px !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+
+  gap: 6px !important;
+
+  padding: 10px 14px !important;
+
+  background: transparent !important;
+
+  border: 0 !important;
+  border-right:
+    1px solid rgba(88, 210, 164, 0.10) !important;
+
+  box-shadow: none !important;
+}
+
+.main-content :where(
+  .overview-status-strip,
+  .risk-status-strip,
+  .fix-status-strip,
+  .replay-status-strip,
+  .operations-status-strip,
+  .system-status-strip,
+  .backtest-status-strip,
+  .analytics-status-strip
+) > div:last-child {
+  border-right: 0 !important;
+}
+
+.main-content :where(
+  .overview-status-strip,
+  .risk-status-strip,
+  .fix-status-strip,
+  .replay-status-strip,
+  .operations-status-strip,
+  .system-status-strip,
+  .backtest-status-strip,
+  .analytics-status-strip
+) > div > span:first-child {
+  color:
+    rgba(132, 172, 153, 0.72) !important;
+
+  font-size: 8px !important;
+  line-height: 1 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.main-content :where(
+  .overview-status-strip,
+  .risk-status-strip,
+  .fix-status-strip,
+  .replay-status-strip,
+  .operations-status-strip,
+  .system-status-strip,
+  .backtest-status-strip,
+  .analytics-status-strip
+) strong {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  font-weight: 500 !important;
+}
+
+@media (max-width: 800px) {
+  .main-content :where(
+    .overview-status-strip,
+    .risk-status-strip,
+    .fix-status-strip,
+    .replay-status-strip,
+    .operations-status-strip,
+    .system-status-strip,
+    .backtest-status-strip,
+    .analytics-status-strip
+  ) {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .main-content :where(
+    .overview-status-strip,
+    .risk-status-strip,
+    .fix-status-strip,
+    .replay-status-strip,
+    .operations-status-strip,
+    .system-status-strip,
+    .backtest-status-strip,
+    .analytics-status-strip
+  ) {
+    grid-template-columns: 1fr !important;
+  }
+
+  .main-content :where(
+    .overview-status-strip,
+    .risk-status-strip,
+    .fix-status-strip,
+    .replay-status-strip,
+    .operations-status-strip,
+    .system-status-strip,
+    .backtest-status-strip,
+    .analytics-status-strip
+  ) > div {
+    border-right: 0 !important;
+    border-bottom:
+      1px solid rgba(88, 210, 164, 0.10) !important;
+  }
+}
+
+/* =========================================================
+   MINIMATCH — CANONICAL SURFACE SYSTEM
+   ========================================================= */
+
+.main-content :where(
+  .panel,
+  .metric-card,
+  .chart-panel
+) {
+  box-sizing: border-box !important;
+  background: rgba(2, 12, 9, 0.86) !important;
+  border: 1px solid var(--mm-border) !important;
+  border-radius: var(--mm-radius) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.main-content .panel {
+  padding: 14px !important;
+}
+
+.main-content .metric-card {
+  padding: 14px !important;
+  min-height: 88px !important;
+}
+
+.main-content .panel-title {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+
+  margin: 0 0 12px !important;
+  padding: 0 0 10px !important;
+
+  border-bottom:
+    1px solid rgba(88, 210, 164, 0.12) !important;
+}
+
+.main-content .panel-title h2 {
+  margin: 0 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+}
+
+.main-content .metric-card .eyebrow {
+  display: block !important;
+  margin-bottom: 8px !important;
+}
+
+.main-content .metric-card strong {
+  color: rgba(239, 250, 244, 0.96) !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1.15 !important;
+}
+
+.main-content :where(
+  .panel,
+  .metric-card,
+  .chart-panel
+)::before,
+.main-content :where(
+  .panel,
+  .metric-card,
+  .chart-panel
+)::after {
+  display: none !important;
+}
+
+/* =========================================================
+   MINIMATCH — CANONICAL FORM SYSTEM
+   ========================================================= */
+
+.main-content label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  min-width: 0;
+
+  margin: 0;
+  padding: 0;
+
+  color: rgba(150, 186, 169, 0.80) !important;
+
+  font-size: 8px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.09em !important;
+}
+
+
+/* Inputs */
+
+.main-content :where(
+  input,
+  select,
+  textarea
+) {
+  display: block;
+
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  margin: 0;
+
+  color: rgba(240, 250, 245, 0.96) !important;
+
+  background:
+    rgba(1, 9, 7, 0.86) !important;
+
+  border:
+    1px solid rgba(88, 210, 164, 0.20) !important;
+
+  border-radius: 4px !important;
+
+  box-shadow: none !important;
+}
+
+
+/* Standard one-line control */
+
+.main-content :where(
+  input,
+  select
+) {
+  height: 38px !important;
+  min-height: 38px !important;
+
+  padding: 0 10px !important;
+}
+
+
+/* Textarea */
+
+.main-content textarea {
+  min-height: 90px !important;
+
+  padding: 10px !important;
+
+  resize: vertical;
+}
+
+
+/* Focus */
+
+.main-content :where(
+  input,
+  select,
+  textarea
+):focus {
+  outline: none !important;
+
+  border-color:
+    rgba(95, 235, 181, 0.48) !important;
+
+  box-shadow:
+    0 0 0 1px rgba(95, 235, 181, 0.07) !important;
+}
+
+
+/* Buttons */
+
+.main-content button {
+  min-height: 38px;
+
+  box-sizing: border-box;
+
+  padding: 0 12px;
+
+  color: rgba(101, 232, 183, 0.94) !important;
+
+  background:
+    rgba(5, 22, 16, 0.84) !important;
+
+  border:
+    1px solid rgba(95, 225, 175, 0.26) !important;
+
+  border-radius: 4px !important;
+
+  box-shadow: none !important;
+}
+
+
+.main-content button:hover:not(:disabled) {
+  background:
+    rgba(9, 34, 25, 0.88) !important;
+
+  border-color:
+    rgba(95, 225, 175, 0.42) !important;
+}
+
+
+.main-content button:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+
+/* Explicit field-label components */
+
+.main-content :where(
+  .execution-field,
+  .trading-field
+) {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+
+  min-width: 0 !important;
+}
+
+
+.main-content :where(
+  .execution-field,
+  .trading-field
+) > span {
+  display: block !important;
+
+  color: rgba(150, 186, 169, 0.80) !important;
+
+  font-size: 8px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.09em !important;
+}
+
+
+/* Form grids */
+
+.main-content :where(
+  .order-form,
+  .risk-limit-grid,
+  .backtest-config-fields,
+  .risk-client-fields,
+  .risk-control-fields
+) {
+  gap: 12px !important;
+}
+

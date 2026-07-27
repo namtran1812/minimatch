@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import { useState } from "react";
 
 interface Reflection {
@@ -210,13 +211,18 @@ export default function Journal() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          ENGINEERING REFLECTIONS
-        </span>
-
-        <h1>Engineering Journal</h1>
-      </div>
+      <PageHeader
+        eyebrow={
+          <>
+            ENGINEERING REFLECTIONS
+          </>
+        }
+        title={
+          <>
+            Engineering Journal
+          </>
+        }
+      />
 
       <div className="journal-index">
         {reflections.map(

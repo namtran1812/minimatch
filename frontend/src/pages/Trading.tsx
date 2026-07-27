@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import {
   useState,
 } from "react";
@@ -306,88 +307,56 @@ export default function Trading({
 
   return (
     <section className="page">
-      <div className="page-heading trading-heading">
-        <div>
-          <span className="eyebrow">
-            ORDER ENTRY + LIFECYCLE
-          </span>
+      <PageHeader
+        eyebrow="ORDER ENTRY + LIFECYCLE"
+        title="Trading"
+        actions={
+          <div className="mm-header-stats">
+            <div>
+              <span>SYSTEM</span>
+              <StatusBadge
+                value={
+                  globallyHalted
+                    ? "HALTED"
+                    : "ACTIVE"
+                }
+              />
+            </div>
 
-          <h1>Trading</h1>
-        </div>
+            <div>
+              <span>MARKET</span>
+              <StatusBadge value={marketStatus} />
+            </div>
 
-        <div className="trading-heading__status">
-          <div>
-            <span>SYSTEM</span>
-            <StatusBadge
-              value={
-                globallyHalted
-                  ? "HALTED"
-                  : "ACTIVE"
-              }
-            />
+            <div>
+              <span>CLIENT RISK</span>
+              <StatusBadge
+                value={
+                  risk?.killed
+                    ? "KILLED"
+                    : "SAFE"
+                }
+              />
+            </div>
           </div>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Trading is the direct order-entry interface for the MiniMatch matching engine. Submit new orders, modify resting orders, cancel open orders, and inspect the resulting execution reports.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Choose a side, order type, quantity, and price, then submit the order. Use the order ID in Cancel / Replace to manage an existing order. Execution reports below show every accepted, replaced, cancelled, filled, or rejected lifecycle event.",
+          },
+          {
+            label: "ORDER TYPES",
+            content: "LIMIT can rest on the book. MARKET executes immediately. IOC fills available quantity and cancels the remainder. FOK requires the full quantity immediately. POST_ONLY rejects orders that would immediately take liquidity.",
+          },
+        ]}
+      />
 
-          <div>
-            <span>MARKET</span>
-            <StatusBadge
-              value={marketStatus}
-            />
-          </div>
-
-          <div>
-            <span>CLIENT RISK</span>
-            <StatusBadge
-              value={
-                risk?.killed
-                  ? "KILLED"
-                  : "SAFE"
-              }
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="trading-info">
-        <div className="trading-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Trading is the direct order-entry interface for the
-            MiniMatch matching engine. Submit new orders, modify
-            resting orders, cancel open orders, and inspect the
-            resulting execution reports.
-          </p>
-        </div>
-
-        <div className="trading-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Choose a side, order type, quantity, and price, then
-            submit the order. Use the order ID in Cancel / Replace
-            to manage an existing order. Execution reports below
-            show every accepted, replaced, cancelled, filled, or
-            rejected lifecycle event.
-          </p>
-        </div>
-
-        <div className="trading-info__section">
-          <span className="eyebrow">
-            ORDER TYPES
-          </span>
-
-          <p>
-            LIMIT can rest on the book. MARKET executes immediately.
-            IOC fills available quantity and cancels the remainder.
-            FOK requires the full quantity immediately. POST_ONLY
-            rejects orders that would immediately take liquidity.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="terminal-grid">
         <div className="panel">

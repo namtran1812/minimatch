@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -27,49 +28,34 @@ export default function Analytics() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">QUANTITATIVE RESEARCH</span>
-        <h1>Analytics</h1>
-      </div>
+      <PageHeader
+        eyebrow={
+          <>
+            QUANTITATIVE RESEARCH
+          </>
+        }
+        title={
+          <>
+            Analytics
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Analytics provides quantitative research tools for portfolio risk, statistical arbitrage, and derivatives pricing across MiniMatch.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Start with portfolio risk metrics, then inspect pairs diagnostics for statistical relationships and options analytics for pricing, volatility, and Greeks.",
+          },
+          {
+            label: "MODEL SCOPE",
+            content: "Current research endpoints use deterministic datasets for portfolio returns, synthetic paired assets, and option-pricing inputs so model output remains reproducible.",
+          },
+        ]}
+      />
 
-      <div className="analytics-info">
-        <div className="analytics-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Analytics provides quantitative research tools for
-            portfolio risk, statistical arbitrage, and derivatives
-            pricing across MiniMatch.
-          </p>
-        </div>
-
-        <div className="analytics-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Start with portfolio risk metrics, then inspect pairs
-            diagnostics for statistical relationships and options
-            analytics for pricing, volatility, and Greeks.
-          </p>
-        </div>
-
-        <div className="analytics-info__section">
-          <span className="eyebrow">
-            MODEL SCOPE
-          </span>
-
-          <p>
-            Current research endpoints use deterministic datasets
-            for portfolio returns, synthetic paired assets, and
-            option-pricing inputs so model output remains
-            reproducible.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="analytics-status-strip">
         <div>

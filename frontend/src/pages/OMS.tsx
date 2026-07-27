@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import {
   useState,
   useEffect,
@@ -299,93 +300,61 @@ export default function OMS() {
 
   return (
     <section className="page">
-      <div className="page-heading oms-page-heading">
-        <div className="oms-page-heading__title">
-          <span className="eyebrow">
-            ORDER MANAGEMENT SYSTEM
-          </span>
+      <PageHeader
+        eyebrow="ORDER MANAGEMENT SYSTEM"
+        title="OMS"
+        actions={
+          <div className="mm-header-stats mm-header-stats--oms">
+            <div>
+              <span>PARENTS ACTIVE</span>
+              <strong>{activeParentCount}</strong>
+            </div>
 
-          <h1>OMS</h1>
-        </div>
+            <div>
+              <span>PARENTS TOTAL</span>
+              <strong>{parents.length}</strong>
+            </div>
 
-        <div className="oms-header-stats">
-          <div className="oms-header-stat">
-            <span>PARENTS ACTIVE</span>
-            <strong>
-              {activeParentCount}
-            </strong>
+            <div>
+              <span>CHILD ORDERS LIVE</span>
+              <strong>{liveChildCount}</strong>
+            </div>
+
+            <div>
+              <span>SELECTED FILLS</span>
+              <strong>{fills.length}</strong>
+            </div>
+
+            <div>
+              <span>FILL NOTIONAL</span>
+              <strong>
+                {totalFillNotional.toLocaleString(
+                  undefined,
+                  {
+                    maximumFractionDigits: 2,
+                  }
+                )}
+              </strong>
+            </div>
           </div>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "OMS manages parent orders, algorithmic execution, child orders, fills, and post-trade lifecycle state across MiniMatch.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Launch an execution algorithm, select the resulting parent order, then inspect its child orders, fills, execution quality, and reconciliation status.",
+          },
+          {
+            label: "ALGO TYPES",
+            content: "MARKET executes immediately. TWAP spreads execution across time. VWAP follows volume participation. POV targets a participation rate. ICEBERG exposes only part of the total quantity.",
+          },
+        ]}
+      />
 
-          <div className="oms-header-stat">
-            <span>PARENTS TOTAL</span>
-            <strong>
-              {parents.length}
-            </strong>
-          </div>
-
-          <div className="oms-header-stat">
-            <span>CHILD ORDERS LIVE</span>
-            <strong>
-              {liveChildCount}
-            </strong>
-          </div>
-
-          <div className="oms-header-stat">
-            <span>SELECTED FILLS</span>
-            <strong>
-              {fills.length}
-            </strong>
-          </div>
-
-          <div className="oms-header-stat">
-            <span>FILL NOTIONAL</span>
-            <strong>
-              {totalFillNotional.toLocaleString(
-                undefined,
-                {
-                  maximumFractionDigits: 2,
-                }
-              )}
-            </strong>
-          </div>
-        </div>
-      </div>
-
-      <div className="oms-info">
-        <div className="oms-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-          <p>
-            OMS manages parent orders, algorithmic execution,
-            child orders, fills, and post-trade lifecycle state
-            across MiniMatch.
-          </p>
-        </div>
-
-        <div className="oms-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-          <p>
-            Launch an execution algorithm, select the resulting
-            parent order, then inspect its child orders, fills,
-            execution quality, and reconciliation status.
-          </p>
-        </div>
-
-        <div className="oms-info__section">
-          <span className="eyebrow">
-            ALGO TYPES
-          </span>
-          <p>
-            MARKET executes immediately. TWAP spreads execution
-            across time. VWAP follows volume participation. POV
-            targets a participation rate. ICEBERG exposes only
-            part of the total quantity.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="panel oms-algo-panel">
         <div className="panel-title">

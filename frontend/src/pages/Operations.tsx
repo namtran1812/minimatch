@@ -1,3 +1,4 @@
+import PageHeader from "../components/layout/PageHeader";
 import {
   useMarketData,
 } from "../context/MarketDataContext";
@@ -153,57 +154,34 @@ export default function Operations() {
 
   return (
     <section className="page">
-      <div className="page-heading">
-        <span className="eyebrow">
-          LIVE MARKET OPERATIONS
-        </span>
+      <PageHeader
+        eyebrow={
+          <>
+            LIVE MARKET OPERATIONS
+          </>
+        }
+        title={
+          <>
+            Operations
+          </>
+        }
+        items={[
+          {
+            label: "WHAT THIS PAGE DOES",
+            content: "Operations monitors the live market-data infrastructure behind MiniMatch, including venue synchronization, message throughput, sequence integrity, pipeline latency, and market recording.",
+          },
+          {
+            label: "HOW TO USE",
+            content: "Start with stream and venue health, then inspect sequence gaps, rejects, reconnects, and latency percentiles. Venue panels expose the source-level telemetry behind aggregate system health.",
+          },
+          {
+            label: "INCIDENT SIGNALS",
+            content: "Unsynchronized venues, sequence gaps, checksum errors, elevated P99 latency, or reconnect activity indicate degraded market data quality and should be investigated before relying on downstream state.",
+          },
+        ]}
+      />
 
-        <h1>Operations</h1>
-      </div>
-
-      <div className="operations-info">
-        <div className="operations-info__section">
-          <span className="eyebrow">
-            WHAT THIS PAGE DOES
-          </span>
-
-          <p>
-            Operations monitors the live market-data
-            infrastructure behind MiniMatch, including
-            venue synchronization, message throughput,
-            sequence integrity, pipeline latency, and
-            market recording.
-          </p>
-        </div>
-
-        <div className="operations-info__section">
-          <span className="eyebrow">
-            HOW TO USE
-          </span>
-
-          <p>
-            Start with stream and venue health, then
-            inspect sequence gaps, rejects, reconnects,
-            and latency percentiles. Venue panels expose
-            the source-level telemetry behind aggregate
-            system health.
-          </p>
-        </div>
-
-        <div className="operations-info__section">
-          <span className="eyebrow">
-            INCIDENT SIGNALS
-          </span>
-
-          <p>
-            Unsynchronized venues, sequence gaps,
-            checksum errors, elevated P99 latency, or
-            reconnect activity indicate degraded market
-            data quality and should be investigated
-            before relying on downstream state.
-          </p>
-        </div>
-      </div>
+      
 
       <div className="operations-status-strip">
         <div>
