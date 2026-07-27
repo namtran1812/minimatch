@@ -11140,3 +11140,19 @@ body,
   gap: 12px !important;
 }
 
+
+/* Journal final spacing refinement */
+.journal-entry__trigger {
+  min-height: 68px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.journal-entry__content h2 {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.journal-entry__content p {
+  line-height: 1.55;
+}
