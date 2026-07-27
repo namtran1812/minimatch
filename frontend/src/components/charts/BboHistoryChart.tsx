@@ -69,7 +69,24 @@ export default function BboHistoryChart({
             />
 
             <YAxis
-              domain={["dataMin", "dataMax"]}
+              domain={[
+                (dataMin: number) => {
+                  const padding = Math.max(
+                    Math.abs(dataMin) * 0.00005,
+                    1
+                  );
+
+                  return dataMin - padding;
+                },
+                (dataMax: number) => {
+                  const padding = Math.max(
+                    Math.abs(dataMax) * 0.00005,
+                    1
+                  );
+
+                  return dataMax + padding;
+                },
+              ]}
               tick={{
                 fill: "#667174",
                 fontSize: 9,
