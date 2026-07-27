@@ -6304,6 +6304,20 @@ handle_request(
                     req.body()
                 );
 
+            if (!fields.count("side")) {
+                return json_response(
+                    http::status::bad_request,
+                    R"({"error":"missing required field: side"})"
+                );
+            }
+
+            if (!fields.count("quantity")) {
+                return json_response(
+                    http::status::bad_request,
+                    R"({"error":"missing required field: quantity"})"
+                );
+            }
+
             const std::string symbol =
                 fields.count("symbol")
                     ? fields.at("symbol")
@@ -6331,10 +6345,23 @@ handle_request(
             minimatch::RouteRequest request;
 
             request.side = side;
-            request.quantity =
+
+            const double quantity =
                 std::stod(
                     fields.at("quantity")
                 );
+
+            if (
+                !std::isfinite(quantity) ||
+                quantity <= 0.0
+            ) {
+                return json_response(
+                    http::status::bad_request,
+                    R"({"error":"quantity must be greater than 0"})"
+                );
+            }
+
+            request.quantity = quantity;
 
             request.limit_price =
                 fields.count("limitPrice")

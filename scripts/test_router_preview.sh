@@ -14,8 +14,8 @@ for side in buy sell; do
       --silent \
       --show-error \
       -X POST \
-      -H "Content-Type: application/x-www-form-urlencoded" \
-      --data "side=${side}&quantity=${QUANTITY}&symbol=${SYMBOL}" \
+      -H "Content-Type: application/json" \
+      --data "{\n        \"side\": \"${side}\",\n        \"quantity\": ${QUANTITY},\n        \"symbol\": \"${SYMBOL}\"\n      }" \
       "${BASE_URL}/api/router/preview"
   )"
 
