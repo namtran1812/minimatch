@@ -11188,3 +11188,53 @@ body,
   gap: 12px !important;
 }
 
+
+/* =========================================================
+   TRADING — CANONICAL PAGE GUTTER
+   ========================================================= */
+
+.page .trading-workspace {
+  display: grid !important;
+
+  grid-template-columns:
+    minmax(280px, 1fr)
+    minmax(420px, 1.55fr)
+    minmax(270px, 0.82fr) !important;
+
+  gap: 12px !important;
+
+  /*
+   * Match the visual right gutter used by the rest
+   * of the dashboard instead of touching the edge.
+   */
+  width: calc(100% - 16px) !important;
+  max-width: calc(100% - 16px) !important;
+
+  margin-right: 16px !important;
+
+  box-sizing: border-box !important;
+}
+
+.page .trading-workspace > .panel {
+  min-width: 0 !important;
+}
+
+@media (max-width: 1200px) {
+  .page .trading-workspace {
+    grid-template-columns:
+      minmax(260px, 1fr)
+      minmax(360px, 1.35fr)
+      minmax(250px, 0.85fr) !important;
+  }
+}
+
+@media (max-width: 950px) {
+  .page .trading-workspace {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-right: 0 !important;
+
+    grid-template-columns: 1fr !important;
+  }
+}
+

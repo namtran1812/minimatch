@@ -358,7 +358,7 @@ export default function Trading({
 
       
 
-      <div className="terminal-grid">
+      <div className="terminal-grid trading-workspace">
         <div className="panel">
           <div className="panel-title">
             <h2>New Order</h2>
