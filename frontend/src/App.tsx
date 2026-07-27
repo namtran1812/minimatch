@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import VideoBackground from "./components/VideoBackground";
 import Sidebar, { type Page } from "./components/layout/Sidebar";
 import ProductAssistant from "./components/assistant/ProductAssistant";
 
@@ -238,6 +239,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      <VideoBackground />
       <Sidebar
         page={page}
         onChange={changePage}

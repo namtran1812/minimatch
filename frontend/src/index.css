@@ -10797,3 +10797,121 @@ button.oms-table__row {
   border-color: var(--mm-green);
   color: var(--mm-green);
 }
+
+/* ===== Fullscreen Background Video ===== */
+
+.video-background {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+  background: #000;
+}
+
+.video-background video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.58);
+  pointer-events: none;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== MINI MATCH VIDEO BACKGROUND ===== */
+
+.video-background {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: -10;
+  pointer-events: none;
+  background: #050705;
+}
+
+.video-background video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.video-background-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      rgba(3, 8, 5, 0.42),
+      rgba(3, 8, 5, 0.60)
+    );
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: transparent;
+}
+
+#root {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ===== MINIMATCH VIDEO BACKGROUND ===== */
+
+.video-background {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  background: #050705;
+}
+
+.video-background video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.video-background-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 8, 5, 0.52);
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.sidebar,
+.main-content {
+  position: relative;
+  z-index: 2;
+}
