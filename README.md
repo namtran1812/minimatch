@@ -1,605 +1,572 @@
-# MiniMatch
+# MiniMatch(a)
 
-MiniMatch is a production-style electronic trading systems project built in modern C++. It combines a low-latency matching engine, order management, risk controls, execution algorithms, smart order routing, FIX 4.4 connectivity, live multi-venue crypto market data, persistent execution history, deterministic market replay, observability, and a React trading terminal.
+<p align="center">
+  <img src="frontend/public/minimatch-logo.png" alt="MiniMatch(a) logo" width="96" />
+</p>
 
-The project is designed to model the architecture of a modern exchange and execution platform from market ingestion through routing and post-trade analysis.
+<p align="center">
+  <strong>A deterministic trading systems lab for matching, routing, risk, market data, replay, execution analytics, and AI-assisted system exploration.</strong>
+</p>
+
+<p align="center">
+  <a href="https://minimatch-six.vercel.app">Live Demo</a>
+  ·
+  <a href="https://minimatch-api.onrender.com/api/health">API Health</a>
+</p>
 
 ---
 
-## Highlights
+## Overview
 
-- Price-time priority matching engine
+**MiniMatch(a)** is a full-stack electronic trading systems project built to explore how the major components of an exchange and execution platform fit together.
+
+It started as a deterministic C++ matching engine and expanded into a broader trading infrastructure environment with:
+
+- Price-time-priority matching
 - Limit, market, IOC, FOK, and post-only orders
-- Cancel and replace/amend workflows
-- Multi-symbol order books
-- Deterministic event logging and replay
-- Risk checks and kill-switch logic
-- Parent/child OMS
-- TWAP, VWAP, POV, Market, and Iceberg execution schedules
-- Smart order routing across multiple venues
-- Fee- and latency-aware route optimization
-- Execution simulation with partial fills, rejections, latency, and fees
-- SQLite-backed routed execution history
-- FIX 4.4 codec, session state machine, sequence recovery, resend, and gap fill
-- FIX-to-OMS order gateway
-- Live Coinbase, Binance, and Kraken L2 market feeds
-- Venue health and synchronization monitoring
-- Market-data recording and deterministic replay
-- Live/replay WebSocket streaming
-- React operations and trading dashboard
-- End-to-end verification and benchmark tooling
+- Multi-venue market data
+- Smart order routing
+- Order management
+- Execution simulation
+- Portfolio and client risk
+- FIX-style connectivity
+- Drop copy
+- Deterministic replay
+- Backtesting
+- Quantitative analytics
+- Operational monitoring
+- An integrated AI assistant named **Matcha**
+
+The project focuses on the engineering problems behind stateful trading systems: determinism, latency, routing, risk, observability, replay, persistence, and failure isolation.
+
+---
+
+## Live Demo
+
+### Frontend
+
+```text
+https://minimatch-six.vercel.app
+```
+
+### API
+
+```text
+https://minimatch-api.onrender.com
+```
+
+Health check:
+
+```bash
+curl https://minimatch-api.onrender.com/api/health
+```
 
 ---
 
 ## Architecture
 
 ```text
-                   ┌─────────────────────┐
-                   │    Exchange Feeds   │
-                   │ Coinbase / Binance  │
-                   │       Kraken        │
-                   └──────────┬──────────┘
-                              │
-                              ▼
-                  ┌──────────────────────┐
-                  │ Market Normalization │
-                  │ L2 snapshots/updates │
-                  └──────────┬───────────┘
-                             │
-              ┌──────────────┼───────────────┐
-              ▼              ▼               ▼
-       Venue Health    Market Recorder   Consolidated Book
-              │              │               │
-              │              ▼               ▼
-              │         .mmdata files   Smart Order Router
-              │                              │
-              └──────────────┬───────────────┘
-                             ▼
-                    WebSocket Market API
-                             │
-                             ▼
-                    React Trading Terminal
+                         ┌─────────────────────┐
+                         │    MiniMatch(a)     │
+                         │   React Frontend    │
+                         └──────────┬──────────┘
+                                    │
+                             REST / WebSocket
+                                    │
+                         ┌──────────▼──────────┐
+                         │      C++ API        │
+                         │   Control Plane     │
+                         └──────────┬──────────┘
+                                    │
+             ┌──────────────────────┼──────────────────────┐
+             │                      │                      │
+             ▼                      ▼                      ▼
+     ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+     │ Matching      │      │ Smart Order   │      │ Risk Engine   │
+     │ Engine        │      │ Router        │      │               │
+     └───────┬───────┘      └───────┬───────┘      └───────┬───────┘
+             │                      │                      │
+             ▼                      ▼                      ▼
+     ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+     │ Order Book    │      │ Venue Quotes  │      │ Positions /   │
+     │ + Executions  │      │ + Simulation  │      │ Portfolio     │
+     └───────┬───────┘      └───────────────┘      └───────────────┘
+             │
+             ▼
+     ┌─────────────────────────────────────────────────────────────┐
+     │ OMS · FIX · Drop Copy · Persistence · Replay · Backtesting │
+     └─────────────────────────────────────────────────────────────┘
+```
 
-FIX Client
-    │
-    ▼
-FIX 4.4 Session
-    │
-    ├── Sequence validation
-    ├── Heartbeat / TestRequest
-    ├── Resend / Gap Fill
-    └── SQLite message persistence
-    │
-    ▼
-FIX Order Gateway
-    │
-    ▼
-OMS
-    │
-    ├── Parent Orders
-    ├── Child Orders
-    └── Execution Reports
-    │
-    ▼
-Matching / Execution / Risk
-Matching Engine
+---
 
-The matching engine uses price-time priority and supports:
+## Core Systems
 
-Limit orders
-Market orders
-IOC
-FOK
-Post-only
-Cancel
-Replace/amend
-Partial fills
-Multi-symbol isolation
+### Matching Engine
 
-The order book is implemented as an in-memory data structure optimized for deterministic execution and low latency.
+The C++ matching engine implements deterministic **price-time priority**.
 
-Example behavior:
+Supported order behavior includes:
 
-SELL 50 @ 10000
-BUY MARKET 20
+- Limit orders
+- Market orders
+- Immediate-or-Cancel
+- Fill-or-Kill
+- Post-only
+- Partial fills
+- Cancellations
+- Amendments
+- FIFO within a price level
+- Best-price priority
+- Multi-symbol isolation
 
-Result:
-Trade: 20 @ 10000
-Resting sell quantity: 30
-Deterministic Event Replay
+The same ordered input stream is designed to produce the same resulting state, making deterministic replay possible.
 
-MiniMatch writes binary event logs that can reconstruct exchange state exactly.
+---
+
+### Smart Order Router
+
+The router evaluates simulated venue liquidity using:
+
+- Price
+- Available quantity
+- Taker fees
+- Venue latency
+- Estimated latency cost
+- Maximum slippage
+- Maximum venue count
+- All-or-none constraints
 
 Example:
 
-./build/minimatch_replay minimatch.events
+```bash
+curl \
+  -X POST \
+  https://minimatch-api.onrender.com/api/router/preview \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "symbol": "btcusd",
+    "side": "buy",
+    "quantity": 0.1,
+    "maxSlippageBps": 100,
+    "maxVenueCount": 3,
+    "allOrNone": false
+  }'
+```
 
-Running the same replay multiple times produces the same state hash.
+---
 
-Example output:
+### Order Management System
 
-events=2
-input_sequence=2
-symbols=1
-active=1
-state_hash=7633056132652409449
+The OMS manages execution state above individual exchange orders.
 
-This is useful for:
+It tracks:
 
-debugging
-regression testing
-post-mortem analysis
-deterministic state reconstruction
-Order Management System
+- Parent orders
+- Child orders
+- Algorithmic execution
+- Fills
+- Remaining quantity
+- Execution status
+- Fill notional
+- Reconciliation state
 
-The OMS models a parent-child execution lifecycle.
+---
 
-Parent Order
-    │
-    ├── Child Order 1
-    ├── Child Order 2
-    └── Child Order N
-            │
-            ▼
-      Execution Reports
-            │
-            ▼
-           Fills
+### Risk Engine
 
-Supported parent strategies include:
+MiniMatch(a) models both client-level and system-level protection mechanisms.
 
-Market
-TWAP
-VWAP
-POV
-Iceberg
+Risk controls include:
 
-The OMS tracks:
+- Position limits
+- Portfolio limits
+- Client exposure
+- Self-trade prevention
+- Price bands
+- Circuit breakers
+- Symbol halts
+- Global trading halt
+- Daily-loss protection
 
-requested quantity
-filled quantity
-remaining quantity
-child order status
-execution reports
-fees
-venue
-timestamps
-Execution Algorithms
+---
 
-MiniMatch supports multiple execution schedules.
+### Market Data
 
-TWAP
+The market-data subsystem exposes consolidated state across simulated or live venues.
 
-Splits quantity across time intervals.
+The dashboard includes:
 
-VWAP
+- Best bid and ask
+- Midpoint
+- Spread
+- Order-book depth
+- Venue liquidity
+- Trade tape
+- Message rates
+- Sequence integrity
+- Venue synchronization
+- Pipeline latency
+- BBO history
 
-Allocates quantity according to a supplied volume profile.
+---
 
-POV
+### FIX and Drop Copy
 
-Targets a percentage of expected market volume.
+MiniMatch(a) includes FIX-oriented infrastructure for exploring electronic trading connectivity.
 
-Iceberg
+The system exposes:
 
-Limits displayed child quantity while progressively executing the parent order.
+- Session state
+- Inbound sequence numbers
+- Outbound sequence numbers
+- Execution reports
+- Rejects
+- Resend activity
+- Sequence resets
+- Message history
+- Drop-copy records
 
-Market
+---
 
-Executes immediately against available liquidity.
+### Deterministic Replay
 
-Smart Order Router
-
-The router evaluates multi-venue liquidity using:
-
-execution price
-available quantity
-taker fees
-latency
-latency cost
-slippage constraints
-venue count limits
-limit prices
-all-or-none semantics
-
-Example flow:
-
-RouteRequest
-    │
-    ▼
-Coinbase liquidity
-Kraken liquidity
-Binance liquidity
-    │
-    ▼
-Effective price calculation
-    │
-    ▼
-RoutePlan
-    │
-    ├── Venue A: quantity X
-    ├── Venue B: quantity Y
-    └── Venue C: quantity Z
-Execution Simulation
-
-Routed executions can be simulated with configurable:
-
-fill ratio
-rejection probability
-base latency
-latency jitter
-random seed
-
-The result tracks:
-
-requested quantity
-filled quantity
-remaining quantity
-average fill price
-total notional
-fees
-total latency
-per-child execution status
-
-Execution history is persisted to SQLite and survives API restarts.
-
-FIX 4.4
-
-MiniMatch includes a functional FIX 4.4 stack.
-
-Features include:
-
-FIX encoding and parsing
-checksum validation
-body-length validation
-Logon
-Logout
-Heartbeat
-TestRequest
-ResendRequest
-SequenceReset / GapFill
-message sequencing
-persistent session state
-persistent inbound/outbound messages
-NewOrderSingle
-OrderCancelRequest
-ExecutionReport
-FIX-to-OMS routing
-
-Example session:
-
-IN  Logon
-OUT Logon
-
-IN  NewOrderSingle
-OUT ExecutionReport ACK
-
-IN  OrderCancelRequest
-OUT ExecutionReport CANCEL
-Live Market Data
-
-MiniMatch connects to live crypto exchange feeds and normalizes L2 data from:
-
-Coinbase
-Binance
-Kraken
-
-The live market gateway maintains:
-
-per-venue books
-consolidated BBO
-midpoint
-spread
-venue sequence state
-smart routing previews
-
-The dashboard stream is exposed through WebSocket.
-
-Venue Health
-
-Each venue is continuously classified as:
-
-UNKNOWN
-HEALTHY
-DELAYED
-STALE
-DISCONNECTED
-
-Metrics include:
-
-synchronization state
-quote age
-message count
-snapshot count
-update count
-messages per second
-reconnect count
-rejected updates
-sequence gaps
-checksum errors
-
-A venue is routable only when it is synchronized and sufficiently fresh.
-
-Market Recording and Replay
-
-Normalized market data can be recorded during live ingestion:
-
-./build/minimatch_live_market_ws \
-  8090 \
-  BTC-USD \
-  --record data/recordings/btcusd_live.mmdata
-
-Replay:
-
-./build/minimatch_market_replay_ws \
-  8091 \
-  data/recordings/btcusd_live.mmdata \
-  BTC-USD \
-  1.0
+Recorded events can be replayed to reconstruct historical system state.
 
 Replay supports:
 
-play
-pause
-restart
-speed control
-seek by record
-seek by timestamp
-deterministic state checksums
+- Restart
+- Pause
+- Resume
+- Seek
+- Playback speed control
+- Intermediate-state inspection
 
-The same frontend can consume either LIVE or REPLAY mode.
+Replay is used as both a debugging mechanism and a foundation for historical analysis.
 
-Frontend
+---
 
-The React frontend includes pages for:
+### Backtesting
 
-Overview
-Markets
-Trading
-Execution
-OMS
-Risk
-FIX
-Replay
-Backtest
-Analytics
-System
-Operations
+The backtesting environment evaluates execution algorithms against recorded market data.
 
-The frontend supports a shared market-data provider with interchangeable:
+It includes metrics such as:
 
-LIVE
-or
-REPLAY
+- Arrival-price slippage
+- VWAP comparison
+- Filled quantity
+- Execution notional
+- Fill progression
+- Historical execution behavior
 
-sources.
+---
 
-Benchmarks
+### Analytics
 
-Example local results on an Apple Silicon development machine:
+The analytics layer includes research-oriented tooling for:
 
-1,000,000 orders
-8 symbols
-~6.59M generated orders/sec
+- Portfolio analysis
+- Pairs trading diagnostics
+- Statistical arbitrage
+- Options pricing
+- Execution quality
+- Latency analysis
 
-Latency benchmark:
+---
 
-1,000,000 orders
+## Matcha
 
-p50   ~42 ns
-p95   ~125 ns
-p99   ~167 ns
-p999  ~833 ns
+<p align="center">
+  <img src="frontend/public/matcha-agent.png" alt="Matcha" width="80" />
+</p>
 
-Arena pipeline benchmark:
+**Matcha** is the AI assistant built into MiniMatch(a).
 
-200,000 steps
-200,000 processed
-0 dropped
-156,892 trades
-456,873 reports
+Matcha can use application context to help explain:
 
-Results vary by hardware and build configuration.
+- Matching behavior
+- Current market state
+- Orders
+- Executions
+- OMS state
+- Positions
+- Portfolio risk
+- System health
+- Trading-system concepts
 
-For reproducibility, see:
+The goal is to make a complex trading system easier to inspect without hiding the underlying infrastructure.
 
-benchmark_results/
-Testing
+---
 
-MiniMatch includes extensive GoogleTest coverage across:
+## Dashboard
 
-matching
-order types
-cancel/replace
-replay
-risk
-OMS
-execution schedules
-router
-multi-venue market data
-Coinbase normalization
-Binance normalization
-Kraken normalization
-backtesting
-FIX codec
-FIX session
-FIX store
-FIX gateway
-execution persistence
+| Page | Purpose |
+|---|---|
+| **Overview** | High-level market and system state |
+| **Markets** | Quotes, BBO, depth, liquidity, and trade tape |
+| **Trading** | Direct order entry and order lifecycle management |
+| **Execution** | Smart routing and execution simulation |
+| **OMS** | Parent orders, child orders, and fills |
+| **Risk** | Client, instrument, and portfolio protection |
+| **FIX** | Protocol session and message inspection |
+| **Replay** | Deterministic historical reconstruction |
+| **Backtest** | Historical execution evaluation |
+| **Analytics** | Quantitative research tools |
+| **System** | Matching-engine internals and performance |
+| **Operations** | Market-data infrastructure and operational health |
+| **Journal** | Engineering decisions and lessons learned |
 
-Example:
+---
 
-ctest \
-  --test-dir build \
-  --output-on-failure
+## Tech Stack
 
-FIX-only tests:
+### Backend
 
-./build/minimatch_tests \
-  --gtest_filter='Fix*'
-End-to-End Verification
-
-Run:
-
-./scripts/verify_e2e.sh
-
-The script verifies:
-
-HTTP API
-Matching engine
-Submit/cancel lifecycle
-Order book
-Historical backtest
-OMS
-Smart order routing
-Execution simulation
-SQLite execution persistence
-FIX observability
-Deterministic replay
-Core test suite
-One-Command Startup
-
-Configure, build, test, and launch:
-
-./scripts/dev_start.sh
-
-Launch without rebuilding:
-
-./scripts/dev_up.sh
-
-This starts:
-
-HTTP API
-FIX gateway
-Live market gateway
-Replay server
-React frontend
-
-Logs are written under:
-
-logs/
-Manual Build
-cmake -S . -B build \
-  -DCMAKE_BUILD_TYPE=Release
-
-cmake --build build \
-  -j"$(sysctl -n hw.ncpu)"
-
-ctest \
-  --test-dir build \
-  --output-on-failure
-
-Frontend:
-
-cd frontend
-npm install
-npm run build
-npm run dev
-Example API Requests
-
-Submit an order:
-
-curl -X POST \
-  http://127.0.0.1:8081/api/orders \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "orderId": 1001,
-    "clientId": 10,
-    "side": "buy",
-    "type": "limit",
-    "price": 10000,
-    "quantity": 100,
-    "symbol": 1
-  }'
-
-Run a TWAP backtest:
-
-curl -X POST \
-  http://127.0.0.1:8081/api/backtest \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "symbol": "btcusd",
-    "side": "buy",
-    "quantity": 2,
-    "algorithm": "TWAP",
-    "slices": 2,
-    "durationSeconds": 2,
-    "takerFeeBps": 5
-  }'
-
-Preview smart routing:
-
-curl -X POST \
-  http://127.0.0.1:8081/api/router/preview \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "symbol": "btcusd",
-    "side": "buy",
-    "quantity": 0.2,
-    "maxSlippageBps": 100,
-    "maxVenueCount": 3
-  }'
-Project Goals
-
-MiniMatch was built to explore the systems problems behind modern trading infrastructure:
-
-deterministic matching
-low-latency data structures
-real-time market-data processing
-execution quality
-smart routing
-protocol-level reliability
-risk management
-observability
-replayability
-
-It is intended as an educational and engineering project, not a production trading system.
-
-Tech Stack
-Backend
+```text
 C++20
 Boost.Asio
-Boost.Beast
-OpenSSL
 SQLite
-GoogleTest
-Google Benchmark
 CMake
-Frontend
+Google Test
+Google Benchmark
+```
+
+### Frontend
+
+```text
 React
 TypeScript
 Vite
 TanStack Query
-Infrastructure
-WebSockets
-FIX 4.4
-Binary event logs
-SQLite persistence
-Live exchange APIs
-License
+Recharts
+Lucide
+```
 
-This project is intended for educational and portfolio use.
+### Deployment
+
+```text
+Vercel
+Render
+```
 
 ---
 
-## Screenshots
+## Repository Structure
 
-### Live Markets
+```text
+minimatch/
+├── apps/
+│   └── api.cpp
+│
+├── include/
+│   └── minimatch/
+│
+├── src/
+│   ├── matching
+│   ├── routing
+│   ├── OMS
+│   ├── risk
+│   ├── replay
+│   ├── persistence
+│   └── analytics
+│
+├── tests/
+│
+├── scripts/
+│   ├── verify_e2e.sh
+│   └── test_router_preview.sh
+│
+├── frontend/
+│   ├── public/
+│   │   ├── background.mp4
+│   │   ├── minimatch-logo.png
+│   │   ├── matcha-agent.png
+│   │   └── favicon.png
+│   │
+│   └── src/
+│       ├── api/
+│       ├── components/
+│       ├── context/
+│       ├── hooks/
+│       └── pages/
+│
+└── CMakeLists.txt
+```
 
-![Live Markets](docs/screenshots/markets.png)
+---
 
-### Smart Order Routing & Execution
+## Local Development
 
-![Execution](docs/screenshots/execution.png)
+### Backend
 
-### FIX 4.4 Session Monitor
+```bash
+git clone <YOUR_REPOSITORY_URL>
+cd minimatch
 
-![FIX](docs/screenshots/fix.png)
+cmake -S . -B build
+cmake --build build -j
+```
 
-### Deterministic Replay
+Run tests:
 
-![Replay](docs/screenshots/replay.png)
+```bash
+ctest --test-dir build --output-on-failure
+```
 
-### Venue Health & Operations
+---
 
-![Operations](docs/screenshots/operations.png)
+### Frontend
+
+```bash
+cd frontend
+
+npm install
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+```
+
+---
+
+## API Examples
+
+### Health
+
+```bash
+curl http://127.0.0.1:8080/api/health
+```
+
+### System
+
+```bash
+curl http://127.0.0.1:8080/api/system
+```
+
+### Portfolio
+
+```bash
+curl http://127.0.0.1:8080/api/portfolio
+```
+
+### Portfolio Risk
+
+```bash
+curl http://127.0.0.1:8080/api/portfolio/risk
+```
+
+### Executions
+
+```bash
+curl http://127.0.0.1:8080/api/executions
+```
+
+### FIX Session
+
+```bash
+curl http://127.0.0.1:8080/api/fix/session
+```
+
+---
+
+## Testing
+
+The test suite covers behavior including:
+
+- FIFO within a price level
+- Best-price priority
+- Market orders do not rest
+- IOC remainder cancellation
+- FOK behavior
+- Post-only behavior
+- Partial fills
+- Cancellations
+- Amendments
+- Multi-symbol isolation
+- Risk limits
+- Deterministic replay
+- Snapshot round trips
+- Smart-routing behavior
+
+Run:
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+Router smoke test:
+
+```bash
+BASE_URL=http://127.0.0.1:8080 \
+bash scripts/test_router_preview.sh
+```
+
+Against production:
+
+```bash
+BASE_URL=https://minimatch-api.onrender.com \
+bash scripts/test_router_preview.sh
+```
+
+---
+
+## Engineering Principles
+
+### Determinism before optimization
+
+Performance matters, but reproducibility makes stateful systems debuggable and trustworthy.
+
+### Explicit system boundaries
+
+Matching, market data, OMS, routing, risk, persistence, and analytics have different responsibilities and failure modes.
+
+### Observability is part of the product
+
+Latency, synchronization, sequence integrity, reconciliation, and recovery state should be visible rather than hidden inside logs.
+
+### Risk exists throughout the lifecycle
+
+Risk is not only a pre-trade check. Orders, fills, positions, portfolio state, and market conditions all affect protection decisions.
+
+### Performance should remain measurable
+
+Optimization is most useful when latency and throughput can be compared against a reproducible baseline.
+
+---
+
+## Engineering Journal
+
+The Journal documents major stages of the project:
+
+1. Determinism Before Performance
+2. Building the Order Book
+3. Real-Time Market Data
+4. Smart Order Routing
+5. Risk as a System
+6. Deterministic Replay
+7. Execution Algorithms and Backtesting
+8. FIX and Post-Trade Infrastructure
+9. Observability and Operations
+10. Architecture After Feature Growth
+
+---
+
+## Disclaimer
+
+MiniMatch(a) is an educational and engineering project.
+
+It is not a production exchange, broker, investment platform, or financial advisory service. Simulated market behavior and execution results should not be used for real trading decisions.
+
+---
+
+<p align="center">
+  <img src="frontend/public/matcha-agent.png" alt="Matcha" width="55" />
+</p>
+
+<p align="center">
+  <strong>MiniMatch(a)</strong><br />
+  Matching systems, with a little matcha.
+</p>
