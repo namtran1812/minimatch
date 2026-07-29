@@ -76,6 +76,30 @@ export default function Sidebar({ page, onChange }: Props) {
           </button>
         ))}
       </nav>
+
+      <div className="sidebar-credit">
+        <span>BUILT BY NAM TRAN</span>
+
+        <div className="sidebar-credit__links">
+          <a
+            href="https://www.linkedin.com/in/nam2k5/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            LINKEDIN
+          </a>
+
+          <span>·</span>
+
+          <a
+            href="https://github.com/namtran1812"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GITHUB
+          </a>
+        </div>
+      </div>
     </aside>
   );
 }

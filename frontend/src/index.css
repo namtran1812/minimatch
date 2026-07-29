@@ -11171,3 +11171,58 @@ body,
     no-repeat;
 }
 
+
+/* =========================================================
+   CREATOR CREDIT
+   ========================================================= */
+
+.sidebar-credit {
+  margin-top: auto;
+  padding: 14px 10px 4px;
+
+  border-top: 1px solid var(--mm-border);
+
+  color: var(--mm-text-dim);
+
+  font-size: 7px;
+  line-height: 1.6;
+  letter-spacing: 0.09em;
+}
+
+.sidebar-credit > span {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.sidebar-credit__links {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sidebar-credit__links a {
+  padding: 0 !important;
+  min-height: 0 !important;
+
+  border: 0 !important;
+  background: transparent !important;
+
+  color: var(--mm-text-dim) !important;
+
+  font-size: 7px !important;
+  letter-spacing: 0.08em;
+
+  text-decoration: none;
+}
+
+.sidebar-credit__links a:hover {
+  color: var(--mm-green) !important;
+  background: transparent !important;
+}
+
+
+.sidebar {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
