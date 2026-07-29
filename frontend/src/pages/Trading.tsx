@@ -343,7 +343,7 @@ export default function Trading({
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "Trading is the direct order-entry interface for the MiniMatch matching engine. Submit new orders, modify resting orders, cancel open orders, and inspect the resulting execution reports.",
+            content: "Trading is the direct order-entry interface for the MiniMatch(a) matching engine. Submit new orders, modify resting orders, cancel open orders, and inspect the resulting execution reports.",
           },
           {
             label: "HOW TO USE",

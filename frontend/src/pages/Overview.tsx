@@ -76,11 +76,11 @@ export default function Overview() {
     <section className="page">
       <PageHeader
         eyebrow="SYSTEM OVERVIEW"
-        title="MiniMatch Control Plane"
+        title="MiniMatch(a) Control Plane"
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "Overview summarizes the most important live MiniMatch state across matching, market data, latency, venue health, and trading activity.",
+            content: "Overview summarizes the most important live MiniMatch(a) state across matching, market data, latency, venue health, and trading activity.",
           },
           {
             label: "HOW TO USE",

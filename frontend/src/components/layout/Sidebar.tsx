@@ -57,9 +57,9 @@ export default function Sidebar({ page, onChange }: Props) {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <div className="sidebar-logo">MM</div>
+        <div className="sidebar-logo"><img src="/minimatch-logo.png" alt="MiniMatch(a) logo" /></div>
         <div>
-          <strong>MiniMatch</strong>
+          <strong>MiniMatch(a)</strong>
           <span>Trading Systems Lab</span>
         </div>
       </div>

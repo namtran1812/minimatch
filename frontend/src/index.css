@@ -11238,3 +11238,43 @@ body,
   }
 }
 
+
+/* =========================================================
+   MINIMATCH(A) + MATCHA BRAND ASSETS
+   ========================================================= */
+
+.sidebar-logo {
+  overflow: hidden !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.sidebar-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.matcha-agent-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.product-assistant__header::before {
+  content: "";
+  display: block;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+
+  background:
+    url("/matcha-agent.png")
+    center / contain
+    no-repeat;
+}
+

@@ -42,7 +42,7 @@ export default function Analytics() {
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "Analytics provides quantitative research tools for portfolio risk, statistical arbitrage, and derivatives pricing across MiniMatch.",
+            content: "Analytics provides quantitative research tools for portfolio risk, statistical arbitrage, and derivatives pricing across MiniMatch(a).",
           },
           {
             label: "HOW TO USE",

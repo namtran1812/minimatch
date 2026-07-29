@@ -81,7 +81,7 @@ const reflections: Reflection[] = [
       "My first risk controls were naturally implemented close to order submission. Before accepting an order, the system could check its size, current position, or loss limits and reject it when necessary. For a small engine, that seemed sufficient.",
 
     challenge:
-      "As MiniMatch grew, risk stopped being a single pre-trade decision. Self-trade prevention needed information about resting orders. Position and portfolio limits depended on fills. Circuit breakers responded to broader system conditions, while a global halt had to affect execution consistently across multiple entry points. Scattering these checks through trading code made their interactions increasingly difficult to reason about.",
+      "As MiniMatch(a) grew, risk stopped being a single pre-trade decision. Self-trade prevention needed information about resting orders. Position and portfolio limits depended on fills. Circuit breakers responded to broader system conditions, while a global halt had to affect execution consistently across multiple entry points. Scattering these checks through trading code made their interactions increasingly difficult to reason about.",
 
     change:
       "I separated risk into an explicit control layer with portfolio limits, position state, STP policies, circuit breakers, and system-wide trading controls. Instead of individual features deciding independently whether trading should continue, they contributed to a common set of enforceable system constraints.",
@@ -103,7 +103,7 @@ const reflections: Reflection[] = [
       "Once more subsystems were connected, failures became temporal. A bad state might only appear after a particular sequence of submissions, fills, cancellations, or market-data updates. Looking at the final state or reading logs after the fact was not enough to understand exactly where the system diverged.",
 
     change:
-      "I turned determinism into a debugging workflow. MiniMatch records ordered events and can reconstruct historical execution from them. I then added replay controls for restarting, pausing, seeking through progress, and changing playback speed so intermediate state could be inspected rather than only the final outcome.",
+      "I turned determinism into a debugging workflow. MiniMatch(a) records ordered events and can reconstruct historical execution from them. I then added replay controls for restarting, pausing, seeking through progress, and changing playback speed so intermediate state could be inspected rather than only the final outcome.",
 
     lesson:
       "Reproducibility changes the economics of debugging. Instead of trying to reproduce a transient failure manually, I can preserve the sequence that caused it and repeatedly inspect the same transition. The event log became more than historical data; it became an executable description of system behavior.",
@@ -138,7 +138,7 @@ const reflections: Reflection[] = [
       "At the beginning, I relied heavily on logs. They were useful for tracing individual failures, so I assumed better logging would be enough to understand whether the system was operating correctly.",
 
     challenge:
-      "As MiniMatch became more concurrent and stateful, logs became good at explaining isolated events but poor at answering operational questions. I needed to know whether latency was degrading, whether a venue was stale, whether sequence gaps were increasing, whether reconciliation remained healthy, and whether recovery behavior was changing over time.",
+      "As MiniMatch(a) became more concurrent and stateful, logs became good at explaining isolated events but poor at answering operational questions. I needed to know whether latency was degrading, whether a venue was stale, whether sequence gaps were increasing, whether reconciliation remained healthy, and whether recovery behavior was changing over time.",
 
     change:
       "I added structured operational metrics alongside the application state: P50, P95, and P99 latency, venue message rates, quote age, synchronization state, reconnects, and integrity counters. I then exposed Prometheus metrics and provisioned Grafana dashboards for reconciliation, recovery, drop-copy lookup performance, and position consistency.",
@@ -192,7 +192,7 @@ const reflections: Reflection[] = [
       "Architecture decisions I would revisit after seeing the matching, execution, risk, market-data, and observability systems interact.",
 
     assumption:
-      "While building MiniMatch, I optimized for forward progress. New capabilities were usually added where they fit most naturally at the time, and only later did the interactions between matching, market data, OMS, risk, persistence, replay, and observability become fully visible.",
+      "While building MiniMatch(a), I optimized for forward progress. New capabilities were usually added where they fit most naturally at the time, and only later did the interactions between matching, market data, OMS, risk, persistence, replay, and observability become fully visible.",
 
     challenge:
       "As the project grew, some boundaries became less clean than I would want in a production system. The API process owns a large amount of shared state, several features depend directly on in-process objects, and some historical or observability paths were added after the core architecture had already formed.",
@@ -201,7 +201,7 @@ const reflections: Reflection[] = [
       "If I rebuilt the system, I would define clearer event contracts between subsystems from the beginning. Matching, execution, risk, market data, and post-trade services would publish typed events into a common event stream, with persistence and replay designed around that log. I would also separate command APIs from read models so dashboards could consume purpose-built views instead of depending on operational objects directly.",
 
     lesson:
-      "The biggest architectural lesson was that boundaries become more important as features accumulate. A good abstraction is not only one that makes today's implementation clean; it should also make tomorrow's failure modes easier to isolate. Building MiniMatch end-to-end gave me a much stronger sense of which interfaces deserve to be stable early and which details should remain replaceable.",
+      "The biggest architectural lesson was that boundaries become more important as features accumulate. A good abstraction is not only one that makes today's implementation clean; it should also make tomorrow's failure modes easier to isolate. Building MiniMatch(a) end-to-end gave me a much stronger sense of which interfaces deserve to be stable early and which details should remain replaceable.",
   },
 ];
 

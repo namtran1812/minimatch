@@ -33,7 +33,7 @@ export default class AppErrorBoundary extends Component<
     info: ErrorInfo
   ) {
     console.error(
-      "MiniMatch render failure",
+      "MiniMatch(a) render failure",
       error,
       info
     );
@@ -62,7 +62,7 @@ export default class AppErrorBoundary extends Component<
           </span>
 
           <h1>
-            MiniMatch encountered a display error.
+            MiniMatch(a) encountered a display error.
           </h1>
 
           <p>

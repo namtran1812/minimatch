@@ -148,7 +148,7 @@ export default function Replay() {
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "Replay reconstructs recorded MiniMatch market state deterministically from the event stream, allowing historical exchange behavior to be inspected record by record.",
+            content: "Replay reconstructs recorded MiniMatch(a) market state deterministically from the event stream, allowing historical exchange behavior to be inspected record by record.",
           },
           {
             label: "HOW TO USE",

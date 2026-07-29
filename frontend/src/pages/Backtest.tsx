@@ -84,7 +84,7 @@ export default function Backtest() {
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "Backtest runs MiniMatch execution algorithms against recorded market data and measures how the resulting fills compare with arrival price and historical market VWAP.",
+            content: "Backtest runs MiniMatch(a) execution algorithms against recorded market data and measures how the resulting fills compare with arrival price and historical market VWAP.",
           },
           {
             label: "HOW TO USE",

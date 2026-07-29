@@ -168,7 +168,7 @@ export default function Operations() {
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "Operations monitors the live market-data infrastructure behind MiniMatch, including venue synchronization, message throughput, sequence integrity, pipeline latency, and market recording.",
+            content: "Operations monitors the live market-data infrastructure behind MiniMatch(a), including venue synchronization, message throughput, sequence integrity, pipeline latency, and market recording.",
           },
           {
             label: "HOW TO USE",
@@ -605,7 +605,7 @@ export default function Operations() {
           </div>
 
           <div className="operations-detail-row">
-            <span>MINIMATCH TARGET</span>
+            <span>MINIMATCH(A) TARGET</span>
 
             <strong>
               /metrics

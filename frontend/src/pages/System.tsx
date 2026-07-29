@@ -202,7 +202,7 @@ export default function System() {
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "System exposes the internal state of the MiniMatch matching engine, including order throughput, acceptance and rejection counts, active orders, execution reports, latency, and deterministic state hash.",
+            content: "System exposes the internal state of the MiniMatch(a) matching engine, including order throughput, acceptance and rejection counts, active orders, execution reports, latency, and deterministic state hash.",
           },
           {
             label: "HOW TO USE",

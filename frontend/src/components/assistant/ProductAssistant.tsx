@@ -1,8 +1,4 @@
-import {
-  Bot,
-  Send,
-  X,
-} from "lucide-react";
+import { Send, X } from "lucide-react";
 
 import {
   useState,
@@ -233,7 +229,7 @@ export default function ProductAssistant({
       {
         role: "assistant",
         content:
-          "Ask me about MiniMatch, the current page, or any trading-system concept shown here.",
+          "Ask Matcha about MiniMatch(a), the current page, or any trading-system concept shown here.",
       },
     ]);
 
@@ -326,7 +322,7 @@ export default function ProductAssistant({
           {
             role: "assistant",
             content:
-              "I couldn't reach the MiniMatch assistant service.",
+              "I couldn't reach Matcha.",
           },
         ]
       );
@@ -343,11 +339,11 @@ export default function ProductAssistant({
         onClick={() =>
           setOpen(true)
         }
-        aria-label="Open MiniMatch assistant"
+        aria-label="Open Matcha assistant"
       >
-        <Bot size={17} />
+        <img className="matcha-agent-icon" src="/matcha-agent.png" alt="Matcha" />
 
-        <span>ASK MM</span>
+        <span>ASK MATCHA</span>
       </button>
     );
   }
@@ -361,7 +357,7 @@ export default function ProductAssistant({
           </span>
 
           <strong>
-            MiniMatch Assistant
+            Matcha
           </strong>
         </div>
 
@@ -402,7 +398,7 @@ export default function ProductAssistant({
                 {message.role ===
                 "user"
                   ? "YOU"
-                  : "MM"}
+                  : "MATCHA"}
               </span>
 
               <p>
@@ -416,7 +412,7 @@ export default function ProductAssistant({
       {loading && (
         <div className="product-assistant__thinking">
           <span />
-          MM IS THINKING...
+          MATCHA IS THINKING...
         </div>
       )}
 
@@ -434,7 +430,7 @@ export default function ProductAssistant({
               event.target.value
             )
           }
-          placeholder="ASK ABOUT MINIMATCH..."
+          placeholder="ASK MATCHA..."
         />
 
         <button

@@ -415,7 +415,7 @@ export default function Risk({
       window.confirm(
         "APPLY PORTFOLIO RISK LIMITS?\n\n" +
         "If the portfolio already breaches the new limits, " +
-        "MiniMatch may immediately halt global trading."
+        "MiniMatch(a) may immediately halt global trading."
       );
 
     if (!confirmed) {
@@ -465,7 +465,7 @@ export default function Risk({
     const confirmed =
       window.confirm(
         "HALT ALL TRADING?\n\n" +
-        "This will globally stop the MiniMatch exchange."
+        "This will globally stop the MiniMatch(a) exchange."
       );
 
     if (!confirmed) {
@@ -618,7 +618,7 @@ export default function Risk({
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "Risk monitors client and firm-wide exposure, positions, profit and loss, concentration, trading limits, and automated protection mechanisms across MiniMatch.",
+            content: "Risk monitors client and firm-wide exposure, positions, profit and loss, concentration, trading limits, and automated protection mechanisms across MiniMatch(a).",
           },
           {
             label: "HOW TO USE",
@@ -1500,7 +1500,7 @@ export default function Risk({
         </div>
 
         <p className="system-kill-warning">
-          Controls the global MiniMatch
+          Controls the global MiniMatch(a)
           matching engine. Confirmation
           is required before changing
           trading state.

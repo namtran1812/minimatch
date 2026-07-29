@@ -341,7 +341,7 @@ export default function OMS() {
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "OMS manages parent orders, algorithmic execution, child orders, fills, and post-trade lifecycle state across MiniMatch.",
+            content: "OMS manages parent orders, algorithmic execution, child orders, fills, and post-trade lifecycle state across MiniMatch(a).",
           },
           {
             label: "HOW TO USE",

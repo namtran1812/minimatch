@@ -221,7 +221,7 @@ export default function FIX() {
         items={[
           {
             label: "WHAT THIS PAGE DOES",
-            content: "FIX monitors the protocol session used by MiniMatch for electronic order and execution messaging. It exposes sequence state, traffic, execution reports, rejects, and recovery events.",
+            content: "FIX monitors the protocol session used by MiniMatch(a) for electronic order and execution messaging. It exposes sequence state, traffic, execution reports, rejects, and recovery events.",
           },
           {
             label: "HOW TO USE",
