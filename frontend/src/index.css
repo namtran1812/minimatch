@@ -2107,21 +2107,6 @@ body {
   color: var(--mm-yellow) !important;
 }
 
-@media (max-width: 1100px) {
-  .markets-info {
-    grid-template-columns: 1fr;
-  }
-
-  .markets-info__section {
-    border-right: 0;
-    border-bottom: 1px solid var(--mm-border);
-  }
-
-  .markets-info__section:last-child {
-    border-bottom: 0;
-  }
-}
-
 /* Forms stay compact and consistent */
 .order-form {
   display: grid;
@@ -2143,25 +2128,6 @@ body {
 
 .order-form button[type="submit"] {
   grid-column: 1 / -1;
-}
-
-@media (max-width: 1100px) {
-  .trading-info {
-    grid-template-columns: 1fr;
-  }
-
-  .trading-info__section {
-    border-right: 0;
-    border-bottom: 1px solid var(--mm-border);
-  }
-
-  .trading-info__section:last-child {
-    border-bottom: 0;
-  }
-
-  .trading-info + .terminal-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .trading-pretrade-panel {
@@ -2203,37 +2169,6 @@ body {
     0.8fr
     1fr
     1fr;
-}
-
-@media (max-width: 1400px) {
-  .trading-info + .terminal-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
-  .trading-info + .terminal-grid
-    > .panel:last-child {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 1100px) {
-  .execution-info {
-    grid-template-columns: 1fr;
-  }
-
-  .execution-info__section {
-    border-right: 0;
-    border-bottom: 1px solid var(--mm-border);
-  }
-
-  .execution-info__section:last-child {
-    border-bottom: 0;
-  }
-
-  .execution-info + .terminal-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* =========================================================
@@ -2646,22 +2581,13 @@ p,
 /* Responsive */
 @media (max-width: 1250px) {
 
-  .trading-info + .terminal-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-  }
-
   .trading-manage-panel {
     grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 850px) {
-  .trading-info + .terminal-grid {
-    grid-template-columns: 1fr;
-  }
 
-  .trading-info + .terminal-grid > .panel,
   .trading-manage-panel {
     height: auto;
     min-height: 0;
@@ -7540,23 +7466,6 @@ button.oms-table__row {
   }
 }
 
-@media (max-width: 900px) {
-  .overview-info {
-    grid-template-columns: 1fr;
-  }
-
-  .overview-info__section {
-    border-right: 0;
-
-    border-bottom:
-      1px solid var(--mm-border);
-  }
-
-  .overview-info__section:last-child {
-    border-bottom: 0;
-  }
-}
-
 /* =========================================================
    OVERVIEW — STATUS STRIP
    ========================================================= */
@@ -11163,30 +11072,14 @@ body,
 
 .trading-workspace,
 .trading-grid,
-.trading-layout,
-.trading-info + .terminal-grid,
-.page:has(.trading-heading) .terminal-grid {
+.trading-layout {
   padding-right: 14px !important;
   box-sizing: border-box !important;
 }
 
 /* Keep the rightmost card away from viewport edge */
-.page:has(.trading-heading)
-  .terminal-grid
-  > .panel:last-child {
-  margin-right: 0 !important;
-}
 
 /* Slightly rebalance the 3-column workspace */
-.page:has(.trading-heading)
-  .terminal-grid {
-  grid-template-columns:
-    minmax(0, 1fr)
-    minmax(0, 1.55fr)
-    minmax(260px, 0.82fr) !important;
-
-  gap: 12px !important;
-}
 
 
 /* =========================================================
